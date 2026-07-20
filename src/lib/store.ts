@@ -10,6 +10,8 @@ export type ViewId =
   | "run"
   | "integration"
   | "settings"
+  | "docs"
+
 
 interface NavState {
   view: ViewId
@@ -50,6 +52,7 @@ interface LayoutState {
   toggleNav: () => void
   setNavWidth: (w: number) => void
   toggleDetail: () => void
+  setDetailCollapsed: (collapsed: boolean) => void
   setDetailWidth: (w: number) => void
 }
 
@@ -63,6 +66,7 @@ export const useLayout = create<LayoutState>()(
       toggleNav: () => set((s) => ({ navCollapsed: !s.navCollapsed })),
       setNavWidth: (w) => set({ navWidth: clamp(w, NAV_SIZE.min, NAV_SIZE.max) }),
       toggleDetail: () => set((s) => ({ detailCollapsed: !s.detailCollapsed })),
+      setDetailCollapsed: (collapsed) => set({ detailCollapsed: collapsed }),
       setDetailWidth: (w) => set({ detailWidth: clamp(w, DETAIL_SIZE.min, DETAIL_SIZE.max) }),
     }),
     {

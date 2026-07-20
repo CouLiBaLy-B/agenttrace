@@ -6,12 +6,14 @@ import { cn } from "@/lib/utils"
 import { Sidebar, MobileTopBar } from "@/components/layout/sidebar"
 import { ResizeHandle } from "@/components/layout/resize-handle"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable"
 import { DashboardView } from "@/components/views/dashboard-view"
 import { ProjectsView } from "@/components/views/projects-view"
 import { ProjectDetailView } from "@/components/views/project-detail-view"
 import { RunView } from "@/components/views/run-view"
 import { IntegrationView } from "@/components/views/integration-view"
 import { SettingsView } from "@/components/views/settings-view"
+import { DocsView } from "@/components/views/docs-view"
 import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Footer } from "@/components/layout/footer"
@@ -36,7 +38,7 @@ export function AppShell() {
             dragging ? "" : "transition-[width] duration-200 ease-out"
           )}
           style={{ width: navCollapsed ? NAV_SIZE.rail : navWidth }}
-        >
+          >
           <Sidebar collapsed={navCollapsed} onToggle={toggleNav} />
           {!navCollapsed && (
             <ResizeHandle
@@ -76,12 +78,14 @@ export function AppShell() {
             {view === "projects" && <ProjectsView />}
             {view === "project" && <ProjectDetailView />}
             {view === "run" && <RunView />}
+            {view === "docs" && <DocsView />}
             {view === "integration" && <IntegrationView />}
             {view === "settings" && <SettingsView />}
           </main>
         </div>
       </div>
 
+      {/* Footer is always visible — never pushed off-screen */}
       <Footer />
     </div>
   )

@@ -16,9 +16,11 @@ import {
   ArrowRight,
   Plus,
   Radio,
+  Coins,
 } from "lucide-react"
 import { EVENT_COLORS } from "@/lib/types"
 import { motion } from "framer-motion"
+import { formatTokens } from "@/lib/tokens"
 
 interface Stats {
   totalProjects: number
@@ -28,6 +30,9 @@ interface Stats {
   successRate: number
   avgMs: number
   totalEvents: number
+  totalTokens: number
+  promptTokens: number
+  completionTokens: number
   perProject: {
     id: string
     name: string
@@ -82,7 +87,7 @@ export function DashboardView() {
       ) : (
         <>
           {/* stat grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
             <StatCard icon={FolderGit2} label="Projects" value={String(data.totalProjects)} tint="#34d399" />
             <StatCard icon={Activity} label="Total runs" value={String(data.totalRuns)} tint="#22d3ee" />
             <StatCard
@@ -93,7 +98,37 @@ export function DashboardView() {
             />
             <StatCard icon={Clock} label="Avg duration" value={formatDuration(data.avgMs)} tint="#fbbf24" />
             <StatCard icon={Zap} label="Events captured" value={String(data.totalEvents)} tint="#a78bfa" />
+            <StatCard icon={Coins} label="Tokens used" value={formatTokens(data.totalTokens || 0)} tint="#22d3ee" />
           </div>
+
+          {/* token breakdown (only if there are tokens) */}
+          {(data.totalTokens || 0) > 0 && (
+            <Card className="p-5 at-graticule-fine">
+              <div className="flex items-center gap-2 mb-3">
+                <Coins className="h-4 w-4 text-cyan-400" />
+                <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                  token consumption
+                </p>
+                <span className="ml-auto font-mono text-sm font-semibold tabular-nums">
+                  {formatTokens(data.totalTokens)} total
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <TokenStat
+                  label="prompt"
+                  value={data.promptTokens}
+                  total={data.totalTokens}
+                  color="#22d3ee"
+                />
+                <TokenStat
+                  label="completion"
+                  value={data.completionTokens}
+                  total={data.totalTokens}
+                  color="#a78bfa"
+                />
+              </div>
+            </Card>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* signal distribution (radar-ish) */}
@@ -207,6 +242,30 @@ function StatCard({
         {label}
       </p>
     </Card>
+  )
+}
+
+function TokenStat({ label, value, total, color }: { label: string; value: number; total: number; color: string }) {
+  const pct = total > 0 ? (value / total) * 100 : 0
+  return (
+    <div className="rounded-md border border-border bg-background/40 p-3">
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</span>
+        <span className="font-mono text-sm font-semibold tabular-nums" style={{ color }}>
+          {formatTokens(value)}
+        </span>
+      </div>
+      <div className="h-1.5 rounded-full bg-border/60 overflow-hidden">
+        <motion.div
+          className="h-full rounded-full"
+          style={{ background: color, boxShadow: `0 0 6px ${color}88` }}
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        />
+      </div>
+      <p className="mt-1 font-mono text-[9px] text-muted-foreground/70">{pct.toFixed(0)}% of total</p>
+    </div>
   )
 }
 

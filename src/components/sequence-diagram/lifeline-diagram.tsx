@@ -4,6 +4,7 @@ import { motion } from "framer-motion"
 import { TraceEvent, EVENT_COLORS } from "@/lib/types"
 import { Participant } from "@/lib/types"
 import { PARTICIPANT_ICON, KIND_COLOR } from "./participants"
+import { extractTokens, formatTokens } from "@/lib/tokens"
 import { cn } from "@/lib/utils"
 
 const LANE_WIDTH = 150
@@ -130,6 +131,7 @@ export function LifelineDiagram({ events, participants, selectedId, onSelect, li
           const startX = srcX
           const endX = tgtX
           const len = Math.abs(endX - startX)
+          const tok = ev.type === "llm_call" ? extractTokens(ev.payload) : null
 
           return (
             <g
@@ -241,6 +243,7 @@ export function LifelineDiagram({ events, participants, selectedId, onSelect, li
                 >
                   {ev.type.replace("_", " ")}
                   {ev.durationMs != null ? ` · ${ev.durationMs}ms` : ""}
+                  {tok ? ` · ${formatTokens(tok.total_tokens)} tok` : ""}
                 </text>
               </motion.g>
             </g>
