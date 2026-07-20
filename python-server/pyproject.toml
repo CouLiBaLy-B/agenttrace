@@ -1,6 +1,6 @@
 [project]
 name = "deepagents-trace"
-version = "0.1.0"
+version = "0.1.1"
 description = "AgentTrace - observability for AI agents. `agenttrace ui` starts the web UI + API, no Node/Bun required."
 readme = "README.md"
 requires-python = ">=3.10"
