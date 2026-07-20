@@ -4,13 +4,22 @@
 // keeps it out of the TypeScript/Next.js compilation so switching profiles
 // never risks breaking the default Postgres build).
 //
-// To activate the SQLite profile:
-//   1. bun run db:generate:sqlite && bun run db:push:sqlite
-//   2. cp src/lib/db.ts src/lib/db.postgres.ts.example   (keep a backup)
-//   3. cp src/lib/db.sqlite.ts.example src/lib/db.ts
-//   4. set DATABASE_URL="file:./dev.db" in .env
+// `better-sqlite3` needs a native build (node-gyp + Python + a C++ toolchain)
+// and Bun's own compatibility notes say it "is not yet supported in Bun" —
+// that's why it's NOT a package.json dependency (it broke `bun install` for
+// everyone, including people who only use the default Postgres profile).
+// This profile is opt-in and BYO-toolchain:
 //
-// To switch back to Postgres, reverse steps 2-3.
+// To activate the SQLite profile:
+//   1. bun add better-sqlite3 @prisma/adapter-better-sqlite3
+//      (requires Python 3 + build tools locally/in your container — e.g.
+//      `apt-get install -y python3 make g++` on Debian-based images)
+//   2. bun run db:generate:sqlite && bun run db:push:sqlite
+//   3. cp src/lib/db.ts src/lib/db.postgres.ts.example   (keep a backup)
+//   4. cp src/lib/db.sqlite.ts.example src/lib/db.ts
+//   5. set DATABASE_URL="file:./dev.db" in .env
+//
+// To switch back to Postgres, reverse steps 3-4 and `bun remove better-sqlite3 @prisma/adapter-better-sqlite3`.
 
 import { PrismaClient } from '@/generated/prisma-sqlite/client'
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'

@@ -53,7 +53,7 @@ Docker, plus a fully local SQLite alternative — pick one at setup:
 | --- | --- | --- |
 | **Postgres, hosted (Neon)** — recommended, zero local install | Create a free [Neon](https://neon.tech) project, copy the connection string | `postgresql://...neon.tech/agenttrace?sslmode=require` |
 | **Postgres, native local** | Install Postgres (Windows service or WSL), create a role/db `agenttrace` | `postgresql://agenttrace:agenttrace@localhost:5432/agenttrace` |
-| **SQLite, fully local** | `bun run db:generate:sqlite && bun run db:push:sqlite`, then swap the Prisma client (see [`src/lib/db.sqlite.ts.example`](src/lib/db.sqlite.ts.example)) | `file:./dev.db` |
+| **SQLite, fully local** | `bun add better-sqlite3 @prisma/adapter-better-sqlite3` (needs Python 3 + build tools — see below), then `bun run db:generate:sqlite && bun run db:push:sqlite` and swap the Prisma client (see [`src/lib/db.sqlite.ts.example`](src/lib/db.sqlite.ts.example)) | `file:./dev.db` |
 
 The first two profiles need **no code change** — only `DATABASE_URL` in `.env`
 differs. The SQLite profile uses a separate schema
@@ -61,6 +61,13 @@ differs. The SQLite profile uses a separate schema
 adapter, so it requires swapping `src/lib/db.ts` for the provided
 `.ts.example` variant (instructions in that file) — this keeps the default
 Postgres build completely unaffected for everyone who doesn't opt into SQLite.
+
+`better-sqlite3` is **not** a `package.json` dependency (on purpose): it needs
+a native build (node-gyp + Python 3 + a C++ toolchain), and per Bun's own
+compatibility notes it "is not yet supported in Bun" — as a regular
+dependency it broke `bun install`/Docker builds for everyone, including
+people who only ever use the default Postgres profile. Install it yourself
+only if you want the SQLite profile.
 
 ## Docker
 
