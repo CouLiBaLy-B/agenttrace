@@ -104,14 +104,19 @@ class AgentTraceMiddleware(AgentMiddleware):
         return response
 
     def _emit_llm_call(self, run: AgentTraceRun, model_name: str, response: Any, start: float) -> None:
+        # wrap_model_call's handler returns a `ModelResponse` dataclass
+        # (`.result: list[BaseMessage]`), not a bare message — unwrap to the
+        # last message before reading content/usage. Some middleware/tests
+        # may still hand back a bare message directly, so fall back to it.
+        message = _last_model_message(response)
         run.emit(
             source=self.orchestrator,
             target=model_name,
             type="llm_call",
             label="llm step",
             payload={
-                "output_preview": truncate(_response_preview(response), 240),
-                "tokens": _token_usage(response),
+                "output_preview": truncate(_response_preview(message), 240),
+                "tokens": _token_usage(message),
             },
             duration_ms=int((time.time() - start) * 1000),
         )
@@ -190,6 +195,16 @@ def _model_name(request) -> str:
     model = getattr(request, "model", None)
     name = getattr(model, "model", None) or getattr(model, "model_name", None)
     return str(name) if name else "LLM"
+
+
+def _last_model_message(response) -> Any:
+    """Unwrap a `ModelResponse` (`.result: list[BaseMessage]`) to its last
+    message. Falls back to `response` itself if it isn't a ModelResponse
+    (e.g. a bare AIMessage, as some tests/middleware hand back directly)."""
+    result = getattr(response, "result", None)
+    if isinstance(result, list) and result:
+        return result[-1]
+    return response
 
 
 def _response_preview(response) -> str:

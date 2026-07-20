@@ -24,6 +24,10 @@ agent = create_deep_agent(
 agent.invoke({"messages": [{"role": "user", "content": "..."}]})
 ```
 
+Works the same with `await agent.ainvoke(...)` — the middleware's async hooks
+fire automatically. See [`examples/`](examples) for full sync and async
+runnable projects.
+
 Configure the target instance and project API key (from the AgentTrace
 Integration tab, prefixed `atr_`) via environment variables, or pass them
 explicitly to the middleware:
@@ -73,6 +77,45 @@ run.close()  # bounded wait for the queue to drain
 primitive (raises on a missing key or a failed request) — the right
 behavior when called directly; `AgentTraceRun` is the layer that adds the
 non-blocking/never-fatal guarantees on top.
+
+## Servers with a cached/reused agent (don't use the middleware)
+
+`AgentTraceMiddleware` is baked into the agent graph at `create_deep_agent(...,
+middleware=[...])` **build** time. If your server compiles the agent once and
+reuses it across many requests (e.g. a per-user compiled-graph cache with a
+TTL), a single middleware instance would span multiple runs — the first
+run's `after_agent` closes the AgentTrace run, and every later request on that
+cached agent silently traces into an already-closed run. The middleware is
+only correct when the agent is (re)built per invocation.
+
+For a cached-agent server, create one `AsyncAgentTraceRun` **per request**
+instead, independent of the agent build, and feed it events from your own
+stream projection (`agent.astream_events(...)`) rather than from `middleware`:
+
+```python
+from agenttrace_langchain import AsyncAgentTraceClient, AsyncAgentTraceRun
+
+client = AsyncAgentTraceClient(api_key="atr_...")  # reuse across runs; own httpx.AsyncClient optional
+run = AsyncAgentTraceRun("chat run", client=client, tool_server=my_mcp_routing_fn)
+
+run.on_user_message(user_text)
+async for kind, source, data in my_stream_projection(agent, ...):
+    run.on_stream_event(kind, source, data)  # tool_call/tool_result/agent_start/agent_end/approval_required/final
+run.end("completed")
+await run.aclose()
+```
+
+`tool_server` is an optional `Callable[[str], str]` — pass it if you want a
+`payload.server` label on tool arrows (e.g. which MCP/backend served a tool
+call); omit it if you don't need that. Note `on_stream_event`'s diagram
+labels ("delegate → X", "failed"/"done") are in English and not currently
+customizable — fork or post-process if you need different wording.
+
+Token usage still needs a `BaseCallbackHandler` (attach via
+`config={"callbacks": [...]}` at invoke time) since a stream projection
+typically doesn't expose LLM call boundaries — callbacks, unlike middleware,
+correctly compose with a cached/reused agent because they're attached
+per-invocation rather than baked into the graph.
 
 ## Event mapping
 
