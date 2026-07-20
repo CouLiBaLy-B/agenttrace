@@ -14,18 +14,60 @@ Watch signals move through your agents in real time: one vertical lifeline per p
 - **TanStack Query** + **Zustand** for server/client state
 - **Framer Motion** for the animated SVG diagram
 
-## Quick start (local dev)
+## Python backend + CLI (in progress)
+
+`python-server/` is a from-scratch FastAPI port of this API, published to
+PyPI as **`deepagents-trace`** (`agenttrace` was already taken by an
+unrelated project): `pip install deepagents-trace && agenttrace ui` starts
+it, zero Node/Bun required — see [python-server/README.md](python-server/README.md)
+(including the remaining PyPI publishing steps).
+It's Phase 1+3 of a larger migration (no bundled frontend yet — that's Phase
+2); the Next.js app in this README stays the full-featured path until then.
+
+## Quick start — without Docker
+
+No container required to run AgentTrace locally: it's a Bun/Next.js app plus one
+standalone Socket.IO process. Pick a database profile (see below), then:
 
 ```bash
 bun install
-bun run db:push          # create the SQLite schema
+bun run db:push          # (or db:push:sqlite — see profiles below)
 bun run dev              # Next.js on :3000
 
 # in another terminal — the Socket.IO live-stream service
 cd mini-services/socket-service && bun run dev   # :3003
 ```
 
+Set `SOCKET_SERVICE_URL=http://localhost:3003` in `.env` so the Next.js server
+reaches the socket process directly (the Caddy gateway referenced elsewhere is
+only used in the hosted dev sandbox, it's not needed to run locally).
+
 Open the app, click **"Explore the live demo"** to create a throwaway account preloaded with three sample projects (Customer Support Agent, Research Assistant, Code Review Bot), or sign up with email/password to get the same demo data.
+
+### Database profiles (no Docker)
+
+The schema (`prisma/schema.prisma`) targets Postgres. Two ways to run it without
+Docker, plus a fully local SQLite alternative — pick one at setup:
+
+| Profile | Setup | `DATABASE_URL` |
+| --- | --- | --- |
+| **Postgres, hosted (Neon)** — recommended, zero local install | Create a free [Neon](https://neon.tech) project, copy the connection string | `postgresql://...neon.tech/agenttrace?sslmode=require` |
+| **Postgres, native local** | Install Postgres (Windows service or WSL), create a role/db `agenttrace` | `postgresql://agenttrace:agenttrace@localhost:5432/agenttrace` |
+| **SQLite, fully local** | `bun add better-sqlite3 @prisma/adapter-better-sqlite3` (needs Python 3 + build tools — see below), then `bun run db:generate:sqlite && bun run db:push:sqlite` and swap the Prisma client (see [`src/lib/db.sqlite.ts.example`](src/lib/db.sqlite.ts.example)) | `file:./dev.db` |
+
+The first two profiles need **no code change** — only `DATABASE_URL` in `.env`
+differs. The SQLite profile uses a separate schema
+([`prisma/schema.sqlite.prisma`](prisma/schema.sqlite.prisma)) and driver
+adapter, so it requires swapping `src/lib/db.ts` for the provided
+`.ts.example` variant (instructions in that file) — this keeps the default
+Postgres build completely unaffected for everyone who doesn't opt into SQLite.
+
+`better-sqlite3` is **not** a `package.json` dependency (on purpose): it needs
+a native build (node-gyp + Python 3 + a C++ toolchain), and per Bun's own
+compatibility notes it "is not yet supported in Bun" — as a regular
+dependency it broke `bun install`/Docker builds for everyone, including
+people who only ever use the default Postgres profile. Install it yourself
+only if you want the SQLite profile.
 
 ## Docker
 
@@ -101,11 +143,15 @@ Same flow with `fetch` — see the Integration tab in the app.
 
 ### DeepAgents (LangChain)
 
-The DeepAgents tab provides a drop-in `BaseCallbackHandler` that instruments a
-`create_deep_agent` run. Attach one instance per invocation:
+The DeepAgents tab provides a drop-in `AgentMiddleware` (deepagents' current
+middleware system — `before_agent` / `wrap_model_call` / `wrap_tool_call` /
+`after_agent`) that instruments a `create_deep_agent` run. It's also published
+as an installable package: [`integrations/agenttrace-langchain`](integrations/agenttrace-langchain).
+Attach one instance per agent:
 
 ```python
-from agenttrace_callback import AgentTraceCallback  # from the snippet
+# pip install -e integrations/agenttrace-langchain
+from agenttrace_langchain import AgentTraceMiddleware
 from deepagents import create_deep_agent
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
@@ -118,26 +164,31 @@ def web_search(query: str) -> str:
 agent = create_deep_agent(
     model=ChatOpenAI(model="gpt-4o-mini"),
     tools=[web_search],
+    # one middleware instance = one AgentTrace run
+    middleware=[AgentTraceMiddleware(run_name="research — Rust frameworks")],
 )
 
-# one callback = one AgentTrace run
-trace = AgentTraceCallback(run_name="research — Rust frameworks")
 result = agent.invoke(
-    {"messages": [{"role": "user", "content": "What's the state of Rust web frameworks?"}]},
-    config={"callbacks": [trace]},
+    {"messages": [{"role": "user", "content": "What's the state of Rust web frameworks?"}]}
 )
 ```
 
-The callback streams, in real time:
+Emission is non-blocking (background thread + queue, so it never adds latency
+to a model/tool call) and never fatal (a misconfigured or unreachable
+AgentTrace instance silently disables tracing for the run instead of breaking
+the agent) — see the package
+[README](integrations/agenttrace-langchain/README.md#reliability) for details.
 
-| Event type      | Emitted from                   | Diagram arrow                |
-| --------------- | ------------------------------ | ---------------------------- |
-| `llm_call`      | `on_llm_start` / `on_llm_end`  | Orchestrator → LLM           |
-| `tool_call`     | `on_tool_start`                | Orchestrator → tool          |
-| `tool_result`   | `on_tool_end`                  | tool → Orchestrator          |
-| `handoff`       | `on_agent_action` (handoff tool) | Orchestrator → Sub-agent   |
-| `error`         | `on_tool_error`                | tool → Orchestrator (red)    |
-| `final_answer`  | `on_agent_finish`              | Orchestrator → User          |
+The middleware streams, in real time:
+
+| Event type     | Emitted from                    | Diagram arrow              |
+| -------------- | -------------------------------- | ---------------------------- |
+| `llm_call`     | `wrap_model_call`                | Orchestrator → LLM           |
+| `tool_call`    | `wrap_tool_call` (before)         | Orchestrator → tool          |
+| `tool_result`  | `wrap_tool_call` (after)          | tool → Orchestrator          |
+| `handoff`      | `wrap_tool_call` (handoff tool)   | Orchestrator → Sub-agent     |
+| `error`        | `wrap_tool_call` (exception)      | tool → Orchestrator (red)    |
+| `final_answer` | `after_agent`                     | Orchestrator → User          |
 
 Open the run in AgentTrace while the agent runs to watch the diagram populate
 live, or replay it afterward at 0.5× / 1× / 2× / instant.

@@ -1,0 +1,46 @@
+[project]
+name = "deepagents-trace"
+version = "0.1.0"
+description = "AgentTrace - observability for AI agents. `agenttrace ui` starts the web UI + API, no Node/Bun required."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+keywords = ["agents", "llm", "observability", "tracing", "deepagents", "langchain"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: System :: Monitoring",
+]
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "sqlalchemy>=2.0",
+    "bcrypt>=4.0",
+    "itsdangerous>=2.2",
+    "click>=8.1",
+    "websockets>=13.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "httpx>=0.27"]
+
+[project.urls]
+Homepage = "https://github.com/CouLiBaLy-B/agenttrace"
+Repository = "https://github.com/CouLiBaLy-B/agenttrace"
+Issues = "https://github.com/CouLiBaLy-B/agenttrace/issues"
+
+[project.scripts]
+agenttrace = "agenttrace.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["agenttrace*"]
