@@ -87,6 +87,29 @@ async def test_on_stream_event_final_answer(run, post):
     assert events[0]["payload"]["answer"] == "the final answer"
 
 
+async def test_custom_phrases_override_default_labels(post):
+    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    run = AsyncAgentTraceRun(
+        "test run",
+        client=client,
+        phrases={
+            "delegate": "délégation → {target}",
+            "subagent_failed": "{name} → échec",
+            "final_answer": "réponse finale",
+        },
+    )
+
+    run.on_stream_event("agent_start", "researcher", {"scope": "subagent", "label": "task"})
+    run.on_stream_event("agent_end", "researcher", {"scope": "subagent", "status": "failed", "error": "boom"})
+    run.on_stream_event("final", "main", {"message": "voila"})
+    await run.aclose(timeout=2.0)
+
+    events = [b for b in _bodies(post) if "type" in b]
+    assert events[0]["label"] == "délégation → researcher"
+    assert events[1]["label"] == "researcher → échec"
+    assert events[2]["label"] == "réponse finale"
+
+
 async def test_tool_server_callback_enriches_payload(post):
     client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
     run = AsyncAgentTraceRun("test run", client=client, tool_server=lambda name: "iam-mcp")
