@@ -18,6 +18,17 @@ class FakeToolMessage:
         self.content = content
 
 
+class FakeModelResponse:
+    """Mirrors langchain.agents.middleware.types.ModelResponse: what a real
+    wrap_model_call handler actually returns (`.result: list[BaseMessage]`),
+    not a bare message. A middleware that reads `.content` off this directly
+    (instead of unwrapping `.result[-1]`) silently captures the wrong thing —
+    see AgentTraceMiddleware._emit_llm_call / _last_model_message."""
+
+    def __init__(self, messages):
+        self.result = messages
+
+
 @pytest.fixture
 def post(mocker):
     post = mocker.patch("requests.post")
@@ -109,6 +120,20 @@ def test_wrap_model_call_emits_llm_call(middleware, post):
     events = [b for b in _bodies(post) if b.get("runId") == "run_1" and "type" in b]
     assert events[0]["type"] == "llm_call"
     assert events[0]["target"] == "gpt-4o-mini"
+
+
+def test_wrap_model_call_unwraps_real_model_response(middleware, post):
+    """Regression test: a real langchain wrap_model_call handler returns a
+    ModelResponse (`.result: list[BaseMessage]`), not a bare message — verified
+    against an actual deepagents graph while writing the examples/ folder."""
+    request = FakeModelRequest("gpt-4o-mini")
+    handler = lambda req: FakeModelResponse([FakeToolMessage("first"), FakeToolMessage("final answer text")])
+
+    middleware.wrap_model_call(request, handler)
+
+    middleware._run.close(timeout=2.0)
+    events = [b for b in _bodies(post) if b.get("runId") == "run_1" and "type" in b]
+    assert events[0]["payload"]["output_preview"] == "final answer text"
 
 
 def test_after_agent_emits_final_answer_and_closes_run(middleware, post):
