@@ -42,6 +42,21 @@ def _elapsed_ms(started: Optional[float]) -> Optional[int]:
     return int((time.monotonic() - started) * 1000) if started is not None else None
 
 
+# Diagram-label strings, overridable via `AsyncAgentTraceRun(phrases=...)` —
+# e.g. to localize them, or to match wording an app already shipped before
+# adopting this library. `{name}`/`{target}` are filled with `str.format`.
+DEFAULT_PHRASES = {
+    "user_message_fallback": "user message",
+    "tool_result": "{name} → result",
+    "delegate": "delegate → {target}",
+    "subagent_done": "{name} → done",
+    "subagent_failed": "{name} → failed",
+    "approval_required": "HITL: approval required",
+    "final_answer": "final answer",
+    "run_failed": "run failed",
+}
+
+
 class AsyncAgentTraceRun:
     """One instance = one run (created per request, NOT per cached agent build).
 
@@ -56,11 +71,13 @@ class AsyncAgentTraceRun:
         client: AsyncAgentTraceClient,
         orchestrator: str = "Orchestrator",
         tool_server: Optional[Callable[[str], str]] = None,
+        phrases: Optional[dict[str, str]] = None,
     ):
         self._name = truncate(name, 120)
         self._client = client
         self._orchestrator = orchestrator
         self._tool_server = tool_server
+        self._phrases = {**DEFAULT_PHRASES, **(phrases or {})}
         self._queue: "asyncio.Queue[Optional[dict]]" = asyncio.Queue()
         self._run_id: Optional[str] = None
         self._failed = not bool(client.api_key)
@@ -80,7 +97,7 @@ class AsyncAgentTraceRun:
             source="User",
             target=self._orchestrator,
             type="handoff",
-            label=truncate(message, LABEL_LIMIT) or "user message",
+            label=truncate(message, LABEL_LIMIT) or self._phrases["user_message_fallback"],
             payload={"message": truncate(message, PAYLOAD_LIMIT)},
         )
 
@@ -120,36 +137,38 @@ class AsyncAgentTraceRun:
                 payload["server"] = self._tool_server(name)
             self.emit(
                 source=name, target=actor, type="tool_result",
-                label=f"{name} → result", payload=payload, duration_ms=_elapsed_ms(started),
+                label=self._phrases["tool_result"].format(name=name), payload=payload,
+                duration_ms=_elapsed_ms(started),
             )
         elif kind == "agent_start" and data.get("scope") == "subagent":
             self._subagent_started[source] = time.monotonic()
             self.emit(
                 source=self._orchestrator, target=source, type="handoff",
-                label=f"delegate → {source}",
+                label=self._phrases["delegate"].format(target=source),
                 payload={"task": truncate(str(data.get("label", "")), PAYLOAD_LIMIT)},
             )
         elif kind == "agent_end" and data.get("scope") == "subagent":
             started = self._subagent_started.pop(source, None)
             failed = data.get("status") == "failed"
+            label_key = "subagent_failed" if failed else "subagent_done"
             self.emit(
                 source=source, target=self._orchestrator,
                 type="error" if failed else "tool_result",
-                label=f"{source} → {'failed' if failed else 'done'}",
+                label=self._phrases[label_key].format(name=source),
                 payload={"status": data.get("status"), "error": data.get("error")},
                 duration_ms=_elapsed_ms(started), status="error" if failed else "ok",
             )
         elif kind == "approval_required":
             self.emit(
                 source=self._orchestrator, target="User", type="handoff",
-                label="HITL: approval required",
+                label=self._phrases["approval_required"],
                 payload={"actionRequests": compact(data.get("action_requests", []))},
                 status="pending",
             )
         elif kind == "final":
             self.emit(
                 source=self._orchestrator, target="User", type="final_answer",
-                label="final answer",
+                label=self._phrases["final_answer"],
                 payload={"answer": truncate(str(data.get("message", "")), ANSWER_LIMIT)},
             )
         # token / todo / chart: UI-only noise for a sequence diagram — ignored.
@@ -157,7 +176,8 @@ class AsyncAgentTraceRun:
     def on_error(self, message: str) -> None:
         self.emit(
             source=self._orchestrator, target="User", type="error",
-            label="run failed", payload={"error": truncate(message, PAYLOAD_LIMIT)}, status="error",
+            label=self._phrases["run_failed"], payload={"error": truncate(message, PAYLOAD_LIMIT)},
+            status="error",
         )
 
     # ----- low-level emit / lifecycle -----
