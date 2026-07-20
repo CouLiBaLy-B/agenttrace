@@ -1,0 +1,23 @@
+[project]
+name = "agenttrace-langchain"
+version = "0.1.0"
+description = "AgentTrace middleware for LangChain deepagents / create_agent"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "langchain>=1.0.0",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-mock>=3.14", "pytest-asyncio>=0.24"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["agenttrace_langchain*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

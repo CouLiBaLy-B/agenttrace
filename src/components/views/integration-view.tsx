@@ -448,207 +448,22 @@ main().catch(console.error);`
 function deepagentsSnippet(project: string, apiKey: string) {
   return `# AgentTrace × LangChain DeepAgents — ${project}
 #
-# pip install langchain langchain-openai langchain-deepagents requests
+# pip install -e integrations/agenttrace-langchain  (or: pip install agenttrace-langchain)
+# pip install langchain langchain-openai
 #
-# This file defines:
-#   1. AgentTraceCallback  — a LangChain BaseCallbackHandler that streams
-#      orchestrator ↔ LLM, tool_call/tool_result, handoffs and the final
-#      answer to AgentTrace as a live sequence diagram.
-#   2. A small DeepAgents example (planner + tools + sub-agent) wired up
-#      with the callback so you can see the diagram populate in real time.
-#
-# DeepAgents emits the standard LangChain callback events
-# (on_llm_start/end, on_tool_start/end, on_agent_action/finish, and the
-# 'handoff' tags when delegating to a sub-agent), so this handler works
-# for create_deep_agent / create_react_agent / any Runnable that supports
-# callbacks.
+# AgentTraceMiddleware is an AgentMiddleware (LangChain's 2026 middleware
+# system: before_agent / wrap_model_call / wrap_tool_call / after_agent) that
+# streams orchestrator ↔ LLM, tool_call/tool_result, handoffs and the final
+# answer to AgentTrace as a live sequence diagram. It works for
+# create_deep_agent / create_agent / any agent built on
+# langchain.agents.middleware.
 
-import time, uuid, requests, json, os
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
-from uuid import UUID
+import os
+os.environ.setdefault("AGENTTRACE_URL", "http://localhost:3000/api/events")
+os.environ.setdefault("AGENTTRACE_KEY", "${apiKey}")   # project-scoped key
 
-from langchain_core.callbacks import BaseCallbackHandler
-from langchain_core.agents import AgentAction, AgentFinish
-from langchain_core.outputs import LLMResult
-from langchain_core.messages import BaseMessage
+from agenttrace_langchain import AgentTraceMiddleware
 
-# ──────────────────────────────────────────────────────────────────────
-# 1. AgentTrace ingestion client + LangChain callback handler
-# ──────────────────────────────────────────────────────────────────────
-
-AGENTTRACE_URL = os.getenv("AGENTTRACE_URL", "http://localhost:3000/api/events")
-AGENTTRACE_KEY = os.getenv("AGENTTRACE_KEY", "${apiKey}")   # project-scoped key
-
-
-def emit(event: dict) -> dict:
-    """POST a single event to AgentTrace. Returns the server response."""
-    r = requests.post(
-        AGENTTRACE_URL,
-        json=event,
-        headers={"Authorization": f"Bearer {AGENTTRACE_KEY}",
-                 "Content-Type": "application/json"},
-        timeout=10,
-    )
-    r.raise_for_status()
-    return r.json()
-
-
-class AgentTraceCallback(BaseCallbackHandler):
-    """Streams a DeepAgents run to AgentTrace as a live sequence diagram.
-
-    One instance = one run. Attach it to any agent invocation:
-
-        agent.invoke({"messages": [...]}, config={"callbacks": [AgentTraceCallback("research run")]})
-    """
-
-    def __init__(self, run_name: str = "deepagents run", orchestrator: str = "Orchestrator"):
-        self.run_name = run_name
-        self.orchestrator = orchestrator
-        self.run_id: Optional[str] = None
-        # stack of (tool/sub-agent name, start_ts) for nesting + latency
-        self._stack: List[Tuple[str, float]] = []
-        # the tool or sub-agent the orchestrator currently handed off to
-        self._current_target: Optional[str] = None
-
-    # ----- run lifecycle -----
-    def _ensure_run(self):
-        if self.run_id is None:
-            res = emit({"runId": None, "name": self.run_name})
-            self.run_id = res["runId"]
-
-    # ----- LLM calls -----
-    def on_llm_start(self, serialized, prompts, **kwargs):
-        self._ensure_run()
-        # DeepAgents wraps the model; we treat every LLM step as orchestrator → LLM
-        model = _model_name(serialized) or "LLM"
-        self._llm_start = time.time()
-        self._llm_model = model
-
-    def on_chat_model_start(self, serialized, messages, **kwargs):
-        # chat models fire on_chat_model_start instead of on_llm_start
-        self.on_llm_start(serialized, messages, **kwargs)
-
-    def on_llm_end(self, response: LLMResult, **kwargs):
-        dur = int((time.time() - getattr(self, "_llm_start", time.time())) * 1000)
-        # pull a short preview of the generation
-        text = ""
-        try:
-            text = response.generations[0][0].text or ""
-        except Exception:
-            pass
-        emit({
-            "runId": self.run_id,
-            "source": self.orchestrator,
-            "target": getattr(self, "_llm_model", "LLM"),
-            "type": "llm_call",
-            "label": "llm step",
-            "payload": {"output_preview": text[:240], "tokens": _token_usage(response)},
-            "durationMs": dur,
-        })
-
-    # ----- tool calls (DeepAgents tools + sub-agent handoffs) -----
-    def on_tool_start(self, serialized, input_str, **kwargs):
-        tool = serialized.get("name", "tool")
-        self._current_target = tool
-        self._stack.append((tool, time.time()))
-        emit({
-            "runId": self.run_id,
-            "source": self.orchestrator,
-            "target": tool,
-            "type": "tool_call",
-            "label": f"{tool}({input_str[:60]})",
-            "payload": {"args": input_str},
-            "durationMs": None,
-        })
-
-    def on_tool_end(self, output: str, **kwargs):
-        tool, start = (self._stack.pop() if self._stack else ("tool", time.time()))
-        dur = int((time.time() - start) * 1000)
-        emit({
-            "runId": self.run_id,
-            "source": tool,
-            "target": self.orchestrator,
-            "type": "tool_result",
-            "label": f"{tool} → result",
-            "payload": {"result": output[:500]},
-            "durationMs": dur,
-        })
-        self._current_target = None
-
-    def on_tool_error(self, error, **kwargs):
-        tool, start = (self._stack.pop() if self._stack else ("tool", time.time()))
-        emit({
-            "runId": self.run_id,
-            "source": tool,
-            "target": self.orchestrator,
-            "type": "error",
-            "label": f"{tool} failed",
-            "payload": {"error": type(error).__name__, "message": str(error)},
-            "status": "error",
-        })
-
-    # ----- agent action / finish (covers the ReAct + DeepAgents loop) -----
-    def on_agent_action(self, action: AgentAction, **kwargs):
-        # DeepAgents tags a handoff to a sub-agent as a tool call whose name
-        # contains 'handoff' or matches a sub-agent name. Detect it and emit
-        # a handoff event so the diagram shows the sub-agent lifeline.
-        tool = getattr(action, "tool", "")
-        if "handoff" in tool.lower() or "delegate" in tool.lower():
-            sub = _extract_handoff_target(tool, action.tool_input)
-            emit({
-                "runId": self.run_id,
-                "source": self.orchestrator,
-                "target": sub or "Sub-agent",
-                "type": "handoff",
-                "label": f"delegate → {sub or 'sub-agent'}",
-                "payload": {"task": str(action.tool_input)[:200]},
-                "durationMs": None,
-            })
-            self._current_target = sub or "Sub-agent"
-
-    def on_agent_finish(self, finish: AgentFinish, **kwargs):
-        # the orchestrator's final answer back to the user
-        answer = finish.return_values.get("output") if hasattr(finish, "return_values") else ""
-        emit({
-            "runId": self.run_id,
-            "source": self.orchestrator,
-            "target": "User",
-            "type": "final_answer",
-            "label": "final answer",
-            "payload": {"answer": str(answer)[:500]},
-        })
-        # close the run
-        emit({"runId": self.run_id, "endRun": "completed"})
-
-
-def _model_name(serialized) -> str:
-    try:
-        return serialized.get("id", [None])[-1] or serialized.get("name") or "LLM"
-    except Exception:
-        return "LLM"
-
-
-def _token_usage(response: LLMResult) -> Optional[dict]:
-    try:
-        u = response.llm_output or {}
-        return u.get("token_usage") or u
-    except Exception:
-        return None
-
-
-def _extract_handoff_target(tool_name: str, tool_input) -> Optional[str]:
-    """Best-effort: pull the sub-agent name out of a handoff tool call."""
-    try:
-        if isinstance(tool_input, dict):
-            return tool_input.get("to") or tool_input.get("name") or tool_input.get("agent")
-    except Exception:
-        pass
-    return None
-
-
-# ──────────────────────────────────────────────────────────────────────
-# 2. Example: a DeepAgents run instrumented with AgentTrace
-# ──────────────────────────────────────────────────────────────────────
 
 def main():
     from langchain_openai import ChatOpenAI
@@ -657,7 +472,7 @@ def main():
     try:
         from deepagents import create_deep_agent
     except ImportError:
-        print("pip install langchain-deepagents  (or your internal deepagents package)")
+        print("pip install deepagents  (or your internal deepagents package)")
         return
 
     @tool
@@ -673,7 +488,7 @@ def main():
     model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
     # create_deep_agent wires up a planner, an executor with tools, and
-    # optional sub-agents. Attach our callback to stream every step.
+    # optional sub-agents. One middleware instance = one AgentTrace run.
     agent = create_deep_agent(
         model=model,
         tools=[web_search, fetch_page],
@@ -681,14 +496,11 @@ def main():
             "You are a research assistant. Use web_search + fetch_page to "
             "answer the user's question, then synthesize a cited summary."
         ),
+        middleware=[AgentTraceMiddleware(run_name="research — state of Rust web frameworks")],
     )
-
-    # 👇 one callback instance = one AgentTrace run
-    trace = AgentTraceCallback(run_name="research — state of Rust web frameworks")
 
     result = agent.invoke(
         {"messages": [{"role": "user", "content": "What's the state of Rust web frameworks in 2025?"}]},
-        config={"callbacks": [trace]},
     )
 
     print("answer:", result["messages"][-1].content)

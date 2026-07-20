@@ -1,0 +1,28 @@
+[project]
+name = "agenttrace"
+version = "0.1.0"
+description = "AgentTrace - observability for AI agents. `agenttrace ui` starts the web UI + API, no Node/Bun required."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "sqlalchemy>=2.0",
+    "bcrypt>=4.0",
+    "itsdangerous>=2.2",
+    "click>=8.1",
+    "websockets>=13.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "httpx>=0.27"]
+
+[project.scripts]
+agenttrace = "agenttrace.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["agenttrace*"]

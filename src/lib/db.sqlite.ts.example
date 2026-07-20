@@ -1,0 +1,31 @@
+// AgentTrace — Prisma client for the SQLite profile.
+//
+// This file is NOT built or imported by default (the .ts.example extension
+// keeps it out of the TypeScript/Next.js compilation so switching profiles
+// never risks breaking the default Postgres build).
+//
+// To activate the SQLite profile:
+//   1. bun run db:generate:sqlite && bun run db:push:sqlite
+//   2. cp src/lib/db.ts src/lib/db.postgres.ts.example   (keep a backup)
+//   3. cp src/lib/db.sqlite.ts.example src/lib/db.ts
+//   4. set DATABASE_URL="file:./dev.db" in .env
+//
+// To switch back to Postgres, reverse steps 2-3.
+
+import { PrismaClient } from '@/generated/prisma-sqlite/client'
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined
+}
+
+const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL! })
+
+export const db =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    adapter,
+    log: ['query'],
+  })
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
