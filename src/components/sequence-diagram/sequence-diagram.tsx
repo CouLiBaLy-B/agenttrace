@@ -10,8 +10,9 @@ import { EventDetailPanel } from "./event-detail-panel"
 import { ReplayControls, ReplaySpeed } from "./replay-controls"
 import { useMediaQuery } from "@/lib/hooks"
 import { motion, AnimatePresence } from "framer-motion"
-import { Radio, Play, History, Search } from "lucide-react"
+import { Radio, Play, History, Search, PanelRightOpen, PanelRightClose } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useLayout } from "@/lib/store"
 
 interface Props {
   runId: string
@@ -30,11 +31,46 @@ export function SequenceDiagram({ runId, initialEvents, initialStatus, onRunUpda
   const [replaySpeed, setReplaySpeed] = useState<ReplaySpeed>(1)
   const [connected, setConnected] = useState(false)
   const isDesktop = useMediaQuery("(min-width: 768px)")
+  const isXl = useMediaQuery("(min-width: 1280px)") // xl: side panel replaces the sheet
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const socketRef = useRef<Socket | null>(null)
   const replayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const live = status === "running"
+
+  // ---- sync when initialEvents changes (from auto-refresh refetch) ----
+  // Merge incoming events with existing ones, deduplicating by id. This keeps
+  // socket-delivered live events AND picks up new events from a server refetch.
+  // Skipped during replay so the scrubber position isn't disrupted.
+  useEffect(() => {
+    if (isReplay) return
+    setEvents((prev) => {
+      const byId = new Map(prev.map((e) => [e.id, e]))
+      let changed = false
+      for (const e of initialEvents) {
+        const existing = byId.get(e.id)
+        // append new events, and refresh existing ones whose tracked fields
+        // changed (e.g. an llm_call backfilled with tokens/duration on completion)
+        if (
+          !existing ||
+          existing.status !== e.status ||
+          existing.durationMs !== e.durationMs ||
+          JSON.stringify(existing.payload) !== JSON.stringify(e.payload)
+        ) {
+          byId.set(e.id, e)
+          changed = true
+        }
+      }
+      if (!changed) return prev
+      // sort by seq to keep chronological order
+      return [...byId.values()].sort((a, b) => a.seq - b.seq)
+    })
+  }, [initialEvents, isReplay])
+
+  // sync status from parent refetch too
+  useEffect(() => {
+    setStatus(initialStatus)
+  }, [initialStatus])
 
   // ---- visible events (respect replay mode) ----
   const visibleEvents = useMemo(() => {
@@ -160,6 +196,15 @@ export function SequenceDiagram({ runId, initialEvents, initialStatus, onRunUpda
     [events.length]
   )
 
+  // detail panel collapse (persisted in the layout store; shared with EventDetailPanel)
+  const { detailCollapsed, setDetailCollapsed, toggleDetail } = useLayout()
+
+  // selecting an event auto-expands the detail panel
+  const handleSelect = useCallback((id: string) => {
+    setSelectedId(id)
+    if (detailCollapsed) setDetailCollapsed(false)
+  }, [detailCollapsed, setDetailCollapsed])
+
   const progress = events.length > 1 ? replayIdx / (events.length - 1) : 1
 
   return (
@@ -183,6 +228,17 @@ export function SequenceDiagram({ runId, initialEvents, initialStatus, onRunUpda
           )}
         </div>
 
+        {/* detail panel toggle (desktop only) */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hidden xl:flex h-8 w-8 text-muted-foreground hover:text-foreground"
+          title={detailCollapsed ? "Show event panel" : "Hide event panel"}
+          onClick={toggleDetail}
+        >
+          {detailCollapsed ? <PanelRightOpen className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />}
+        </Button>
+
         {!isReplay ? (
           <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={enterReplay} disabled={events.length < 2}>
             <History className="h-3.5 w-3.5" />
@@ -204,9 +260,10 @@ export function SequenceDiagram({ runId, initialEvents, initialStatus, onRunUpda
         )}
       </div>
 
-      {/* canvas + detail panel */}
-      <div className="flex flex-1 min-h-0">
-        <div ref={scrollRef} className="flex-1 min-w-0 relative">
+      {/* canvas + detail panel (side panel on desktop, sheet on mobile) */}
+      <div className="flex-1 min-h-0 flex">
+        {/* canvas — the auto-scroll target lives inside here */}
+        <div ref={scrollRef} className="flex-1 min-w-0 h-full relative">
           {events.length === 0 ? (
             <ListeningState runId={runId} live={live} />
           ) : isDesktop ? (
@@ -214,7 +271,7 @@ export function SequenceDiagram({ runId, initialEvents, initialStatus, onRunUpda
               events={visibleEvents}
               participants={participants}
               selectedId={selectedId}
-              onSelect={setSelectedId}
+              onSelect={handleSelect}
               live={live && !isReplay}
             />
           ) : (
@@ -222,12 +279,12 @@ export function SequenceDiagram({ runId, initialEvents, initialStatus, onRunUpda
               events={visibleEvents}
               participants={participants}
               selectedId={selectedId}
-              onSelect={setSelectedId}
+              onSelect={handleSelect}
             />
           )}
         </div>
 
-        {/* desktop side panel */}
+        {/* desktop side panel — self-collapsing + resizable (xl only), persisted via useLayout */}
         <EventDetailPanel
           event={selectedEvent}
           participants={participants}
@@ -236,13 +293,15 @@ export function SequenceDiagram({ runId, initialEvents, initialStatus, onRunUpda
         />
       </div>
 
-      {/* mobile sheet detail */}
-      <EventDetailPanel
-        event={selectedEvent}
-        participants={participants}
-        onClose={() => setSelectedId(null)}
-        variant="sheet"
-      />
+      {/* mobile/tablet sheet detail — desktop (xl) uses the side panel instead */}
+      {!isXl && (
+        <EventDetailPanel
+          event={selectedEvent}
+          participants={participants}
+          onClose={() => setSelectedId(null)}
+          variant="sheet"
+        />
+      )}
     </div>
   )
 }

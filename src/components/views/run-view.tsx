@@ -17,10 +17,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import { ArrowLeft, Trash2, StopCircle, CheckCircle2, XCircle, ChevronDown } from "lucide-react"
-import { useState } from "react"
+import { ArrowLeft, Trash2, StopCircle, CheckCircle2, XCircle, ChevronDown, Coins, RefreshCw, Pause } from "lucide-react"
+import { useMemo, useState } from "react"
 import { TraceEvent, EVENT_COLORS } from "@/lib/types"
 import { StatusDot } from "./project-detail-view"
+import { sumTokens, formatTokens } from "@/lib/tokens"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,17 +43,30 @@ export function RunView() {
   const { runId, go } = useNav()
   const qc = useQueryClient()
   const [deleting, setDeleting] = useState(false)
+  // auto-refresh interval (ms). 0 = auto (2s while running, off when done),
+  // -1 = explicitly off, >0 = explicit interval.
+  const [refreshMs, setRefreshMs] = useState<number>(0)
 
   const { data, isLoading } = useQuery<{ run: RunDetail }>({
     queryKey: ["run", runId],
     queryFn: () => api(`/api/runs/${runId}`),
     enabled: !!runId,
-    // keep polling while running so a closed socket still catches status updates
-    refetchInterval: (q) => {
-      const r = (q.state.data as any)?.run
-      return r && r.status === "running" ? 5000 : false
+    // Never poll a terminal run (immutable). "Off" (-1) disables entirely.
+    refetchInterval: () => {
+      if (refreshMs === -1) return false
+      const r = (qc.getQueryData(["run", runId]) as any)?.run
+      const running = r?.status === "running"
+      if (!running) return false
+      return refreshMs > 0 ? refreshMs : 2000
     },
   })
+
+  // Parse payloads once per fetched dataset, not on every render.
+  const events = useMemo(
+    () => (data?.run.events ?? []).map((e) => ({ ...e, payload: safeParse(e.payload) })),
+    [data]
+  )
+  const tokens = useMemo(() => sumTokens(events), [events])
 
   const updateStatusMut = useMutation({
     mutationFn: (vars: { status: "completed" | "failed" }) =>
@@ -100,7 +114,6 @@ export function RunView() {
   }
 
   const run = data.run
-  const events = run.events.map((e) => ({ ...e, payload: safeParse(e.payload) }))
   const dur = run.endedAt ? new Date(run.endedAt).getTime() - new Date(run.startedAt).getTime() : null
 
   return (
@@ -117,10 +130,18 @@ export function RunView() {
             <StatusDot status={run.status} />
             <h1 className="text-sm font-medium truncate">{run.name}</h1>
           </div>
-          <p className="font-mono text-[10px] text-muted-foreground mt-0.5">
-            {formatTime(run.startedAt)} → {run.endedAt ? formatTime(run.endedAt) : "live"}
-            {dur != null && ` · ${formatDuration(dur)}`}
-            {` · ${events.length} events`}
+          <p className="font-mono text-[10px] text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
+            <span>
+              {formatTime(run.startedAt)} → {run.endedAt ? formatTime(run.endedAt) : "live"}
+              {dur != null && ` · ${formatDuration(dur)}`}
+              {` · ${events.length} events`}
+            </span>
+            {tokens.total_tokens > 0 && (
+              <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                <Coins className="h-3 w-3" />
+                {formatTokens(tokens.total_tokens)} tokens
+              </span>
+            )}
           </p>
         </div>
 
@@ -138,6 +159,54 @@ export function RunView() {
         </div>
 
         <div className="flex items-center gap-1.5">
+          {/* auto-refresh control */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant={refreshMs > 0 ? "default" : "outline"}
+                size="sm"
+                className="gap-1.5 h-8"
+                title="Auto-refresh interval"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${run.status === "running" && refreshMs !== -1 ? "animate-spin" : ""}`} style={{ animationDuration: "1.5s" }} />
+                <span className="hidden sm:inline">
+                  {refreshMs === -1 ? "off" : refreshMs > 0 ? `${refreshMs / 1000}s` : run.status === "running" ? "2s" : "auto"}
+                </span>
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <div className="px-2 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                refresh interval
+              </div>
+              {[
+                { label: "Off", value: -1 },
+                { label: "2 seconds", value: 2000 },
+                { label: "5 seconds", value: 5000 },
+                { label: "10 seconds", value: 10000 },
+                { label: "30 seconds", value: 30000 },
+              ].map((opt) => {
+                const active =
+                  (opt.value === -1 && refreshMs === -1) ||
+                  (opt.value === -1 && refreshMs === 0 && run.status !== "running") ||
+                  (opt.value > 0 && refreshMs === opt.value) ||
+                  (opt.value === 2000 && refreshMs === 0 && run.status === "running")
+                return (
+                  <DropdownMenuItem
+                    key={opt.value}
+                    onClick={() => setRefreshMs(opt.value)}
+                    className={active ? "text-primary" : ""}
+                  >
+                    {opt.value > 0 && <RefreshCw className="mr-2 h-3 w-3" />}
+                    {opt.value === -1 && <Pause className="mr-2 h-3 w-3" />}
+                    {opt.label}
+                    {active && <span className="ml-auto">✓</span>}
+                  </DropdownMenuItem>
+                )
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           {run.status === "running" && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -173,6 +242,7 @@ export function RunView() {
       {/* the diagram */}
       <div className="flex-1 min-h-0">
         <SequenceDiagram
+          key={run.id}
           runId={run.id}
           initialEvents={events}
           initialStatus={run.status as any}

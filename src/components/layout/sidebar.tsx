@@ -9,7 +9,9 @@ import {
   Cable,
   Settings,
   LogOut,
+  Activity,
   ChevronRight,
+  BookOpen,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react"
@@ -20,6 +22,7 @@ const NAV: { id: ViewId; label: string; icon: any; hint: string }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, hint: "overview" },
   { id: "projects", label: "Projects", icon: FolderGit2, hint: "traces" },
   { id: "integration", label: "Integration", icon: Cable, hint: "api keys" },
+  { id: "docs", label: "Documentation", icon: BookOpen, hint: "guides" },
   { id: "settings", label: "Settings", icon: Settings, hint: "account" },
 ]
 
@@ -59,30 +62,30 @@ export function Sidebar({
         ) : (
           <>
             <svg width="22" height="22" viewBox="0 0 24 24" className="shrink-0 text-primary">
-              <rect x="2" y="2" width="20" height="20" rx="3" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.5" />
-              <path
-                d="M2 12 L7 12 L9 7 L11 17 L13 9 L15 15 L17 12 L22 12"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="at-glow"
-              />
-            </svg>
+          <rect x="2" y="2" width="20" height="20" rx="3" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.5" />
+          <path
+            d="M2 12 L7 12 L9 7 L11 17 L13 9 L15 15 L17 12 L22 12"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="at-glow"
+          />
+        </svg>
             <span className="truncate font-mono text-sm tracking-[0.25em] text-primary/90 at-glow uppercase">
-              AgentTrace
-            </span>
+            AgentTrace
+          </span>
             {onToggle && (
-              <Button
-                variant="ghost"
-                size="icon"
+          <Button
+            variant="ghost"
+            size="icon"
                 className="ml-auto h-7 w-7 text-muted-foreground hover:text-foreground"
                 onClick={onToggle}
-                title="Collapse sidebar"
-              >
-                <PanelLeftClose className="h-4 w-4" />
-              </Button>
+            title="Collapse sidebar"
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </Button>
             )}
           </>
         )}
@@ -143,9 +146,9 @@ export function Sidebar({
             <p className="mt-1.5 text-[11px] text-muted-foreground/70 leading-snug">
               POST <span className="text-primary/80 font-mono">/api/events</span> streams live
             </p>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
+        </div>
 
       {/* User */}
       <div className={cn("border-t border-sidebar-border", collapsed ? "px-2 py-3" : "px-3 py-3")}>
@@ -155,8 +158,8 @@ export function Sidebar({
               className="h-8 w-8 shrink-0 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center font-mono text-xs text-primary"
               title={session?.user?.name || session?.user?.email || "Account"}
             >
-              {(session?.user?.name || session?.user?.email || "?").slice(0, 1).toUpperCase()}
-            </div>
+            {(session?.user?.name || session?.user?.email || "?").slice(0, 1).toUpperCase()}
+          </div>
             <Button
               variant="ghost"
               size="icon"
@@ -185,7 +188,7 @@ export function Sidebar({
             >
               <LogOut className="h-4 w-4" />
             </Button>
-          </div>
+        </div>
         )}
       </div>
     </div>
@@ -207,6 +210,7 @@ export function MobileTopBar() {
     project: "Project",
     run: "Run trace",
     integration: "Integration",
+    docs: "Documentation",
     settings: "Settings",
   }
   return (

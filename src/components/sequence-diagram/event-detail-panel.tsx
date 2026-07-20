@@ -1,15 +1,16 @@
 "use client"
 
+import { useState, type ReactNode } from "react"
 import { TraceEvent, EVENT_COLORS } from "@/lib/types"
 import { Participant } from "@/lib/types"
 import { PARTICIPANT_ICON, KIND_COLOR } from "./participants"
-import { useState } from "react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { ArrowRight, Clock, X, PanelRightClose, PanelRightOpen } from "lucide-react"
+import { ArrowRight, Clock, X, PanelRightClose, PanelRightOpen, Coins } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ResizeHandle } from "@/components/layout/resize-handle"
 import { useLayout, DETAIL_SIZE } from "@/lib/store"
+import { extractTokens, formatTokens, type TokenUsage } from "@/lib/tokens"
 import { cn } from "@/lib/utils"
 
 interface Props {
@@ -82,11 +83,11 @@ export function EventDetailPanel({ event, onClose, variant }: Props) {
           event payload
         </span>
         <div className="flex items-center gap-1">
-          {event && (
+        {event && (
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose} title="Clear selection">
-              <X className="h-4 w-4" />
-            </Button>
-          )}
+            <X className="h-4 w-4" />
+          </Button>
+        )}
           <Button
             variant="ghost"
             size="icon"
@@ -119,6 +120,7 @@ function EventBody({ event }: { event: TraceEvent }) {
   const color = event.status === "error" ? "#f87171" : meta.color
   const SrcIcon = PARTICIPANT_ICON[kindOfLocal(event.source)]
   const TgtIcon = PARTICIPANT_ICON[kindOfLocal(event.target)]
+  const tokens = extractTokens(event.payload)
 
   return (
     <div className="p-4 space-y-4">
@@ -162,6 +164,9 @@ function EventBody({ event }: { event: TraceEvent }) {
         />
       </div>
 
+      {/* token usage (llm_call only) */}
+      {tokens && <TokenUsageCard tokens={tokens} />}
+
       {/* payload */}
       <div>
         <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5">
@@ -175,7 +180,56 @@ function EventBody({ event }: { event: TraceEvent }) {
   )
 }
 
-function Meta({ label, value, accent, icon }: { label: string; value: string; accent?: string; icon?: React.ReactNode }) {
+function TokenUsageCard({ tokens }: { tokens: TokenUsage }) {
+  const max = Math.max(tokens.prompt_tokens, tokens.completion_tokens, 1)
+  return (
+    <div className="rounded-md border border-cyan-500/30 bg-cyan-500/5 p-3">
+      <div className="flex items-center gap-1.5 mb-2.5">
+        <Coins className="h-3.5 w-3.5 text-cyan-400" />
+        <span className="font-mono text-[10px] uppercase tracking-widest text-cyan-400">
+          token usage
+        </span>
+        <span className="ml-auto font-mono text-sm font-semibold text-foreground tabular-nums">
+          {formatTokens(tokens.total_tokens)}
+        </span>
+      </div>
+      <div className="space-y-1.5">
+        <TokenBar
+          label="prompt"
+          value={tokens.prompt_tokens}
+          max={max}
+          color="#22d3ee"
+        />
+        <TokenBar
+          label="completion"
+          value={tokens.completion_tokens}
+          max={max}
+          color="#a78bfa"
+        />
+      </div>
+    </div>
+  )
+}
+
+function TokenBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+  const pct = max > 0 ? (value / max) * 100 : 0
+  return (
+    <div className="flex items-center gap-2">
+      <span className="font-mono text-[10px] text-muted-foreground w-16 shrink-0">{label}</span>
+      <div className="flex-1 h-1.5 rounded-full bg-border/60 overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-300"
+          style={{ width: `${pct}%`, background: color, boxShadow: `0 0 4px ${color}88` }}
+        />
+      </div>
+      <span className="font-mono text-[10px] text-foreground/80 tabular-nums w-10 text-right shrink-0">
+        {formatTokens(value)}
+      </span>
+    </div>
+  )
+}
+
+function Meta({ label, value, accent, icon }: { label: string; value: string; accent?: string; icon?: ReactNode }) {
   return (
     <div className="rounded-md border border-border bg-background/40 px-3 py-2">
       <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{label}</p>
@@ -195,3 +249,4 @@ function kindOfLocal(name: string): Participant["kind"] {
   if (n.includes("sub-agent") || n.includes("subagent") || n.includes("research") || n.includes("assistant")) return "subagent"
   return "tool"
 }
+

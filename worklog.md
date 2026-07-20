@@ -147,3 +147,156 @@ Stage Summary:
 - Docker: multi-stage Dockerfile (web + socket), docker-compose with volume + env wiring, .dockerignore, .env.example
 - CI: GitHub Actions with lint + typecheck + build + docker build/smoke-test, GHA cache, concurrency control
 - All local CI-equivalent checks pass; production build verified
+
+---
+Task ID: 14
+Agent: main
+Task: Rédiger la documentation fonctionnelle et le mode d'emploi
+
+Work Log:
+- Créé docs/functional-documentation.md (454 lignes) : présentation produit, problématique, cas d'usage, architecture (schéma ASCII des flux), modèle de données Prisma complet, les 16 fonctionnalités détaillées (types d'événements + code couleur, participants/kinds, diagramme live, replay, panneau détail, état listening, auth, CRUD projets/runs, dashboard, integration, optimistic updates, empty states, loading, design system, responsive), API d'ingestion (endpoint + body + codes réponse + tous les endpoints), sécurité, déploiement Docker/CI, limitations & roadmap.
+- Créé docs/user-manual.md (594 lignes) : mode d'emploi pas-à-pas en 13 sections — démarrage (3 options: demo/signup/signin), navigation, créer un projet, démarrer/suivre un run, lire le diagramme (anatomie ASCII + comportement live + responsive), mode replay (contrôles + vitesses + cas d'usage), inspecter un événement, gérer les clés API, instrumenter un agent (Python HTTP brut + TypeScript + DeepAgents LangChain avec mapping callback→événement), dashboard & stats, settings, déploiement Docker, FAQ (13 questions), référence rapide (table je veux/je fais).
+- Ajouté une vue Documentation in-app (src/components/views/docs-view.tsx) accessible depuis la sidebar :
+  * 2 cartes pour les docs principales (fonctionnelle + mode d'emploi) avec icône, description, référence au fichier
+  * 3 "guides rapides" (Instrumenter en 30s, Lire un diagramme, Replay un run) en étapes numérotées
+  * Référence des 6 types d'événements avec couleur + flèche + description
+  * Résumé d'architecture (Next.js :3000, Socket.IO :3003, DB, Gateway)
+  * Liste des fichiers de doc
+  * Maintient l'esthétique oscilloscope (graticule, mono, phosphore)
+- Câblage : ajouté "docs" au ViewId du store, nav entry "Documentation" (icône BookOpen) dans le sidebar entre Integration et Settings, route dans app-shell, title dans MobileTopBar.
+- Vérifié : lint ✓, typecheck ✓, vue Documentation rendue dans le navigateur sans erreur console (cartes + guides + types + archi tous présents).
+
+Stage Summary:
+- 2 fichiers de doc complets (~1050 lignes au total) dans /docs
+- Vue Documentation in-app pour y accéder sans quitter l'app
+- Doc couvre tout : spec produit, mode d'emploi, API, DeepAgents, Docker, FAQ
+
+---
+Task ID: 15
+Agent: main
+Task: Sidebars rétractables/ajustables + snippet d'intégration par projection
+
+Work Log:
+- **Sidebar gauche (nav) rétractable + ajustable** :
+  * Utilisé `ResizablePanelGroup` (react-resizable-panels, déjà installé) dans app-shell
+  * Panel gauche : defaultSize=18%, minSize=14%, maxSize=26%, collapsible, collapsedSize=4% (rail d'icônes)
+  * `ResizableHandle` avec grip visible entre sidebar et main
+  * Ajouté `sidebarCollapsed` au store Zustand (persiste entre changements de vue)
+  * Sidebar.tsx : mode compact (rail d'icônes) quand collapsed — icônes centrées, tooltips, indicateur de bord, bouton expand en bas, bouton collapse dans le header
+  * Boutons `PanelLeftClose` / `PanelLeftOpen` (lucide) pour basculer
+- **Panneau détail droit (vue run) rétractable + ajustable** :
+  * ResizablePanelGroup horizontal dans SequenceDiagram (desktop xl+)
+  * Panel canvas : defaultSize=72%, minSize=40%
+  * Panel détail : defaultSize=28%, minSize=18%, maxSize=45%, collapsible, collapsedSize=0
+  * `ResizableHandle` avec grip entre les deux
+  * Bouton toggle `PanelRightOpen`/`PanelRightClose` dans la toolbar du diagramme
+  * **Auto-expand** : cliquer un événement quand le panneau est collapsed le rouvre automatiquement (handleSelect → detailPanelRef.expand())
+  * `detailCollapsed` dans le store Zustand (persiste entre changements de run)
+  * EventDetailPanel.tsx : refactorisé pour rendre son contenu sans wrapper `<aside>` (le ResizablePanel est maintenant le conteneur)
+  * Mobile/tablet (<xl) : inchangé, le détail reste en Sheet plein écran
+- **Snippet "Projection" (4e onglet Integration)** :
+  * Ajouté un 4e onglet "Projection" à côté de Python/TypeScript/DeepAgents
+  * Banner explicative : "For production runtimes that already have a stream projection..."
+  * Snippet basé sur le pattern réel partagé par l'utilisateur : `AgentTraceRun` avec queue asyncio + worker unique, fail-safe (1ère erreur désactive la trace), payloads bornés, mapping `on_stream_event(kind, source, data)` → flèches AgentTrace
+  * Couvre : tool_call/tool_result (avec latence), agent_start/agent_end subagent (handoff), approval_required (HITL), final, error
+  * 3 points de câblage documentés en bas du snippet (run start / stream loop / run end)
+  * `maybe_trace_run()` factory qui lit AGENTTRACE_URL + AGENTTRACE_KEY depuis l'env, retourne None si non configuré
+- Vérifié dans le navigateur : sidebar collapse→rail d'icônes→expand, panneau détail collapse→auto-expand au clic, snippet Projection rendu avec la classe complète, pas d'erreurs console, lint ✓, typecheck ✓.
+
+Stage Summary:
+- Les deux sidebars sont rétractables (collapse vers rail/hidden) et ajustables (drag handle avec min/max)
+- Le pattern d'intégration par projection (pour systèmes avec stream projection existant, comme DeepAgents + FastAPI SSE) est maintenant documenté et copiable depuis l'app
+- L'auto-expand du panneau détail au clic d'événement améliore l'UX
+
+---
+Task ID: 16
+Agent: main
+Task: Ajouter un wrapper ergonomique (context manager + décorateur) pour une intégration minimale
+
+Work Log:
+- Ajouté un 5e onglet "✦ Easy" à la page Integration (sélectionné par défaut, mis en évidence avec bg-primary/10)
+- Le snippet contient un module `agenttrace.py` complet et autonome (~150 lignes) à déposer une fois dans le projet
+- 3 patterns d'utilisation ultra-simples :
+  1. **Context manager** : `with trace("name") as run:` — auto start/end/error (completed si succès, failed + event error si exception)
+  2. **Décorateur** : `@traced` sur n'importe quelle fonction — chaque appel = un run tracé, nom auto-généré depuis fn.__name__ + 1er arg
+  3. **LangChain auto-attach** : `config={"callbacks": run.callbacks}` — le callback LangChain est créé paresseusement, mappe on_llm_start/end → llm_call, on_tool_start/end → tool_call/tool_result, on_tool_error → error, on_agent_action (handoff) → handoff, on_agent_finish → final_answer
+- Garanties du module :
+  * Non-bloquant : background thread + queue (les emit() ne bloquent jamais l'agent)
+  * Fail-safe : toute erreur réseau est silencieusement avalée (tracing ne casse jamais le run)
+  * Payloads bornés : _trunc() à 2000 chars
+  * Dep LangChain optionnelle : import paresseux dans un try/except, run.callbacks lève une erreur claire si langchain n'est pas installé
+  * run.emit() manuel pour des événements custom sans LangChain
+- Fix accessoire : le .env avait perdu NEXTAUTH_SECRET/URL/SOCKET_SERVICE_PORT (causait JWEDecryptionFailed sur toutes les API calls → 401). Restauré.
+- Vérifié : lint ✓, typecheck ✓, onglet Easy rendu dans le navigateur avec le module complet + les 3 patterns, pas d'erreurs console.
+
+Stage Summary:
+- L'intégration la plus simple est maintenant : copier agenttrace.py, puis `with trace("name") as run: agent.invoke(..., config={"callbacks": run.callbacks})`
+- Le décorateur `@traced` permet même de tracer sans modifier le corps de la fonction
+- 5 onglets d'intégration disponibles : Easy (défaut), Python, TypeScript, DeepAgents, Projection
+
+---
+Task ID: 17
+Agent: main
+Task: Tracking des tokens (prompt/completion/total) de bout en bout
+
+Work Log:
+- Créé src/lib/tokens.ts avec extractTokens() (gère 4 formats : standard {prompt_tokens, completion_tokens, total_tokens}, legacy {tokens: N}, langchain {token_usage: {...}}, anthropic {usage: {...}}), formatTokens() (184 → "184", 1240 → "1.2k"), sumTokens() (agrège sur un tableau d'events)
+- Seed data : converti les 15 entrées `tokens: N` en `prompt_tokens/completion_tokens/total_tokens` (split 40/60 prompt/completion)
+- Panneau détail (event-detail-panel.tsx) : ajout d'une carte "TOKEN USAGE" (fond cyan, icône Coins) avec barres de progression prompt (cyan) / completion (violet) + total en grand. S'affiche uniquement pour les llm_call qui ont des tokens.
+- Run view header : ajout d'un badge tokens (bg cyan, icône Coins, "Xk tokens") à côté du meta timeline. Calcule sumTokens(events) à chaque render.
+- Lifeline diagram : ajout du compte de tokens dans le sous-label des flèches llm_call ("LLM CALL · 420MS · 160 TOK")
+- Dashboard : 
+  * 6e StatCard "Tokens used" (icône Coins, cyan) dans la grille de stats
+  * Nouvelle carte "Token consumption" avec 2 TokenStat (prompt/completion) — barres animées + % du total. S'affiche seulement si totalTokens > 0.
+- API stats : agrège les tokens en parsant les payloads des llm_call events (extractTokensFromPayload), retourne totalTokens/promptTokens/completionTokens
+- Snippet Easy : on_llm_end extrait maintenant les tokens depuis response.llm_output.token_usage (ou .usage) et les met dans le payload au format standard
+- Snippet DeepAgents : on_llm_end utilise _flat_tokens() qui aplatit token_usage au format standard (prompt_tokens/completion_tokens/total_tokens) au lieu de l'objet brut
+- Fix lint : useMemo après early return → remplacé par sumTokens() direct (tableau petit, pas besoin de memo)
+- Vérifié navigateur : dashboard affiche "TOKENS USED" + "TOKEN CONSUMPTION" avec barres, run header affiche badge tokens, flèches llm_call affichent "· 160 TOK", panneau détail affiche carte "TOKEN USAGE" avec total + barres prompt/completion. VLM confirme. Pas d'erreurs console.
+
+Stage Summary:
+- Le tracking des tokens est maintenant visible à 4 endroits : dashboard (total + breakdown prompt/completion), run header (badge total), flèches llm_call (tok count), panneau détail (carte complète avec barres)
+- Les snippets Easy et DeepAgents capturent automatiquement les tokens depuis LangChain LLMResult.llm_output.token_usage
+- Le helper extractTokens gère 4 formats différents (OpenAI, Anthropic, LangChain, legacy) pour une compatibilité maximale
+
+---
+Task ID: 18
+Agent: main
+Task: Fix affichage tokens + auto-refresh ajustable pour les events
+
+Problèmes :
+1. Tokens : les données en DB avaient l'ancien format {tokens: 160} → extractTokens interprétait prompt=0, completion=0, total=160 (incohérent, barres vides)
+2. Pas de mise à jour live : il fallait refresh manuellement la page pour voir les nouveaux events
+
+Work Log:
+- Reset DB (rm db/custom.db + db:push) pour forcer le reseed avec le nouveau format {prompt_tokens, completion_tokens, total_tokens}
+- Vérifié : dashboard affiche maintenant prompt=4.7k + completion=7.0k = ~12k total (cohérent, barres remplies)
+- Vérifié : panneau détail d'un llm_call affiche prompt=392 + completion=588 = 980 total (barres remplies, VLM confirme)
+
+- Auto-refresh ajustable ajouté au RunView :
+  * State refreshMs (0=off, 2000, 5000, 10000, 30000)
+  * Dropdown dans le header avec options : Off, 2s, 5s, 10s, 30s
+  * Comportement par défaut : 2s automatique si run running, off si completed/failed
+  * L'utilisateur peut forcer un intervalle qui s'applique quel que soit le statut
+  * Icône RefreshCw animée (spin) quand le refresh est actif
+  * Bouton variant="default" (plein) quand un intervalle explicite est choisi, outline sinon
+  * Indicateur ✓ sur l'option active dans le dropdown
+
+- Fix clé : SequenceDiagram ne se mettait pas à jour quand initialEvents changeait (useQuery refetch)
+  * Ajouté un useEffect qui merge initialEvents avec les events existants (dédup par id, tri par seq)
+  * Skip pendant le replay pour ne pas disrupter le scrubber
+  * Ajouté aussi un useEffect pour sync initialStatus → status
+  * Les events venant du socket ET ceux du refetch sont maintenant mergés correctement
+
+- Test live end-to-end :
+  * Créé un run "Auto-refresh test" via curl
+  * Ouvert dans le navigateur (1 event visible)
+  * Émis event 2 via curl → apparu automatiquement après ~3s (2 events)
+  * Émis event 3 via curl → apparu automatiquement (3 events)
+  * Fermé le run via curl → status mis à jour en COMPLETED automatiquement
+  * Pas d'erreurs console
+
+Stage Summary:
+- Tokens : affichage correct (prompt/completion/total cohérents, barres remplies) après reseed
+- Auto-refresh : dropdown ajustable (2s/5s/10s/30s/off), 2s par défaut pour les runs running, icône animée, les nouveaux events apparaissent sans refresh manuel
+- Le SequenceDiagram sync maintenant correctement avec les refetchs (merge + dédup)
