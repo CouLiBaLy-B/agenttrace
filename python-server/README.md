@@ -1,7 +1,14 @@
-# agenttrace (Python server + CLI)
+# deepagents-trace (Python server + CLI)
 
-`pip install -e python-server && agenttrace ui` — starts the AgentTrace web
+PyPI distribution name: **`deepagents-trace`** (the `agenttrace` name is
+already taken on PyPI by an unrelated project — TensorStax's own agent-tracing
+tool — so this package is published under a different name; the importable
+module, the CLI command, and the product itself are still called
+`agenttrace`/AgentTrace).
+
+`pip install deepagents-trace && agenttrace ui` — starts the AgentTrace web
 API (and a `/ws` live-stream) with **zero Node/Bun process**, `mlflow ui`-style.
+For local development against this checkout: `pip install -e python-server`.
 
 This is **Phase 1 + 3** of the Python migration plan: a FastAPI backend that
 is a 1:1 contract port of the Next.js API (`src/app/api/*` in the main repo),
@@ -43,6 +50,34 @@ types.
 pip install -e "python-server[dev]"
 pytest python-server/tests
 ```
+
+## Publishing to PyPI
+
+Packaging is ready and verified (`python -m build` + `twine check dist/*`
+both pass; the built wheel installs and runs standalone in a clean venv).
+`.github/workflows/publish-pypi.yml` builds and publishes on every GitHub
+Release, using **PyPI Trusted Publishing (OIDC)** — no API token stored as a
+GitHub secret. What's left requires your PyPI account, so it can't be done
+from here:
+
+1. Create a PyPI account (https://pypi.org/account/register/) if you don't
+   have one, and enable 2FA (PyPI requires it).
+2. Since `deepagents-trace` doesn't exist on PyPI yet, register it as a
+   **pending publisher** (Publishing → Trusted publishers →
+   "Add a pending publisher" at https://pypi.org/manage/account/publishing/):
+   - PyPI project name: `deepagents-trace`
+   - Owner: `CouLiBaLy-B`, Repository: `agenttrace`
+   - Workflow filename: `publish-pypi.yml`
+   - Environment name: `pypi`
+3. In the GitHub repo settings, create an environment named `pypi` (Settings
+   → Environments) — optionally with a required reviewer, so publishing needs
+   manual approval.
+4. Bump `version` in `pyproject.toml`, commit, then create a GitHub Release
+   (tag `v0.1.0`) — the workflow builds and publishes automatically. First
+   publish finalizes the pending publisher into a real one.
+5. (Optional but recommended) do a dry run against TestPyPI first
+   (https://test.pypi.org) with the same trusted-publisher flow before the
+   real release.
 
 ## Known gaps vs. the Next.js backend (tracked for later phases)
 

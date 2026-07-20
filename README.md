@@ -16,8 +16,11 @@ Watch signals move through your agents in real time: one vertical lifeline per p
 
 ## Python backend + CLI (in progress)
 
-`python-server/` is a from-scratch FastAPI port of this API (`agenttrace ui`
-starts it, zero Node/Bun required — see [python-server/README.md](python-server/README.md)).
+`python-server/` is a from-scratch FastAPI port of this API, published to
+PyPI as **`deepagents-trace`** (`agenttrace` was already taken by an
+unrelated project): `pip install deepagents-trace && agenttrace ui` starts
+it, zero Node/Bun required — see [python-server/README.md](python-server/README.md)
+(including the remaining PyPI publishing steps).
 It's Phase 1+3 of a larger migration (no bundled frontend yet — that's Phase
 2); the Next.js app in this README stays the full-featured path until then.
 
