@@ -142,7 +142,7 @@ per-invocation rather than baked into the graph.
 
 | Event type | Emitted from | Diagram arrow |
 | --- | --- | --- |
-| `llm_call` | `wrap_model_call` | Orchestrator → LLM |
+| `llm_call` | `wrap_model_call` | Orchestrator → LLM (payload: `input` — system prompt + messages sent — and `output_preview`) |
 | `tool_call` | `wrap_tool_call` (before) | Orchestrator → tool |
 | `tool_result` | `wrap_tool_call` (after) | tool → Orchestrator |
 | `handoff` | `wrap_tool_call` (tool name matches `handoff`/`delegate`) | Orchestrator → Sub-agent |

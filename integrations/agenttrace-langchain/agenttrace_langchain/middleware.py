@@ -92,7 +92,7 @@ class AgentTraceMiddleware(AgentMiddleware):
         model_name = _model_name(request)
         start = time.time()
         response = handler(request)
-        self._emit_llm_call(run, model_name, response, start)
+        self._emit_llm_call(run, model_name, request, response, start)
         return response
 
     async def awrap_model_call(self, request, handler: Callable) -> Any:
@@ -100,10 +100,12 @@ class AgentTraceMiddleware(AgentMiddleware):
         model_name = _model_name(request)
         start = time.time()
         response = await handler(request)
-        self._emit_llm_call(run, model_name, response, start)
+        self._emit_llm_call(run, model_name, request, response, start)
         return response
 
-    def _emit_llm_call(self, run: AgentTraceRun, model_name: str, response: Any, start: float) -> None:
+    def _emit_llm_call(
+        self, run: AgentTraceRun, model_name: str, request: Any, response: Any, start: float
+    ) -> None:
         # wrap_model_call's handler returns a `ModelResponse` dataclass
         # (`.result: list[BaseMessage]`), not a bare message — unwrap to the
         # last message before reading content/usage. Some middleware/tests
@@ -115,6 +117,7 @@ class AgentTraceMiddleware(AgentMiddleware):
             type="llm_call",
             label="llm step",
             payload={
+                "input": _messages_preview(request),
                 "output_preview": truncate(_response_preview(message), 240),
                 "tokens": _token_usage(message),
             },
@@ -195,6 +198,45 @@ def _model_name(request) -> str:
     model = getattr(request, "model", None)
     name = getattr(model, "model", None) or getattr(model, "model_name", None)
     return str(name) if name else "LLM"
+
+
+def _content_to_text(content: Any) -> str:
+    """Flatten LangChain message content to plain text. `content` is either a
+    string or a list of content blocks (`[{"type": "text", "text": "..."}]`,
+    the shape deepagents/most chat models use for system/human messages) —
+    naively `str()`-ing the list would dump Python-repr noise instead of the
+    actual text."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for block in content:
+            if isinstance(block, str):
+                parts.append(block)
+            elif isinstance(block, dict) and block.get("text"):
+                parts.append(str(block["text"]))
+        return "".join(parts) if parts else str(content)
+    return str(content)
+
+
+def _message_dict(message: Any, limit: int = RESULT_LIMIT) -> dict[str, Any]:
+    role = getattr(message, "type", None) or type(message).__name__
+    content = getattr(message, "content", message)
+    return {"role": role, "content": truncate(_content_to_text(content), limit)}
+
+
+def _messages_preview(request: Any) -> dict[str, Any]:
+    """The full input to this LLM call: system prompt (if any) + the
+    conversation messages sent, as `ModelRequest` exposes them. Each field is
+    truncated on its own (not the payload as a whole) so a huge, mostly-
+    unchanging system prompt can't crowd out the actual conversation turns —
+    or worse, get cut mid-JSON by a global length cap."""
+    system_message = getattr(request, "system_message", None)
+    messages = getattr(request, "messages", None) or []
+    preview: dict[str, Any] = {"messages": [_message_dict(m) for m in messages]}
+    if system_message is not None:
+        preview["system"] = truncate(_content_to_text(getattr(system_message, "content", system_message)), LABEL_LIMIT * 4)
+    return preview
 
 
 def _last_model_message(response) -> Any:
