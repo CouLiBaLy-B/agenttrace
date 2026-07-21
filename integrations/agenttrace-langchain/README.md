@@ -134,3 +134,25 @@ per-invocation rather than baked into the graph.
 pip install -e ".[dev]"
 pytest
 ```
+
+## Publishing to PyPI
+
+Packaging is ready and verified (`python -m build` + `twine check dist/*`
+both pass; the built wheel installs and imports standalone in a clean venv).
+`.github/workflows/publish-agenttrace-langchain.yml` (repo root) builds and
+publishes on every GitHub Release or a `agenttrace-langchain-v*` tag push,
+using **PyPI Trusted Publishing (OIDC)** — no API token in GitHub secrets.
+What's left needs a PyPI account, so it can't be done from here:
+
+1. On pypi.org (Publishing → Trusted publishers → "Add a pending publisher"),
+   register:
+   - PyPI project name: `agenttrace-langchain`
+   - Owner: `CouLiBaLy-B`, Repository: `agenttrace`
+   - Workflow filename: `publish-agenttrace-langchain.yml`
+   - Environment name: `pypi-agenttrace-langchain`
+2. Create a GitHub environment named `pypi-agenttrace-langchain` (repo
+   Settings → Environments) — distinct from the `pypi` environment used by
+   `deepagents-trace`, so the two packages' publish permissions stay
+   independent.
+3. Push a tag matching `agenttrace-langchain-v*` (e.g. `agenttrace-langchain-v0.1.0`)
+   — the workflow builds and publishes automatically.

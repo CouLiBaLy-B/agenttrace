@@ -1,15 +1,18 @@
-name: Publish deepagents-trace to PyPI
+name: Publish agenttrace-langchain to PyPI
 
 # Trusted Publishing (OIDC) — no API token stored in GitHub secrets.
-# One-time setup required on pypi.org before the first run (see
-# python-server/README.md#publishing): register this repo/workflow as a
-# "trusted publisher" for the `deepagents-trace` project.
+# One-time setup required on pypi.org before the first run: register this
+# repo/workflow as a "trusted publisher" for the `agenttrace-langchain`
+# PyPI project (pypi.org -> Publishing -> Add a pending publisher):
+#   Owner: CouLiBaLy-B, Repository: agenttrace
+#   Workflow filename: publish-agenttrace-langchain.yml
+#   Environment name: pypi-agenttrace-langchain
 on:
   release:
     types: [published]
   push:
     tags:
-      - "python-server-v*"
+      - "agenttrace-langchain-v*"
   workflow_dispatch: {}
 
 jobs:
@@ -17,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: python-server
+        working-directory: integrations/agenttrace-langchain
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -28,12 +31,12 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: dist
-          path: python-server/dist/*
+          path: integrations/agenttrace-langchain/dist/*
 
   publish:
     needs: build
     runs-on: ubuntu-latest
-    environment: pypi
+    environment: pypi-agenttrace-langchain
     permissions:
       id-token: write  # required for OIDC trusted publishing
     steps:
