@@ -2,7 +2,7 @@
 
 import { useNav, ViewId } from "@/lib/store"
 import { cn } from "@/lib/utils"
-import { signOut, useSession } from "next-auth/react"
+import { signOut, useSession } from "@/lib/auth-client"
 import {
   LayoutDashboard,
   FolderGit2,

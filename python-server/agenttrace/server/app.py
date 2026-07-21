@@ -1,30 +1,36 @@
 """FastAPI application factory.
 
 Mounts the REST API (1:1 contract with the Next.js backend's `src/app/api/*`
-routes) and a `/ws` WebSocket replacing the Socket.IO mini-service. Serving
-the actual frontend bundle is Phase 2 (frontend decoupling, not done yet) —
-for now `/` serves a minimal placeholder page confirming the API is up.
+routes) and a `/ws` WebSocket replacing the Socket.IO mini-service. The
+static frontend bundle (Phase 2 — the decoupled React UI, built via
+`bun run build` with `output: "export"` and copied into `server/static/`) is
+served from `/` when present; otherwise `/` falls back to a placeholder page
+confirming the API is up.
 """
 
 from __future__ import annotations
 
 import asyncio
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from .db import init_db
 from .realtime import manager
-from .routes import auth, events, keys, projects, runs, stats
+from .routes import auth, events, keys, projects, runs, seed, stats
+
+STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 PLACEHOLDER_HTML = """<!doctype html>
 <html><head><title>AgentTrace</title></head>
 <body style="font-family: system-ui; padding: 2rem;">
 <h1>AgentTrace API is running</h1>
-<p>The Python backend (FastAPI) is up. The web dashboard bundle isn't wired in
-yet — that's Phase 2 of the Python migration (frontend decoupled from
-Next.js, served here as a static bundle).</p>
+<p>The Python backend (FastAPI) is up, but no frontend bundle is present in
+this install (<code>server/static/</code> is empty) — see
+python-server/README.md for how to build one.</p>
 <p>Try the API directly, e.g. <code>GET /api/stats</code> (requires a session
 cookie) or <code>POST /api/events</code> (requires a project API key).</p>
 </body></html>"""
@@ -52,10 +58,7 @@ def create_app() -> FastAPI:
     app.include_router(events.router)
     app.include_router(keys.router)
     app.include_router(stats.router)
-
-    @app.get("/", response_class=HTMLResponse)
-    async def index():
-        return PLACEHOLDER_HTML
+    app.include_router(seed.router)
 
     @app.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket):
@@ -77,6 +80,17 @@ def create_app() -> FastAPI:
             pass
         finally:
             manager.disconnect(websocket)
+
+    if STATIC_DIR.is_dir() and (STATIC_DIR / "index.html").exists():
+        # Mounted last so it never shadows the API routes above (Starlette
+        # tries routes in registration order). `html=True` serves index.html
+        # for "/"; there's no client-side URL routing to fall back for
+        # (the app's internal navigation is a Zustand store, not real routes).
+        app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="static")
+    else:
+        @app.get("/", response_class=HTMLResponse)
+        async def index():
+            return PLACEHOLDER_HTML
 
     return app
 

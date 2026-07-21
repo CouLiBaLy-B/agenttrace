@@ -308,10 +308,10 @@ function SnippetBlock({
       </div>
       {lang === "deepagents" && (
         <div className="px-4 py-2 border-b border-border bg-primary/5 text-[11px] text-muted-foreground">
-          Drop-in <code className="font-mono text-primary/80">BaseCallbackHandler</code> for{" "}
-          <code className="font-mono">langchain-deepagents</code> — tracks the orchestrator,
-          LLM calls, every tool call/result, sub-agent handoffs, and the final answer as a live
-          AgentTrace sequence diagram.
+          Drop-in <code className="font-mono text-primary/80">AgentMiddleware</code> from{" "}
+          <code className="font-mono">agenttrace-langchain</code> (published on PyPI) — tracks
+          the orchestrator, LLM calls, every tool call/result, sub-agent handoffs, and the final
+          answer as a live AgentTrace sequence diagram.
         </div>
       )}
       <div className="relative">
@@ -448,7 +448,7 @@ main().catch(console.error);`
 function deepagentsSnippet(project: string, apiKey: string) {
   return `# AgentTrace × LangChain DeepAgents — ${project}
 #
-# pip install -e integrations/agenttrace-langchain  (or: pip install agenttrace-langchain)
+# pip install agenttrace-langchain  (or: pip install -e integrations/agenttrace-langchain, from this repo)
 # pip install langchain langchain-openai
 #
 # AgentTraceMiddleware is an AgentMiddleware (LangChain's 2026 middleware

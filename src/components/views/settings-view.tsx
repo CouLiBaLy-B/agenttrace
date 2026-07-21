@@ -1,6 +1,6 @@
 "use client"
 
-import { useSession } from "next-auth/react"
+import { useSession } from "@/lib/auth-client"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { Card } from "@/components/ui/card"
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { User, Database, Sparkles, LogOut, Bell, Palette } from "lucide-react"
-import { signOut } from "next-auth/react"
+import { signOut } from "@/lib/auth-client"
 import { Switch } from "@/components/ui/switch"
 
 export function SettingsView() {
@@ -127,7 +127,7 @@ export function SettingsView() {
           <div>
             <p className="font-mono text-xs text-muted-foreground">AgentTrace</p>
             <p className="text-[11px] text-muted-foreground/70 mt-0.5">
-              v1.0.0 · socket.io :3003 · next-auth · prisma
+              v1.0.0 · FastAPI · SQLAlchemy · /ws
             </p>
           </div>
           <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/60">

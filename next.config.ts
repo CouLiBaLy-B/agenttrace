@@ -1,23 +1,19 @@
 import type { NextConfig } from "next";
 
+// Static export: the FastAPI backend (python-server/) serves this build's
+// output directly via StaticFiles — same origin as /api/* and /ws, so
+// src/lib/api.ts's relative fetch paths just work with zero CORS config.
+// `bun run dev` still works for iterating on the UI itself; point
+// NEXT_PUBLIC_API_BASE / NEXT_PUBLIC_WS_HOST (read in api.ts /
+// sequence-diagram.tsx) at a separately-running `agenttrace ui` instance
+// if you need live data while developing (`output: "export"` disables
+// next.config rewrites/proxying, so this env-var escape hatch replaces it).
 const nextConfig: NextConfig = {
-  output: "standalone",
+  output: "export",
   typescript: {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
-  // Allow the gateway / preview hostnames to load /_next/* dev assets.
-  // The app is served via a Caddy gateway on :81 (and a preview domain),
-  // which reverse-proxies to this dev server on :3000.
-  allowedDevOrigins: [
-    "http://127.0.0.1:81",
-    "http://localhost:81",
-    "http://0.0.0.0:81",
-    "http://*.space-z.ai",
-    "http://*.chatglm.cn",
-    "https://*.space-z.ai",
-    "https://*.chatglm.cn",
-  ],
 };
 
 export default nextConfig;

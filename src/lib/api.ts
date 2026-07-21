@@ -1,5 +1,11 @@
 // Client-side fetch helpers
 
+// Empty by default: the static bundle is served by the same FastAPI process
+// as /api/*, so relative paths just work. Set NEXT_PUBLIC_API_BASE (build-time)
+// to point at a separately-running backend while iterating on the UI with
+// `bun run dev` (see next.config.ts).
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || ""
+
 export async function api<T = any>(
   path: string,
   opts?: RequestInit & { json?: any }
@@ -11,7 +17,7 @@ export async function api<T = any>(
     headers["Content-Type"] = "application/json"
     body = JSON.stringify(json)
   }
-  const res = await fetch(path, { ...rest, headers, body, credentials: "same-origin" })
+  const res = await fetch(`${API_BASE}${path}`, { ...rest, headers, body, credentials: "same-origin" })
   const text = await res.text()
   const data = text ? safeJson(text) : null
   if (!res.ok) {

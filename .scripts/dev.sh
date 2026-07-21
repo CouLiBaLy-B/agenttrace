@@ -123,11 +123,6 @@ echo "[BUN] Installing dependencies..."
 bun install
 log_step_end "bun install"
 
-log_step_start "bun run db:push"
-echo "[BUN] Setting up database..."
-bun run db:push
-log_step_end "bun run db:push"
-
 log_step_start "Starting Next.js dev server"
 echo "[BUN] Starting development server..."
 bun run dev &

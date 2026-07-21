@@ -300,7 +300,7 @@ Stats agrégées pour l'utilisateur connecté :
 - **Sélecteur de projet**
 - **Bouton "Regenerate key"** → crée une nouvelle clé, l'affiche une fois (bannière ambre avec copie)
 - **Liste des clés** : prefix, label, dernière utilisation, bouton revoke
-- **3 snippets** copiables : Python (HTTP brut), TypeScript (fetch), **DeepAgents** (`BaseCallbackHandler` LangChain)
+- **3 snippets** copiables : Python (HTTP brut), TypeScript (fetch), **DeepAgents** (`AgentTraceMiddleware`, package publié `agenttrace-langchain`)
 - **Référence API** : endpoints + schéma du body d'événement
 
 ### 4.12 Optimistic updates

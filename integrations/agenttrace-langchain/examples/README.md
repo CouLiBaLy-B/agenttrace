@@ -15,7 +15,7 @@ automatically for the async case — no separate setup needed.
 
 ```bash
 cd examples
-pip install -e ..
+pip install agenttrace-langchain     # or `pip install -e ..` to run against this checkout
 pip install deepagents langchain-openai
 
 export OPENAI_API_KEY=...
@@ -23,11 +23,12 @@ export AGENTTRACE_KEY=atr_...          # project API key, from the AgentTrace In
 export AGENTTRACE_URL=http://localhost:3000/api/events   # default, override for a remote instance
 ```
 
-An AgentTrace instance must be running to see the trace (see the main repo's
-README — `agenttrace ui`, or `bun run agenttrace` for the Next.js stack).
-Without it, the examples still run the agent correctly; the middleware just
-logs a warning and disables tracing for that run (non-blocking, never fatal —
-see the package [README](../README.md#reliability)).
+An AgentTrace instance must be running to see the trace: `pip install
+deepagents-trace && agenttrace ui` (see the main repo's README), or the
+Next.js stack (`bun run dev` + the socket service). Without one running, the
+examples still run the agent correctly; the middleware just logs a warning
+and disables tracing for that run (non-blocking, never fatal — see the
+package [README](../README.md#reliability)).
 
 ## Run
 

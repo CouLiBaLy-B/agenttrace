@@ -72,6 +72,14 @@ def run_out(run: models.Run, *, event_count: int | None = None) -> dict[str, Any
 def run_detail_out(run: models.Run) -> dict[str, Any]:
     data = run_out(run)
     data["events"] = [event_out(e) for e in run.events]
+    # Only the single-run detail view nests the project (matches the
+    # original route.ts's `include: { project: { select: {...} } }` —
+    # list views already know which project they're scoped to).
+    data["project"] = {
+        "id": run.project.id,
+        "name": run.project.name,
+        "userId": run.project.user_id,
+    }
     return data
 
 

@@ -366,18 +366,22 @@ Même logique avec `fetch`. Onglet **TypeScript** de la page Integration. Idéal
 
 ### 9.3 DeepAgents (LangChain)
 
-C'est l'intégration la plus puissante. L'onglet **DeepAgents** fournit un `BaseCallbackHandler` complet (`AgentTraceCallback`) à déposer dans votre codebase.
+C'est l'intégration la plus puissante. Le package publié
+[`agenttrace-langchain`](https://pypi.org/project/agenttrace-langchain/)
+fournit `AgentTraceMiddleware`, un `AgentMiddleware` (système de middleware
+actuel de deepagents/LangChain — `before_agent` / `wrap_model_call` /
+`wrap_tool_call` / `after_agent`), à attacher à votre agent.
 
 #### Installation
 
 ```bash
-pip install langchain langchain-openai langchain-deepagents requests
+pip install agenttrace-langchain deepagents langchain-openai
 ```
 
 #### Utilisation
 
 ```python
-from agenttrace_callback import AgentTraceCallback
+from agenttrace_langchain import AgentTraceMiddleware
 from deepagents import create_deep_agent
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
@@ -396,35 +400,49 @@ agent = create_deep_agent(
     model=ChatOpenAI(model="gpt-4o-mini"),
     tools=[web_search, fetch_page],
     system_prompt="You are a research assistant.",
+    # 👇 UNE instance de middleware = UN run AgentTrace
+    middleware=[AgentTraceMiddleware(run_name="research — Rust frameworks")],
 )
 
-# 👇 UNE instance de callback = UN run AgentTrace
-trace = AgentTraceCallback(run_name="research — Rust frameworks")
-
 result = agent.invoke(
-    {"messages": [{"role": "user", "content": "State of Rust web frameworks?"}]},
-    config={"callbacks": [trace]},
+    {"messages": [{"role": "user", "content": "State of Rust web frameworks?"}]}
 )
 ```
 
-#### Ce que le callback capture automatiquement
+Fonctionne aussi avec `await agent.ainvoke(...)` — les hooks async
+(`awrap_model_call`/`awrap_tool_call`) se déclenchent automatiquement, sans
+câblage supplémentaire.
 
-| Callback LangChain | Événement AgentTrace | Flèche dans le diagramme |
+#### Ce que le middleware capture automatiquement
+
+| Hook `AgentMiddleware` | Événement AgentTrace | Flèche dans le diagramme |
 |---|---|---|
-| `on_llm_start` / `on_llm_end` / `on_chat_model_start` | `llm_call` | Orchestrator → LLM (+ tokens, output preview) |
-| `on_tool_start` | `tool_call` | Orchestrator → tool |
-| `on_tool_end` | `tool_result` | tool → Orchestrator (+ latence) |
-| `on_tool_error` | `error` | tool → Orchestrator (rouge) |
-| `on_agent_action` (si tool = handoff/delegate) | `handoff` | Orchestrator → Sub-agent |
-| `on_agent_finish` | `final_answer` + ferme le run | Orchestrator → User |
+| `wrap_model_call` | `llm_call` | Orchestrator → LLM (+ tokens, output preview) |
+| `wrap_tool_call` (avant) | `tool_call` | Orchestrator → tool |
+| `wrap_tool_call` (après) | `tool_result` | tool → Orchestrator (+ latence) |
+| `wrap_tool_call` (exception) | `error` | tool → Orchestrator (rouge) |
+| `wrap_tool_call` (tool = handoff/delegate) | `handoff` | Orchestrator → Sub-agent |
+| `after_agent` | `final_answer` + ferme le run | Orchestrator → User |
 
-Vous n'avez **rien à coder de plus** : tout agent LangChain qui supporte les callbacks (DeepAgents, ReAct, LangGraph…) est instrumenté automatiquement.
+Vous n'avez **rien à coder de plus** : tout agent `create_deep_agent`/
+`create_agent` avec ce middleware est instrumenté automatiquement.
+
+Émission non bloquante (thread + queue en arrière-plan) et jamais fatale
+(une instance AgentTrace injoignable ou mal configurée désactive juste la
+trace pour ce run, sans casser l'agent) — voir le
+[README du package](https://github.com/CouLiBaLy-B/agenttrace/tree/main/integrations/agenttrace-langchain#reliability).
+
+Pour un serveur qui **cache et réutilise un agent compilé** entre plusieurs
+requêtes (le middleware est figé dans le graph au moment du build, donc mal
+adapté à ce cas), utilisez plutôt `AsyncAgentTraceRun` — voir la section
+["Servers with a cached/reused agent"](https://github.com/CouLiBaLy-B/agenttrace/tree/main/integrations/agenttrace-langchain#servers-with-a-cachedreused-agent-dont-use-the-middleware)
+du même README.
 
 #### Variables d'environnement
 
-Le callback lit :
+Le middleware lit (sauf si passé explicitement au constructeur) :
 - `AGENTTRACE_URL` (défaut : `http://localhost:3000/api/events`)
-- `AGENTTRACE_KEY` (défaut : `atr_YOUR_API_KEY` — remplacez par votre clé)
+- `AGENTTRACE_KEY` (obligatoire — clé projet, `atr_...`)
 
 ```bash
 export AGENTTRACE_URL=https://votre-deploiement/api/events

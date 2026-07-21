@@ -23,6 +23,7 @@ from ..security import (
     verify_password,
 )
 from ..serializers import user_out
+from ..seed import seed_demo_data
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -63,6 +64,8 @@ def signup(body: SignupBody, response: Response, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    seed_demo_data(db, user.id)
 
     _set_session_cookie(response, user.id)
     return {"user": user_out(user)}

@@ -5,3 +5,7 @@ __pycache__
 *.db
 /dist
 /build
+# Built by `bun run build:embed` (repo root) — a release-time artifact, not
+# source. Must exist on disk before `python -m build`/`pip install -e .` for
+# `agenttrace ui` to serve a real dashboard instead of the placeholder page.
+/agenttrace/server/static

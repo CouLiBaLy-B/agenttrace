@@ -44,6 +44,18 @@ def test_signup_rejects_short_password(client):
     assert resp.json() == {"error": "Password must be at least 6 characters"}
 
 
+def test_signup_seeds_demo_projects(client):
+    _signup(client)
+    projects = client.get("/api/projects").json()["projects"]
+    names = {p["name"] for p in projects}
+    assert names == {"Customer Support Agent", "Research Assistant", "Code Review Bot"}
+    # Idempotent: a second signup (different user) also seeds fresh demo data
+    # for that user, not a no-op — projects are per-user.
+    client.post("/api/auth/signout")
+    _signup(client)
+    assert len(client.get("/api/projects").json()["projects"]) == 3
+
+
 def test_projects_require_auth(client):
     resp = client.get("/api/projects")
     assert resp.status_code == 401
@@ -59,9 +71,12 @@ def test_create_and_list_project(client):
     assert body["project"]["name"] == "Research Agent"
     assert body["apiKey"].startswith("atr_")
 
+    # Signup auto-seeds 3 demo projects (matches the original Next.js
+    # behavior — see seed.py) alongside the one just created above.
     listed = client.get("/api/projects").json()["projects"]
-    assert len(listed) == 1
-    assert listed[0]["_count"]["runs"] == 0
+    assert len(listed) == 4
+    created_project = next(p for p in listed if p["name"] == "Research Agent")
+    assert created_project["_count"]["runs"] == 0
 
 
 def test_project_not_found_for_other_user(client):
@@ -117,6 +132,11 @@ def test_events_ingestion_full_lifecycle(client):
     assert run_detail["status"] == "completed"
     assert len(run_detail["events"]) == 1
     assert run_detail["events"][0]["type"] == "tool_call"
+    # Regression: the frontend's run-view reads run.project.name directly
+    # (matches the original route.ts's `include: { project: {...} } }`) —
+    # a flat projectId alone crashes it.
+    assert run_detail["project"]["id"] == project_id
+    assert "name" in run_detail["project"]
 
     events = client.get(f"/api/runs/{run_id}/events").json()["events"]
     assert len(events) == 1
@@ -149,11 +169,14 @@ def test_stats_endpoint(client):
     run_id = run_resp.json()["runId"]
     client.post("/api/events", json={"runId": run_id, "endRun": "completed"}, headers=headers)
 
+    # Signup auto-seeds 3 demo projects/12 runs alongside "Stats demo" — assert
+    # against that project specifically rather than exact totals, so this
+    # test doesn't couple to seed.py's dataset shape.
     stats = client.get("/api/stats").json()
-    assert stats["totalProjects"] == 1
-    assert stats["totalRuns"] == 1
-    assert stats["completed"] == 1
-    assert stats["successRate"] == 100
+    assert stats["totalProjects"] == 4
+    stats_demo = next(p for p in stats["perProject"] if p["name"] == "Stats demo")
+    assert stats_demo["runs"] == 1
+    assert stats_demo["successRate"] == 100
 
 
 def test_websocket_receives_broadcast_event(client):

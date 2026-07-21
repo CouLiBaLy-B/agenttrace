@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react"
-import { io, Socket } from "socket.io-client"
 import { TraceEvent } from "@/lib/types"
 import { extractParticipants } from "./participants"
 import { LifelineDiagram } from "./lifeline-diagram"
@@ -32,7 +31,7 @@ export function SequenceDiagram({ runId, initialEvents, initialStatus, onRunUpda
   const isDesktop = useMediaQuery("(min-width: 768px)")
 
   const scrollRef = useRef<HTMLDivElement>(null)
-  const socketRef = useRef<Socket | null>(null)
+  const socketRef = useRef<WebSocket | null>(null)
   const replayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const live = status === "running"
 
@@ -49,37 +48,65 @@ export function SequenceDiagram({ runId, initialEvents, initialStatus, onRunUpda
     [events, selectedId]
   )
 
-  // ---- socket: subscribe for live events ----
+  // ---- WebSocket: subscribe for live events (plain JSON protocol, see
+  // agenttrace/server/realtime.py) with a small bounded reconnect loop —
+  // native WebSocket has no built-in auto-reconnect like socket.io did. ----
   useEffect(() => {
     if (!live) return
-    const sock = io("/?XTransformPort=3003", {
-      transports: ["websocket", "polling"],
-      reconnection: true,
-      reconnectionAttempts: 10,
-      reconnectionDelay: 1000,
-    })
-    socketRef.current = sock
-    sock.on("connect", () => {
-      setConnected(true)
-      sock.emit("subscribe", { runId })
-    })
-    sock.on("disconnect", () => setConnected(false))
-    sock.on("event", (ev: TraceEvent) => {
-      setEvents((prev) => {
-        if (prev.some((p) => p.id === ev.id)) return prev
-        return [...prev, ev]
-      })
-    })
-    sock.on("run:update", (payload: { runId: string; patch: any }) => {
-      if (payload.runId !== runId) return
-      if (payload.patch?.status) {
-        setStatus(payload.patch.status)
-        onRunUpdate?.(payload.patch)
+    let cancelled = false
+    let ws: WebSocket | null = null
+    let attempt = 0
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+
+    const connect = () => {
+      if (cancelled) return
+      // NEXT_PUBLIC_WS_HOST lets `bun run dev` point at a separately-running
+      // `agenttrace ui` instance; empty (default) uses the current origin,
+      // correct once the static bundle is served by that same FastAPI app.
+      const wsHost = process.env.NEXT_PUBLIC_WS_HOST || window.location.host
+      const proto = window.location.protocol === "https:" ? "wss:" : "ws:"
+      ws = new WebSocket(`${proto}//${wsHost}/ws`)
+      socketRef.current = ws
+
+      ws.onopen = () => {
+        attempt = 0
+        setConnected(true)
+        ws?.send(JSON.stringify({ action: "subscribe", runId }))
       }
-    })
+      ws.onclose = () => {
+        setConnected(false)
+        if (cancelled || attempt >= 10) return
+        attempt += 1
+        reconnectTimer = setTimeout(connect, 1000)
+      }
+      ws.onmessage = (msg) => {
+        let parsed: any
+        try {
+          parsed = JSON.parse(msg.data)
+        } catch {
+          return
+        }
+        if (parsed.type === "event") {
+          const ev = parsed.data as TraceEvent
+          setEvents((prev) => (prev.some((p) => p.id === ev.id) ? prev : [...prev, ev]))
+        } else if (parsed.type === "run:update") {
+          if (parsed.runId !== runId) return
+          if (parsed.patch?.status) {
+            setStatus(parsed.patch.status)
+            onRunUpdate?.(parsed.patch)
+          }
+        }
+      }
+    }
+    connect()
+
     return () => {
-      sock.emit("unsubscribe", { runId })
-      sock.disconnect()
+      cancelled = true
+      if (reconnectTimer) clearTimeout(reconnectTimer)
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: "unsubscribe", runId }))
+      }
+      ws?.close()
       socketRef.current = null
     }
   }, [runId, live, onRunUpdate])

@@ -1,6 +1,6 @@
 "use client"
 
-import { useSession } from "next-auth/react"
+import { useSession } from "@/lib/auth-client"
 import { AuthScreen } from "@/components/auth/auth-screen"
 import { AppShell } from "@/components/app-shell"
 import { BootScreen } from "@/components/boot-screen"
