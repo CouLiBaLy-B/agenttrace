@@ -34,6 +34,30 @@ from typing import Any, Callable, Optional
 from langchain.agents.middleware import AgentMiddleware
 
 from .client import AgentTraceClient
+from .projection import (
+    content_to_text as _content_to_text,
+)
+from .projection import (
+    extract_handoff_target as _extract_handoff_target,
+)
+from .projection import (
+    last_model_message as _last_model_message,
+)
+from .projection import (
+    messages_preview as _messages_preview,
+)
+from .projection import (
+    model_name as _model_name,
+)
+from .projection import (
+    response_preview as _response_preview,
+)
+from .projection import (
+    result_content as _result_content,
+)
+from .projection import (
+    token_usage as _token_usage,
+)
 from .run import ANSWER_LIMIT, LABEL_LIMIT, RESULT_LIMIT, AgentTraceRun, compact, truncate
 
 logger = logging.getLogger(__name__)
@@ -192,88 +216,6 @@ class AgentTraceMiddleware(AgentMiddleware):
             payload={"error": type(exc).__name__, "message": str(exc)},
             status="error",
         )
-
-
-def _model_name(request) -> str:
-    model = getattr(request, "model", None)
-    name = getattr(model, "model", None) or getattr(model, "model_name", None)
-    return str(name) if name else "LLM"
-
-
-def _content_to_text(content: Any) -> str:
-    """Flatten LangChain message content to plain text. `content` is either a
-    string or a list of content blocks (`[{"type": "text", "text": "..."}]`,
-    the shape deepagents/most chat models use for system/human messages) —
-    naively `str()`-ing the list would dump Python-repr noise instead of the
-    actual text."""
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        parts = []
-        for block in content:
-            if isinstance(block, str):
-                parts.append(block)
-            elif isinstance(block, dict) and block.get("text"):
-                parts.append(str(block["text"]))
-        return "".join(parts) if parts else str(content)
-    return str(content)
-
-
-def _message_dict(message: Any, limit: int = RESULT_LIMIT) -> dict[str, Any]:
-    role = getattr(message, "type", None) or type(message).__name__
-    content = getattr(message, "content", message)
-    return {"role": role, "content": truncate(_content_to_text(content), limit)}
-
-
-def _messages_preview(request: Any) -> dict[str, Any]:
-    """The full input to this LLM call: system prompt (if any) + the
-    conversation messages sent, as `ModelRequest` exposes them. Each field is
-    truncated on its own (not the payload as a whole) so a huge, mostly-
-    unchanging system prompt can't crowd out the actual conversation turns —
-    or worse, get cut mid-JSON by a global length cap."""
-    system_message = getattr(request, "system_message", None)
-    messages = getattr(request, "messages", None) or []
-    preview: dict[str, Any] = {"messages": [_message_dict(m) for m in messages]}
-    if system_message is not None:
-        preview["system"] = truncate(_content_to_text(getattr(system_message, "content", system_message)), LABEL_LIMIT * 4)
-    return preview
-
-
-def _last_model_message(response) -> Any:
-    """Unwrap a `ModelResponse` (`.result: list[BaseMessage]`) to its last
-    message. Falls back to `response` itself if it isn't a ModelResponse
-    (e.g. a bare AIMessage, as some tests/middleware hand back directly)."""
-    result = getattr(response, "result", None)
-    if isinstance(result, list) and result:
-        return result[-1]
-    return response
-
-
-def _response_preview(response) -> str:
-    content = _result_content(response)
-    return content if isinstance(content, str) else str(content)
-
-
-def _result_content(result) -> Any:
-    for attr in ("content", "result", "text"):
-        value = getattr(result, attr, None)
-        if value is not None:
-            return value
-    return result
-
-
-def _token_usage(response) -> Optional[dict]:
-    for attr in ("usage_metadata", "response_metadata"):
-        value = getattr(response, attr, None)
-        if value:
-            return value
-    return None
-
-
-def _extract_handoff_target(tool_args: dict) -> Optional[str]:
-    if isinstance(tool_args, dict):
-        return tool_args.get("to") or tool_args.get("name") or tool_args.get("agent")
-    return None
 
 
 def _last_message_text(state) -> str:

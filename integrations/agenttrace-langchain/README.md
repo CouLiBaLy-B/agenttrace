@@ -95,9 +95,58 @@ run's `after_agent` closes the AgentTrace run, and every later request on that
 cached agent silently traces into an already-closed run. The middleware is
 only correct when the agent is (re)built per invocation.
 
-For a cached-agent server, create one `AsyncAgentTraceRun` **per request**
-instead, independent of the agent build, and feed it events from your own
-stream projection (`agent.astream_events(...)`) rather than from `middleware`:
+For a cached-agent server there are two options: attach a **callback handler**
+per request (recommended — least code), or drive an `AsyncAgentTraceRun` from
+your own stream projection (below).
+
+### Recommended: `AgentTraceCallbackHandler` (one callback, minimal wiring)
+
+`AgentTraceCallbackHandler` is a LangChain `AsyncCallbackHandler`. You attach a
+fresh one **per request** via `config={"callbacks": [handler]}` on your
+`astream_events`/`ainvoke` call — nothing is baked into the cached graph, so
+reuse across requests is safe. One top-level handler fires for the main agent
+**and every deepagents sub-agent** (LangGraph propagates callbacks down the
+ambient `RunnableConfig`), so you don't hand-map the stream at all:
+
+```python
+from agenttrace_langchain import AgentTraceCallbackHandler, AsyncAgentTraceClient
+
+handler = AgentTraceCallbackHandler(
+    "chat run",
+    client=AsyncAgentTraceClient(api_key="atr_..."),
+    anonymizer=my_scrubber,        # optional; applied to EVERY event payload
+    phrases={"final_answer": "réponse finale"},   # optional label overrides
+)
+handler.on_user_message(user_text)
+
+config = {"configurable": {"thread_id": tid}, "callbacks": [handler]}
+async for event in agent.astream_events(payload, version="v2", config=config):
+    ...                            # your own UI dispatch — untouched by tracing
+
+# Two things a callback can't derive — the app supplies them:
+#   handler.approval_required(interrupt_info)      # HITL pause (read from graph state)
+await handler.finish("completed", answer=final_report)   # emits final_answer + closes
+```
+
+The handler captures on its own: LLM **input** (system + messages) at
+`on_chat_model_start`, LLM **output + token usage** at `on_llm_end`, tool
+call/result (with duration), sub-agent handoffs (the `task` tool and any
+`handoff`/`delegate` tool), and tool/LLM errors — each attributed to the main
+agent or the emitting sub-agent node (via `metadata["langgraph_node"]` /
+`checkpoint_ns`). It works identically whether you consume `astream_events`
+v2 or v3, since callbacks fire at the runnable level, not the stream level.
+
+`anonymizer` is any `Callable[[Any], Any]` (e.g.
+`langsmith.anonymizer.create_anonymizer(rules)`): it runs on every event
+payload right before send, once, instead of masking at each call site. It's
+never fatal — a raising anonymizer logs a warning and the payload passes
+through rather than breaking the run.
+
+### Lower-level: `AsyncAgentTraceRun` + your own projection
+
+If you already project `agent.astream_events(...)` into your own typed events
+and would rather feed those directly, create one `AsyncAgentTraceRun` **per
+request** and call `on_stream_event`:
 
 ```python
 from agenttrace_langchain import AsyncAgentTraceClient, AsyncAgentTraceRun
@@ -132,11 +181,12 @@ run = AsyncAgentTraceRun(
 )
 ```
 
-Token usage still needs a `BaseCallbackHandler` (attach via
-`config={"callbacks": [...]}` at invoke time) since a stream projection
-typically doesn't expose LLM call boundaries — callbacks, unlike middleware,
-correctly compose with a cached/reused agent because they're attached
-per-invocation rather than baked into the graph.
+A stream projection typically doesn't expose LLM call boundaries, so on this
+lower-level path token usage/`llm_call` still needs a callback. Prefer
+`AgentTraceCallbackHandler` above, which already captures LLM input/output/
+tokens **and** tool/sub-agent arrows in a single handler. `AsyncAgentTraceRun`
+also accepts the same optional `anonymizer=` callable, applied to every
+emitted payload.
 
 ## Event mapping
 

@@ -72,12 +72,19 @@ class AsyncAgentTraceRun:
         orchestrator: str = "Orchestrator",
         tool_server: Optional[Callable[[str], str]] = None,
         phrases: Optional[dict[str, str]] = None,
+        anonymizer: Optional[Callable[[Any], Any]] = None,
     ):
         self._name = truncate(name, 120)
         self._client = client
         self._orchestrator = orchestrator
         self._tool_server = tool_server
         self._phrases = {**DEFAULT_PHRASES, **(phrases or {})}
+        # Optional PII scrubber applied to every event payload right before it
+        # is queued (see `emit`). Lets an app (e.g. clinical data) pass one
+        # callable once instead of masking at every call site. Never fatal: a
+        # failing anonymizer logs a warning and the payload passes through, so
+        # tracing can't crash the run it's observing.
+        self._anonymizer = anonymizer
         self._queue: "asyncio.Queue[Optional[dict]]" = asyncio.Queue()
         self._run_id: Optional[str] = None
         self._failed = not bool(client.api_key)
@@ -198,12 +205,23 @@ class AsyncAgentTraceRun:
         if label is not None:
             event["label"] = label
         if payload is not None:
-            event["payload"] = payload
+            event["payload"] = self._anonymize(payload)
         if duration_ms is not None:
             event["durationMs"] = duration_ms
         if status is not None:
             event["status"] = status
         self._queue.put_nowait(event)
+
+    def _anonymize(self, payload: Any) -> Any:
+        if self._anonymizer is None:
+            return payload
+        try:
+            return self._anonymizer(payload)
+        except Exception:  # noqa: BLE001 - tracing must never crash the run
+            logger.warning(
+                "AgentTrace anonymizer raised for run %r — payload sent unmasked", self._name
+            )
+            return payload
 
     def end(self, status: str = "completed") -> None:
         if self._failed:
