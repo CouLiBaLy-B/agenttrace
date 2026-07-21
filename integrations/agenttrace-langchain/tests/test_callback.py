@@ -141,6 +141,43 @@ async def test_subagent_attribution_from_metadata(handler, post):
     assert _events(post)[0]["source"] == "prerequisites-agent"
 
 
+async def test_structural_model_node_attributes_to_orchestrator(handler, post):
+    """A main-agent LLM call runs under the structural langgraph node "model"
+    (langchain/deepagents name it that) — it must attribute to the orchestrator,
+    NOT a phantom "model" participant."""
+    rid = uuid.uuid4()
+    await handler.on_chat_model_start(
+        {}, [[FakeMessage("human", "x")]], run_id=rid,
+        metadata={"ls_model_name": "gpt", "langgraph_node": "model", "checkpoint_ns": "model:abc"},
+    )
+    await handler.on_llm_end(FakeLLMResult(FakeAIMessage("y")), run_id=rid)
+    await handler.aclose()
+
+    assert _events(post)[0]["source"] == "Orchestrator"
+
+
+async def test_subagent_inner_calls_attributed_via_task_ns(handler, post):
+    """After a `task` delegation, an inner call sharing that task's
+    checkpoint_ns attributes to the sub-agent, not the orchestrator — even
+    though its langgraph_node is the structural "model"."""
+    task_rid, llm_rid = uuid.uuid4(), uuid.uuid4()
+    await handler.on_tool_start(
+        {"name": "task"}, "", run_id=task_rid,
+        metadata={"checkpoint_ns": "tools:xyz"},
+        inputs={"subagent_type": "researcher", "description": "dig"},
+    )
+    await handler.on_chat_model_start(
+        {}, [[FakeMessage("human", "x")]], run_id=llm_rid,
+        metadata={"ls_model_name": "gpt", "langgraph_node": "model", "checkpoint_ns": "tools:xyz"},
+    )
+    await handler.on_llm_end(FakeLLMResult(FakeAIMessage("y")), run_id=llm_rid)
+    await handler.on_tool_end("done", run_id=task_rid)
+    await handler.aclose()
+
+    inner = next(e for e in _events(post) if e["type"] == "llm_call")
+    assert inner["source"] == "researcher"
+
+
 async def test_anonymizer_applied_to_every_payload(post):
     client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
     h = AgentTraceCallbackHandler("run", client=client, anonymizer=lambda p: {"masked": True})

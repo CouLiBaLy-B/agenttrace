@@ -124,26 +124,32 @@ def extract_handoff_target(tool_args: Any) -> Optional[str]:
     return None
 
 
+# LangGraph node names that are STRUCTURAL (the agent's own model/tool/agent
+# nodes), never a sub-agent identity. In a langchain/deepagents agent every
+# LLM call runs under a node literally named "model" and every tool under
+# "tools" — treating those as emitters produced a phantom "model" participant
+# and hid the real orchestrator/sub-agent.
+_STRUCTURAL_NODES = ("", "agent", "tools", "model", "__start__")
+
+
 def emitting_agent(metadata: Optional[dict], parent_ids: Optional[list] = None) -> str:
     """Which agent emitted an event/callback: ``"main"`` for the top-level
-    agent, otherwise the sub-agent node name.
+    agent, otherwise a named sub-agent.
 
-    deepagents wires every sub-agent under its own LangGraph node, exposed via
-    ``metadata["langgraph_node"]`` (e.g. ``"prerequisites-agent"``) and, for
-    nested calls, ``metadata["checkpoint_ns"]`` (``"<parent_node>:<uuid>"``).
-    The main agent's node is ``"agent"``/``"tools"``. This mirrors the logic
-    consumer apps previously hand-rolled against `astream_events` events —
-    the same signals reach a callback's ``metadata`` argument since
-    `astream_events` v2 is itself an ``AsyncCallbackHandler``.
+    `langgraph_node` is only ever a structural token (``model``/``tools``/
+    ``agent``) — it does NOT carry the sub-agent name, so it can't identify the
+    emitter. A sub-agent is instead recognised by a ``checkpoint_ns`` head that
+    isn't structural. For deepagents the sub-agent's own inner calls actually
+    share the ``task`` tool's ns (head ``tools``), so precise sub-agent naming
+    needs the ns→name map the callback handler builds from ``task`` inputs;
+    standalone, this returns ``"main"`` for any structural context.
     """
     metadata = metadata or {}
-    parent_ids = parent_ids or []
-    node = metadata.get("langgraph_node") or ""
     checkpoint_ns = metadata.get("checkpoint_ns") or ""
-    if not parent_ids and node in ("", "agent", "tools"):
-        return "main"
-    if node and node not in ("agent", "tools"):
+    head = checkpoint_ns.split(":", 1)[0] if checkpoint_ns else ""
+    if head and head not in _STRUCTURAL_NODES:
+        return head
+    node = metadata.get("langgraph_node") or ""
+    if node and node not in _STRUCTURAL_NODES:
         return node
-    if checkpoint_ns:
-        return checkpoint_ns.split(":", 1)[0] or "main"
     return "main"

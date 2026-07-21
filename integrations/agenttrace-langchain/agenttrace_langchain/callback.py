@@ -102,6 +102,12 @@ class AgentTraceCallbackHandler(AsyncCallbackHandler):
         # real name ("zai.glm-5") with a fallback and the diagram sprouts two
         # LLM lanes for one model.
         self._model_name: Optional[str] = None
+        # checkpoint_ns → sub-agent name. deepagents runs a delegated sub-agent
+        # under the `task` tool's ns; the sub-agent's own LLM/tool calls carry
+        # that same ns, but `langgraph_node` stays structural ("model"/"tools")
+        # and never names the sub-agent. Recording the ns at the `task` call is
+        # the only way to attribute those inner calls to the right sub-agent.
+        self._subagent_ns: dict[str, str] = {}
 
     @property
     def run(self) -> AsyncAgentTraceRun:
@@ -165,7 +171,7 @@ class AgentTraceCallbackHandler(AsyncCallbackHandler):
             llm_output = getattr(response, "llm_output", None)
             if isinstance(llm_output, dict):
                 tokens = llm_output.get("token_usage") or llm_output.get("usage")
-        node = emitting_agent(info.get("metadata"))
+        node = self._attribution(info.get("metadata"))
         self._run.emit(
             source=self._orchestrator if node == "main" else node,
             target=info.get("model") or "LLM",
@@ -181,7 +187,7 @@ class AgentTraceCallbackHandler(AsyncCallbackHandler):
 
     async def on_llm_error(self, error, *, run_id: UUID, **kwargs) -> None:
         info = self._llm.pop(run_id, {})
-        node = emitting_agent(info.get("metadata"))
+        node = self._attribution(info.get("metadata"))
         self._run.emit(
             source=info.get("model") or "LLM",
             target=self._orchestrator if node == "main" else node,
@@ -196,13 +202,19 @@ class AgentTraceCallbackHandler(AsyncCallbackHandler):
         self, serialized, input_str, *, run_id: UUID, metadata=None, inputs=None, **kwargs
     ) -> None:
         name = self._tool_name(serialized, kwargs)
-        node = emitting_agent(metadata)
+        node = self._attribution(metadata)
         args = inputs if inputs is not None else input_str
         is_handoff = any(marker in name.lower() for marker in HANDOFF_MARKERS)
         self._tools[run_id] = {"name": name, "node": node, "handoff": is_handoff}
         if is_handoff:
             target = extract_handoff_target(inputs) or "Sub-agent"
             self._tools[run_id]["target"] = target
+            # The sub-agent runs under this `task` call's checkpoint_ns; record
+            # it so the sub-agent's inner LLM/tool calls (same ns) attribute to
+            # `target` rather than collapsing to the orchestrator.
+            ns = (metadata or {}).get("checkpoint_ns")
+            if ns:
+                self._subagent_ns[ns] = target
             # agent_start records the sub-agent start (for duration) and emits
             # the Orchestrator → Sub-agent handoff arrow.
             self._run.on_stream_event(
@@ -251,6 +263,18 @@ class AgentTraceCallbackHandler(AsyncCallbackHandler):
         )
 
     # ----- helpers -----
+    def _attribution(self, metadata: Any) -> str:
+        """Emitter of a call: ``"main"`` or a named sub-agent. First matches the
+        call's ``checkpoint_ns`` against sub-agent ns recorded at `task` time
+        (deepagents' only reliable sub-agent signal), then falls back to the
+        structural-node-aware `emitting_agent`."""
+        ns = (metadata or {}).get("checkpoint_ns") or ""
+        if ns:
+            for sub_ns, name in self._subagent_ns.items():
+                if ns == sub_ns or ns.startswith(sub_ns):
+                    return name
+        return emitting_agent(metadata)
+
     @staticmethod
     def _elapsed(started: Optional[float]) -> Optional[int]:
         return int((time.monotonic() - started) * 1000) if started is not None else None
