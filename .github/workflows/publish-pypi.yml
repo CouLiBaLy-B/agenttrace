@@ -15,16 +15,27 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: python-server
     steps:
       - uses: actions/checkout@v4
+
+      # Build the frontend bundle first — python-server/agenttrace/server/static/
+      # is gitignored (a release artifact, not source), so a fresh checkout
+      # has none of it until this step runs. Without this, `python -m build`
+      # below silently packages an empty static/ dir (missed once already —
+      # see the 0.1.2 release notes).
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3
+      - run: bun install
+      - run: bun run build:embed
+      - run: test -f python-server/agenttrace/server/static/index.html || (echo "static bundle missing after build:embed" && exit 1)
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: python -m pip install build
       - run: python -m build
+        working-directory: python-server
       - uses: actions/upload-artifact@v4
         with:
           name: dist
