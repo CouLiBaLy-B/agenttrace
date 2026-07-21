@@ -81,6 +81,23 @@ async def test_llm_call_captures_input_output_and_tokens(handler, post):
     assert ev["payload"]["tokens"] == {"input_tokens": 5, "output_tokens": 3}
 
 
+async def test_model_label_is_stable_across_calls(handler, post):
+    """One model → one LLM lane: a later call whose metadata omits the model
+    name reuses the name remembered from the first call (no second lane)."""
+    r1, r2 = uuid.uuid4(), uuid.uuid4()
+    await handler.on_chat_model_start(
+        {}, [[FakeMessage("human", "a")]], run_id=r1, metadata={"ls_model_name": "zai.glm-5"}
+    )
+    await handler.on_llm_end(FakeLLMResult(FakeAIMessage("x")), run_id=r1)
+    # Second call: no ls_model_name in metadata, no usable serialized model.
+    await handler.on_chat_model_start({}, [[FakeMessage("human", "b")]], run_id=r2, metadata={})
+    await handler.on_llm_end(FakeLLMResult(FakeAIMessage("y")), run_id=r2)
+    await handler.aclose()
+
+    targets = [e["target"] for e in _events(post) if e["type"] == "llm_call"]
+    assert targets == ["zai.glm-5", "zai.glm-5"]
+
+
 async def test_tool_call_and_result_pair_with_duration(handler, post):
     rid = uuid.uuid4()
     await handler.on_tool_start({"name": "web_search"}, "q", run_id=rid, inputs={"query": "rust"})

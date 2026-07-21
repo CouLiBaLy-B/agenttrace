@@ -97,6 +97,11 @@ class AgentTraceCallbackHandler(AsyncCallbackHandler):
         # use at *_end. run_id pairs a start with its end reliably.
         self._llm: dict[UUID, dict[str, Any]] = {}
         self._tools: dict[UUID, dict[str, Any]] = {}
+        # Model label remembered from the first call that exposes one, reused
+        # for later calls whose metadata omits it. Without this, a run mixes a
+        # real name ("zai.glm-5") with a fallback and the diagram sprouts two
+        # LLM lanes for one model.
+        self._model_name: Optional[str] = None
 
     @property
     def run(self) -> AsyncAgentTraceRun:
@@ -137,7 +142,7 @@ class AgentTraceCallbackHandler(AsyncCallbackHandler):
         self._llm[run_id] = {
             "input": messages_preview(msgs),
             "metadata": metadata or {},
-            "model": self._model_label(serialized, metadata),
+            "model": self._resolve_model(serialized, metadata),
             "start": time.monotonic(),
         }
 
@@ -148,7 +153,7 @@ class AgentTraceCallbackHandler(AsyncCallbackHandler):
         self._llm[run_id] = {
             "input": {"prompts": [truncate(str(p), RESULT_LIMIT) for p in (prompts or [])]},
             "metadata": metadata or {},
-            "model": self._model_label(serialized, metadata),
+            "model": self._resolve_model(serialized, metadata),
             "start": time.monotonic(),
         }
 
@@ -250,13 +255,26 @@ class AgentTraceCallbackHandler(AsyncCallbackHandler):
     def _elapsed(started: Optional[float]) -> Optional[int]:
         return int((time.monotonic() - started) * 1000) if started is not None else None
 
-    @staticmethod
-    def _model_label(serialized: Any, metadata: Any) -> str:
+    def _resolve_model(self, serialized: Any, metadata: Any) -> str:
+        """A single, stable model label for the whole run.
+
+        Prefer LangChain's ``metadata["ls_model_name"]`` (the real model id,
+        e.g. ``zai.glm-5``), else the model id in the serialized kwargs. The
+        first label found is remembered and reused for later calls whose
+        metadata omits it — otherwise one model would render as two LLM lanes
+        (a named one + a fallback one). Never uses ``serialized["name"]``, which
+        is often the class name (``ChatOpenAI``) or a generic ``model`` node
+        label, not the model itself.
+        """
         md = metadata or {}
         name = md.get("ls_model_name")
         if not name and isinstance(serialized, dict):
-            name = serialized.get("name")
-        return str(name) if name else "LLM"
+            kwargs = serialized.get("kwargs")
+            if isinstance(kwargs, dict):
+                name = kwargs.get("model") or kwargs.get("model_name") or kwargs.get("model_id")
+        if name:
+            self._model_name = str(name)
+        return self._model_name or "LLM"
 
     @staticmethod
     def _tool_name(serialized: Any, kwargs: dict) -> str:
