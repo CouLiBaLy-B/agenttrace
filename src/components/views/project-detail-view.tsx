@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api, formatDuration, formatRelative, formatTime } from "@/lib/api"
 import { useNav } from "@/lib/store"
@@ -8,14 +8,6 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,13 +21,36 @@ import {
 import { toast } from "sonner"
 import {
   ArrowLeft,
-  Plus,
+  ArrowDownUp,
   Trash2,
   Search,
   ChevronRight,
   Radio,
   Cable,
 } from "lucide-react"
+
+type SortKey = "date" | "events" | "duration" | "name" | "status"
+
+const SORT_LABELS: Record<SortKey, string> = {
+  date: "Date",
+  events: "Events",
+  duration: "Duration",
+  name: "Name",
+  status: "Status",
+}
+
+function runDuration(r: Run): number {
+  // Finished runs sort by real duration; still-running ones sort last (-1).
+  return r.endedAt ? new Date(r.endedAt).getTime() - new Date(r.startedAt).getTime() : -1
+}
+
+const RUN_COMPARATORS: Record<SortKey, (a: Run, b: Run) => number> = {
+  date: (a, b) => new Date(a.startedAt).getTime() - new Date(b.startedAt).getTime(),
+  events: (a, b) => (a._count?.events ?? 0) - (b._count?.events ?? 0),
+  duration: (a, b) => runDuration(a) - runDuration(b),
+  name: (a, b) => a.name.localeCompare(b.name),
+  status: (a, b) => a.status.localeCompare(b.status),
+}
 
 interface Run {
   id: string
@@ -58,49 +73,15 @@ interface ProjectDetail {
 export function ProjectDetailView() {
   const { projectId, go } = useNav()
   const qc = useQueryClient()
-  const [createOpen, setCreateOpen] = useState(false)
-  const [runName, setRunName] = useState("")
   const [deleting, setDeleting] = useState<Run | null>(null)
   const [filter, setFilter] = useState("")
+  const [sortKey, setSortKey] = useState<SortKey>("date")
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
 
   const { data, isLoading } = useQuery<{ project: ProjectDetail }>({
     queryKey: ["project", projectId],
     queryFn: () => api(`/api/projects/${projectId}`),
     enabled: !!projectId,
-  })
-
-  const createRunMut = useMutation({
-    mutationFn: (name: string) =>
-      api<{ run: Run }>(`/api/projects/${projectId}/runs`, { method: "POST", json: { name } }),
-    onMutate: async (name) => {
-      await qc.cancelQueries({ queryKey: ["project", projectId] })
-      const prev = qc.getQueryData<{ project: ProjectDetail }>(["project", projectId])
-      const optimistic: Run = {
-        id: `temp-${Date.now()}`,
-        name,
-        status: "running",
-        startedAt: new Date().toISOString(),
-        endedAt: null,
-        _count: { events: 0 },
-      }
-      qc.setQueryData<{ project: ProjectDetail }>(["project", projectId], (old) => {
-        if (!old?.project) return old
-        return { project: { ...old.project, runs: [optimistic, ...old.project.runs] } }
-      })
-      return { prev }
-    },
-    onError: (_e, _v, ctx) => {
-      if (ctx?.prev) qc.setQueryData(["project", projectId], ctx.prev)
-      toast.error("Couldn't start the run — rolled back. " + (_e as Error).message)
-    },
-    onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: ["project", projectId] })
-      qc.invalidateQueries({ queryKey: ["stats"] })
-      toast.success("Run started — listening for events")
-      setCreateOpen(false)
-      setRunName("")
-      go("run", { runId: data.run.id })
-    },
   })
 
   const deleteRunMut = useMutation({
@@ -126,9 +107,13 @@ export function ProjectDetailView() {
   }
 
   const project = data?.project
-  const runs = (project?.runs || []).filter((r) =>
-    r.name.toLowerCase().includes(filter.toLowerCase())
-  )
+  const runs = useMemo(() => {
+    const list = (project?.runs || []).filter((r) =>
+      r.name.toLowerCase().includes(filter.toLowerCase())
+    )
+    const sorted = [...list].sort(RUN_COMPARATORS[sortKey])
+    return sortDir === "desc" ? sorted.reverse() : sorted
+  }, [project?.runs, filter, sortKey, sortDir])
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5">
@@ -166,15 +151,11 @@ export function ProjectDetailView() {
                 </button>
               </div>
             </div>
-            <Button size="sm" onClick={() => setCreateOpen(true)} className="gap-1.5">
-              <Plus className="h-4 w-4" />
-              Start a run
-            </Button>
           </div>
 
-          {/* runs */}
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1 max-w-xs">
+          {/* runs toolbar: filter + sort */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[12rem] max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 placeholder="Filter runs…"
@@ -182,6 +163,30 @@ export function ProjectDetailView() {
                 onChange={(e) => setFilter(e.target.value)}
                 className="pl-9 h-9"
               />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <label className="font-mono text-[11px] text-muted-foreground">sort</label>
+              <select
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value as SortKey)}
+                className="h-9 rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
+                  <option key={k} value={k}>
+                    {SORT_LABELS[k]}
+                  </option>
+                ))}
+              </select>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9"
+                title={sortDir === "desc" ? "Descending" : "Ascending"}
+                onClick={() => setSortDir((d) => (d === "desc" ? "asc" : "desc"))}
+              >
+                <ArrowDownUp className="h-3.5 w-3.5" />
+                <span className="sr-only">Toggle sort direction</span>
+              </Button>
             </div>
             <span className="font-mono text-[11px] text-muted-foreground ml-auto">
               {runs.length} shown
@@ -206,12 +211,10 @@ export function ProjectDetailView() {
                 </div>
                 <h3 className="mt-5 text-base font-medium">Listening for your agent's first event</h3>
                 <p className="mt-1.5 text-sm text-muted-foreground">
-                  Start a run from the button above, or send a <code className="font-mono text-primary/80">POST /api/events</code> with this project's key. The first event renders instantly.
+                  Send a <code className="font-mono text-primary/80">POST /api/events</code> with this
+                  project's key (see the <button className="text-primary hover:underline" onClick={() => go("integration", { projectId: project.id })}>Integration</button> tab).
+                  The first event renders instantly.
                 </p>
-                <Button className="mt-4 gap-1.5" onClick={() => setCreateOpen(true)}>
-                  <Plus className="h-4 w-4" />
-                  Start a run
-                </Button>
               </div>
             </Card>
           ) : (
@@ -254,38 +257,6 @@ export function ProjectDetailView() {
           )}
         </>
       )}
-
-      {/* create run dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Start a run</DialogTitle>
-            <DialogDescription>
-              This creates a run in <code className="font-mono">{project?.name}</code> and opens the
-              live trace view. Events streamed via the API will appear here in real time.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2 py-2">
-            <Input
-              value={runName}
-              onChange={(e) => setRunName(e.target.value)}
-              placeholder="Run name (e.g. refund order #4821)"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && runName.trim()) createRunMut.mutate(runName.trim())
-              }}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setCreateOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={() => createRunMut.mutate(runName.trim() || "Untitled run")} disabled={createRunMut.isPending}>
-              {createRunMut.isPending ? "Starting…" : "Start run"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent>
