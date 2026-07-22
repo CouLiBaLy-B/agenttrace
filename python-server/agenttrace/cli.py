@@ -12,6 +12,57 @@ import os
 
 import click
 
+_LOGO = r"""
+    ___                    __ ______
+   /   | ____ ____  ____  / //_  __/________ _________
+  / /| |/ __ `/ _ \/ __ \/ __/ / / / ___/ __ `/ ___/ _ \
+ / ___ / /_/ /  __/ / / / /_  / / / /  / /_/ / /__/  __/
+/_/  |_\__, /\___/_/ /_/\__/ /_/ /_/   \__,_/\___/\___/
+      /____/
+"""
+
+_DOCS_URL = "https://coulibaly-b.github.io/agenttrace"
+
+
+def _version() -> str:
+    from importlib.metadata import PackageNotFoundError, version
+
+    for dist in ("deepagents-trace", "agenttrace"):
+        try:
+            return version(dist)
+        except PackageNotFoundError:
+            continue
+    return "dev"
+
+
+def _mask_db_url(url: str) -> str:
+    """Hide credentials in a DB URL before printing it (scheme://user:PASS@host)."""
+    if "://" not in url or "@" not in url:
+        return url
+    scheme, rest = url.split("://", 1)
+    creds, host = rest.rsplit("@", 1)
+    user = creds.split(":", 1)[0]
+    return f"{scheme}://{user}:***@{host}" if ":" in creds else f"{scheme}://{rest}"
+
+
+def _print_banner(host: str, port: int) -> None:
+    db = os.environ.get("DATABASE_URL")
+    db_display = _mask_db_url(db) if db else "sqlite (agenttrace.db)"
+    base = f"http://{host}:{port}"
+    click.echo(click.style(_LOGO, fg="green"))
+    click.echo(click.style(f"  AgentTrace {_version()}", fg="green", bold=True))
+    click.echo("  observability for AI agents\n")
+    click.echo("  Running the AgentTrace web UI:")
+    for label, value in (
+        ("URL", base),
+        ("API", f"{base}/api"),
+        ("WebSocket", f"ws://{host}:{port}/ws"),
+        ("Database", db_display),
+        ("Docs", _DOCS_URL),
+    ):
+        click.echo(f"    {label + ':':11} {value}")
+    click.echo("\n  Press CTRL+C to stop.\n")
+
 
 @click.group()
 @click.version_option(package_name="agenttrace")
@@ -35,7 +86,7 @@ def ui(host: str, port: int, database_url: str | None) -> None:
 
     import uvicorn
 
-    click.echo(f"[AgentTrace] Starting at http://{host}:{port}")
+    _print_banner(host, port)
     uvicorn.run("agenttrace.server.app:app", host=host, port=port, log_level="info")
 
 
