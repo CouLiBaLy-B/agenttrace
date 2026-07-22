@@ -1,0 +1,29 @@
+name: docs
+
+# Builds the MkDocs site and publishes it to the `gh-pages` branch. Enable it
+# once in the repo: Settings → Pages → Source = "Deploy from a branch",
+# Branch = `gh-pages` / `/ (root)`.
+on:
+  push:
+    branches: [main, dev]
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r docs/requirements.txt
+      - run: mkdocs gh-deploy --force --clean

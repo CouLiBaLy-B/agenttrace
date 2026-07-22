@@ -1,0 +1,62 @@
+site_name: AgentTrace
+site_description: Observability for AI agents — a live sequence-diagram dashboard for deepagents / LangChain runs.
+site_url: https://coulibaly-b.github.io/agenttrace/
+repo_url: https://github.com/CouLiBaLy-B/agenttrace
+repo_name: CouLiBaLy-B/agenttrace
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - content.code.annotate
+    - toc.follow
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Installation: install.md
+      - Quickstart: quickstart.md
+  - LangChain integration:
+      - Middleware: integration-middleware.md
+      - Callback handler: integration-callback.md
+      - Event contract: events.md
+  - Operating:
+      - CLI reference: cli.md
+      - Deployment: deployment.md
+  - Reference:
+      - User manual: user-manual.md
+      - Functional documentation: functional-documentation.md
