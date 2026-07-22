@@ -1,0 +1,2924 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Observability for AI agents — a live sequence-diagram dashboard for deepagents / LangChain runs.">
+      
+      
+      
+        <link rel="canonical" href="https://coulibaly-b.github.io/agenttrace/functional-documentation/">
+      
+      
+        <link rel="prev" href="../user-manual/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Functional documentation - AgentTrace</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="teal">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#agenttrace-documentation-fonctionnelle" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="AgentTrace" class="md-header__button md-logo" aria-label="AgentTrace" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            AgentTrace
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Functional documentation
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/CouLiBaLy-B/agenttrace" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    CouLiBaLy-B/agenttrace
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="AgentTrace" class="md-nav__button md-logo" aria-label="AgentTrace" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    AgentTrace
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/CouLiBaLy-B/agenttrace" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    CouLiBaLy-B/agenttrace
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LangChain integration
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    LangChain integration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration-middleware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Middleware
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration-callback/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Callback handler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operating
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operating
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user-manual/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User manual
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Functional documentation
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Functional documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-presentation-du-produit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Présentation du produit
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Présentation du produit">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-problematique" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Problématique
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-solution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Solution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-cas-dusage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Cas d'usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-public-cible" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 Public cible
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-vue-densemble" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Vue d'ensemble
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-composants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Composants
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.2 Composants">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#221-application-nextjs-port-3000" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.1 Application Next.js (port 3000)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#222-service-socketio-port-3003" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.2 Service Socket.IO (port 3003)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#223-base-de-donnees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.3 Base de données
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#224-gateway-caddy-port-81" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.4 Gateway Caddy (port 81)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-flux-de-donnees-temps-reel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Flux de données temps réel
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-modele-de-donnees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Modèle de données
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Modèle de données">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-schema-prisma" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Schéma Prisma
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-entites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Entités
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.2 Entités">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#user" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#project" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#event" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#apikey" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ApiKey
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-fonctionnalites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Fonctionnalités
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Fonctionnalités">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-types-devenements-et-code-couleur" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Types d'événements et code couleur
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-participants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Participants
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-le-diagramme-de-sequence-live-composant-central" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Le diagramme de séquence live (composant central)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-mode-replay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 Mode replay
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-panneau-de-detail-devenement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 Panneau de détail d'événement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#46-etat-listening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.6 État "listening"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#47-authentification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.7 Authentification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#48-gestion-des-projets-crud" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.8 Gestion des projets (CRUD)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#49-gestion-des-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.9 Gestion des runs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#410-dashboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.10 Dashboard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#411-page-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.11 Page Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#412-optimistic-updates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.12 Optimistic updates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#413-etats-vides" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.13 États vides
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#414-loading-states" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.14 Loading states
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#415-design-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.15 Design system
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#416-responsive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.16 Responsive
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-api-dingestion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. API d'ingestion
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. API d&#39;ingestion">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-endpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Endpoint
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-corps-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Corps (JSON)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-reponses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Réponses
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-autres-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Autres endpoints
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-securite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Sécurité
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-deploiement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Déploiement
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Déploiement">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-docker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Docker
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-production" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Production
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 CI
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-limitations-roadmap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Limitations &amp; roadmap
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Limitations &amp; roadmap">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-implemente" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Implémenté
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-nice-to-haves-non-faits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Nice-to-haves non faits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-axes-damelioration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Axes d'amélioration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-presentation-du-produit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Présentation du produit
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Présentation du produit">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-problematique" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Problématique
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-solution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Solution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-cas-dusage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Cas d'usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-public-cible" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 Public cible
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-vue-densemble" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Vue d'ensemble
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-composants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Composants
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.2 Composants">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#221-application-nextjs-port-3000" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.1 Application Next.js (port 3000)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#222-service-socketio-port-3003" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.2 Service Socket.IO (port 3003)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#223-base-de-donnees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.3 Base de données
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#224-gateway-caddy-port-81" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.4 Gateway Caddy (port 81)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-flux-de-donnees-temps-reel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Flux de données temps réel
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-modele-de-donnees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Modèle de données
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Modèle de données">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-schema-prisma" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Schéma Prisma
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-entites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Entités
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.2 Entités">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#user" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#project" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#event" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#apikey" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ApiKey
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-fonctionnalites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Fonctionnalités
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Fonctionnalités">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-types-devenements-et-code-couleur" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Types d'événements et code couleur
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-participants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Participants
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-le-diagramme-de-sequence-live-composant-central" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Le diagramme de séquence live (composant central)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-mode-replay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 Mode replay
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-panneau-de-detail-devenement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 Panneau de détail d'événement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#46-etat-listening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.6 État "listening"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#47-authentification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.7 Authentification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#48-gestion-des-projets-crud" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.8 Gestion des projets (CRUD)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#49-gestion-des-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.9 Gestion des runs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#410-dashboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.10 Dashboard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#411-page-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.11 Page Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#412-optimistic-updates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.12 Optimistic updates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#413-etats-vides" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.13 États vides
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#414-loading-states" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.14 Loading states
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#415-design-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.15 Design system
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#416-responsive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.16 Responsive
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-api-dingestion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. API d'ingestion
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. API d&#39;ingestion">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-endpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Endpoint
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-corps-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Corps (JSON)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-reponses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Réponses
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-autres-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Autres endpoints
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-securite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Sécurité
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-deploiement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Déploiement
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Déploiement">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-docker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Docker
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-production" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Production
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 CI
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-limitations-roadmap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Limitations &amp; roadmap
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Limitations &amp; roadmap">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-implemente" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Implémenté
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-nice-to-haves-non-faits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Nice-to-haves non faits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-axes-damelioration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Axes d'amélioration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="agenttrace-documentation-fonctionnelle">AgentTrace — Documentation fonctionnelle<a class="headerlink" href="#agenttrace-documentation-fonctionnelle" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>Plateforme d'observabilité pour ingénieurs IA construisant et déboguant des systèmes autonomes ou multi-agents. Le diagramme de séquence live est l'élément central du produit.</p>
+</blockquote>
+<hr />
+<h2 id="1-presentation-du-produit">1. Présentation du produit<a class="headerlink" href="#1-presentation-du-produit" title="Permanent link">&para;</a></h2>
+<h3 id="11-problematique">1.1 Problématique<a class="headerlink" href="#11-problematique" title="Permanent link">&para;</a></h3>
+<p>Quand un agent autonome (ou un orchestrateur multi-agents) tourne, il enchaîne des appels LLM, des appels d'outils, des délégations à des sous-agents et des erreurs — le tout de façon asynchrone et difficile à suivre. Les logs traditionnels ne montrent pas <strong>qui a parlé à qui, dans quel ordre, et combien de temps</strong>. Sans cette visibilité, déboguer un agent qui se trompe ou boucle devient un travail d'archéologie.</p>
+<h3 id="12-solution">1.2 Solution<a class="headerlink" href="#12-solution" title="Permanent link">&para;</a></h3>
+<p>AgentTrace stream les événements d'un agent en temps réel vers un <strong>diagramme de séquence animé inspiré d'UML</strong> : une ligne de vie verticale par participant (User, Orchestrator, LLM, chaque outil, chaque sous-agent), chaque événement apparaissant comme une flèche horizontale de haut en bas dans l'ordre chronologique. On voit littéralement les signaux se déplacer dans le système.</p>
+<h3 id="13-cas-dusage">1.3 Cas d'usage<a class="headerlink" href="#13-cas-dusage" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Cas</th>
+<th>Bénéfice</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Déboguer un agent qui boucle</td>
+<td>Le diagramme montre la séquence exacte des appels et où le cycle recommence</td>
+</tr>
+<tr>
+<td>Comprendre un échec intermittent</td>
+<td>Le mode replay rejoue le run image par image (0.5×/1×/2×/instant)</td>
+</tr>
+<tr>
+<td>Auditer une décision d'agent</td>
+<td>Le panneau latéral expose le payload complet (prompt, résultat, latence) de chaque événement</td>
+</tr>
+<tr>
+<td>Comparer des runs</td>
+<td>Le dashboard agrège taux de succès, durée moyenne, mix d'événements par projet</td>
+</tr>
+<tr>
+<td>Surveiller un agent en production</td>
+<td>Le mode "listening" affiche les événements dès qu'ils arrivent, sans refresh</td>
+</tr>
+</tbody>
+</table>
+<h3 id="14-public-cible">1.4 Public cible<a class="headerlink" href="#14-public-cible" title="Permanent link">&para;</a></h3>
+<p>Ingénieurs IA et équipes ML ops qui :
+- construisent des agents LangChain/LangGraph/DeepAgents/CrewAI/AutoGen
+- ont besoin d'inspecter le comportement runtime d'un agent
+- veulent un équivalent du "debugger pas-à-pas" pour les systèmes d'agents</p>
+<hr />
+<h2 id="2-architecture">2. Architecture<a class="headerlink" href="#2-architecture" title="Permanent link">&para;</a></h2>
+<h3 id="21-vue-densemble">2.1 Vue d'ensemble<a class="headerlink" href="#21-vue-densemble" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌─────────────────────────────────────────────────────────────┐
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│                    Navigateur (client)                       │
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│  ┌──────────────┐  ┌────────────────┐  ┌─────────────────┐  │
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│  │  App Shell   │  │ Diagramme SVG  │  │  Panneau détail │  │
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│  │  (sidebar +  │  │   (lifelines + │  │  (payload,      │  │
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│  │   6 vues)    │  │   flèches)     │  │   latence)      │  │
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│  └──────┬───────┘  └────────┬───────┘  └─────────────────┘  │
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│         │ fetch REST         │ Socket.IO (ws)                │
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>└─────────┼────────────────────┼──────────────────────────────┘
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>          │                    │ io(&quot;/?XTransformPort=3003&quot;)
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>          ▼                    ▼
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>┌─────────────────────┐  ┌──────────────────────────────────┐
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>│  Next.js :3000      │  │  Socket.IO service :3003         │
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>│  (App Router)       │  │  (mini-service Bun)              │
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>│                     │  │                                  │
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>│  ┌───────────────┐  │  │  • rooms par runId               │
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>│  │ API routes    │──┼──│▶ • broadcast event → abonnés     │
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>│  │ /api/events   │  │  │ • replay (scheduler par client) │
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>│  │ /api/projects │  │  │   vitesse 0.5×/1×/2×/instant    │
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>│  │ /api/runs     │  │  └──────────────────────────────────┘
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>│  │ /api/keys     │  │
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>│  │ /api/stats    │  │  (le serveur Next.js se connecte au
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>│  │ /api/auth/*   │  │   socket service comme client pour
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>│  └──────┬────────┘  │   forwarder les events ingestion →
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>│         │           │   navigateurs abonnés)
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>│         ▼           │
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>│  ┌───────────────┐  │
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>│  │   Prisma      │  │
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>│  │   (SQLite)    │  │
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>│  └───────────────┘  │
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>└─────────────────────┘
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>          ▲
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>          │ POST /api/events (Bearer atr_...)
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>          │
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>┌─────────┴───────────────────────────────────────────────────┐
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>│              Agent externe (Python / TS / DeepAgents)        │
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>│  émet : handoff, llm_call, tool_call, tool_result, error,    │
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>│         final_answer                                         │
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>└──────────────────────────────────────────────────────────────┘
+</code></pre></div>
+<h3 id="22-composants">2.2 Composants<a class="headerlink" href="#22-composants" title="Permanent link">&para;</a></h3>
+<h4 id="221-application-nextjs-port-3000">2.2.1 Application Next.js (port 3000)<a class="headerlink" href="#221-application-nextjs-port-3000" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Framework</strong> : Next.js 16, App Router, TypeScript, <code>output: standalone</code></li>
+<li><strong>Auth</strong> : NextAuth.js v4 (credentials email/password, JWT session)</li>
+<li><strong>State</strong> : TanStack Query (server state) + Zustand (navigation locale)</li>
+<li><strong>UI</strong> : Tailwind CSS 4 + shadcn/ui (New York), thème oscilloscope/phosphor</li>
+<li><strong>Animations</strong> : Framer Motion (draw-in des flèches, transitions)</li>
+</ul>
+<h4 id="222-service-socketio-port-3003">2.2.2 Service Socket.IO (port 3003)<a class="headerlink" href="#222-service-socketio-port-3003" title="Permanent link">&para;</a></h4>
+<p>Mini-service Bun indépendant, path <code>/</code> (pour le gateway Caddy). Responsabilités :
+- <strong>Rooms par run</strong> : un client s'abonne à <code>run:&lt;id&gt;</code> et ne reçoit que les events de ce run
+- <strong>Forward server→client</strong> : le serveur Next.js s'y connecte comme client et émet <code>ingest:event</code> / <code>ingest:run</code> qui sont diffusés aux rooms
+- <strong>Replay scheduler</strong> : chaque client peut demander <code>replay { events, speed }</code> et reçoit les événements un par un selon l'échelle de temps demandée</p>
+<h4 id="223-base-de-donnees">2.2.3 Base de données<a class="headerlink" href="#223-base-de-donnees" title="Permanent link">&para;</a></h4>
+<p>Prisma + SQLite (par défaut ; Postgres en production). Voir §3.</p>
+<h4 id="224-gateway-caddy-port-81">2.2.4 Gateway Caddy (port 81)<a class="headerlink" href="#224-gateway-caddy-port-81" title="Permanent link">&para;</a></h4>
+<p>Un seul port exposé à l'utilisateur. Le gateway route :
+- <code>/?XTransformPort=3003</code> → service socket (pour les WebSockets)
+- tout le reste → Next.js :3000</p>
+<h3 id="23-flux-de-donnees-temps-reel">2.3 Flux de données temps réel<a class="headerlink" href="#23-flux-de-donnees-temps-reel" title="Permanent link">&para;</a></h3>
+<p>Quand un agent externe émet un événement :</p>
+<ol>
+<li><code>POST /api/events</code> avec <code>Authorization: Bearer atr_&lt;key&gt;</code></li>
+<li>Le route authentifie la clé (hash SHA-256, lookup en base), vérifie le <code>runId</code> appartient au projet</li>
+<li>L'événement est <strong>persisté en base</strong> (table <code>Event</code>, <code>seq</code> auto-incrémenté par run)</li>
+<li>Le serveur Next.js <strong>forward</strong> au service socket via son client persistant (<code>ingest:event</code>)</li>
+<li>Le service socket <strong>diffuse</strong> à tous les navigateurs abonnés à <code>run:&lt;id&gt;</code> via l'événement <code>event</code></li>
+<li>Le composant <code>SequenceDiagram</code> reçoit l'événement, l'ajoute à son state, la flèche <strong>s'anime</strong> (Framer Motion <code>pathLength</code>) et l'<strong>auto-scroll</strong> la garde visible</li>
+</ol>
+<p>Latence typique bout-en-bout : &lt; 100ms.</p>
+<hr />
+<h2 id="3-modele-de-donnees">3. Modèle de données<a class="headerlink" href="#3-modele-de-donnees" title="Permanent link">&para;</a></h2>
+<h3 id="31-schema-prisma">3.1 Schéma Prisma<a class="headerlink" href="#31-schema-prisma" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>User 1───* Project 1───* Run 1───* Event
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>                └── 1───* ApiKey
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>User 1───* Account
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>User 1───* Session
+</code></pre></div>
+<h3 id="32-entites">3.2 Entités<a class="headerlink" href="#32-entites" title="Permanent link">&para;</a></h3>
+<h4 id="user">User<a class="headerlink" href="#user" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>string (cuid)</td>
+<td>PK</td>
+</tr>
+<tr>
+<td>email</td>
+<td>string (unique)</td>
+<td>login</td>
+</tr>
+<tr>
+<td>name</td>
+<td>string?</td>
+<td>affiché dans la sidebar</td>
+</tr>
+<tr>
+<td>passwordHash</td>
+<td>string?</td>
+<td>bcrypt (null si OAuth)</td>
+</tr>
+<tr>
+<td>createdAt / updatedAt</td>
+<td>DateTime</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h4 id="project">Project<a class="headerlink" href="#project" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>string (cuid)</td>
+<td>PK</td>
+</tr>
+<tr>
+<td>name</td>
+<td>string</td>
+<td>ex. "Customer Support Agent"</td>
+</tr>
+<tr>
+<td>description</td>
+<td>string?</td>
+<td></td>
+</tr>
+<tr>
+<td>userId</td>
+<td>string</td>
+<td>FK User (propriétaire)</td>
+</tr>
+<tr>
+<td>createdAt / updatedAt</td>
+<td>DateTime</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Un projet = un agent. Regroupe ses runs. <strong>Privé par utilisateur.</strong></p>
+<h4 id="run">Run<a class="headerlink" href="#run" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>string (cuid)</td>
+<td>PK</td>
+</tr>
+<tr>
+<td>projectId</td>
+<td>string</td>
+<td>FK Project</td>
+</tr>
+<tr>
+<td>name</td>
+<td>string</td>
+<td>ex. "Refund — Order #4821"</td>
+</tr>
+<tr>
+<td>status</td>
+<td>string</td>
+<td><code>running</code> | <code>completed</code> | <code>failed</code></td>
+</tr>
+<tr>
+<td>startedAt</td>
+<td>DateTime</td>
+<td>auto à la création</td>
+</tr>
+<tr>
+<td>endedAt</td>
+<td>DateTime?</td>
+<td>set quand <code>endRun</code> reçu</td>
+</tr>
+</tbody>
+</table>
+<h4 id="event">Event<a class="headerlink" href="#event" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>string (cuid)</td>
+<td>PK</td>
+</tr>
+<tr>
+<td>runId</td>
+<td>string</td>
+<td>FK Run</td>
+</tr>
+<tr>
+<td>timestamp</td>
+<td>DateTime</td>
+<td>auto</td>
+</tr>
+<tr>
+<td>seq</td>
+<td>int</td>
+<td>ordre dans le run (0, 1, 2…)</td>
+</tr>
+<tr>
+<td>source</td>
+<td>string</td>
+<td>participant émetteur (ex. "Orchestrator")</td>
+</tr>
+<tr>
+<td>target</td>
+<td>string</td>
+<td>participant destinataire (ex. "web_search")</td>
+</tr>
+<tr>
+<td>type</td>
+<td>string</td>
+<td>voir §4.1</td>
+</tr>
+<tr>
+<td>label</td>
+<td>string?</td>
+<td>court résumé affiché sur la flèche</td>
+</tr>
+<tr>
+<td>payload</td>
+<td>string (JSON)</td>
+<td>prompt, résultat, args, erreur…</td>
+</tr>
+<tr>
+<td>durationMs</td>
+<td>int?</td>
+<td>latence mesurée côté agent</td>
+</tr>
+<tr>
+<td>status</td>
+<td>string</td>
+<td><code>ok</code> | <code>error</code> | <code>pending</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="apikey">ApiKey<a class="headerlink" href="#apikey" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>string (cuid)</td>
+<td>PK</td>
+</tr>
+<tr>
+<td>projectId</td>
+<td>string</td>
+<td>FK Project</td>
+</tr>
+<tr>
+<td>keyHash</td>
+<td>string (unique)</td>
+<td>SHA-256 de la clé complète</td>
+</tr>
+<tr>
+<td>prefix</td>
+<td>string</td>
+<td><code>atr_xxxxxxxx</code> (pour affichage)</td>
+</tr>
+<tr>
+<td>label</td>
+<td>string?</td>
+<td>ex. "Default key"</td>
+</tr>
+<tr>
+<td>lastUsedAt</td>
+<td>DateTime?</td>
+<td>mis à jour à chaque ingestion</td>
+</tr>
+</tbody>
+</table>
+<p>La clé complète (<code>atr_&lt;32 hex&gt;</code>) n'est montrée qu'une fois à la création. Le serveur ne stocke que son hash.</p>
+<hr />
+<h2 id="4-fonctionnalites">4. Fonctionnalités<a class="headerlink" href="#4-fonctionnalites" title="Permanent link">&para;</a></h2>
+<h3 id="41-types-devenements-et-code-couleur">4.1 Types d'événements et code couleur<a class="headerlink" href="#41-types-devenements-et-code-couleur" title="Permanent link">&para;</a></h3>
+<p>Chaque type d'événement a une couleur dédiée (cohérente partout : flèches, badges, barres du dashboard, légende) :</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Couleur</th>
+<th>Sens</th>
+<th>Flèche</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>llm_call</code></td>
+<td>cyan <code>#22d3ee</code></td>
+<td>Appel à un modèle de langage</td>
+<td>Orchestrator → LLM</td>
+</tr>
+<tr>
+<td><code>tool_call</code></td>
+<td>violet <code>#a78bfa</code></td>
+<td>L'agent invoque un outil</td>
+<td>Orchestrator → tool</td>
+</tr>
+<tr>
+<td><code>tool_result</code></td>
+<td>vert <code>#34d399</code></td>
+<td>L'outil retourne son résultat</td>
+<td>tool → Orchestrator</td>
+</tr>
+<tr>
+<td><code>handoff</code></td>
+<td>ambre <code>#fbbf24</code></td>
+<td>Délégation à un sous-agent</td>
+<td>Orchestrator → Sub-agent</td>
+</tr>
+<tr>
+<td><code>error</code></td>
+<td>rouge <code>#f87171</code></td>
+<td>Échec (timeout, exception…)</td>
+<td>tool → Orchestrator</td>
+</tr>
+<tr>
+<td><code>final_answer</code></td>
+<td>rose <code>#f472b6</code></td>
+<td>Réponse finale à l'utilisateur</td>
+<td>Orchestrator → User</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42-participants">4.2 Participants<a class="headerlink" href="#42-participants" title="Permanent link">&para;</a></h3>
+<p>Détectés automatiquement à partir du flux d'événements (première occurrence dans <code>source</code> ou <code>target</code>). Chaque participant a un <strong>kind</strong> déduit de son nom, qui détermine son icône et la teinte de sa ligne de vie :</p>
+<table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Détecté si le nom contient</th>
+<th>Icône</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>user</code></td>
+<td>"user"</td>
+<td>User</td>
+</tr>
+<tr>
+<td><code>orchestrator</code></td>
+<td>"orchestrator", "agent", "main"</td>
+<td>Cpu</td>
+</tr>
+<tr>
+<td><code>llm</code></td>
+<td>"llm", "gpt", "claude", "model"</td>
+<td>BrainCircuit</td>
+</tr>
+<tr>
+<td><code>subagent</code></td>
+<td>"sub-agent", "subagent", "research", "assistant"</td>
+<td>Bot</td>
+</tr>
+<tr>
+<td><code>tool</code></td>
+<td>(par défaut)</td>
+<td>Wrench</td>
+</tr>
+</tbody>
+</table>
+<p>Les participants apparaissent dans l'ordre de première apparition (gauche → droite).</p>
+<h3 id="43-le-diagramme-de-sequence-live-composant-central">4.3 Le diagramme de séquence live (composant central)<a class="headerlink" href="#43-le-diagramme-de-sequence-live-composant-central" title="Permanent link">&para;</a></h3>
+<p>C'est un <strong>vrai composant React/SVG</strong>, pas une lib de diagrammes re-rendue à chaque update. Caractéristiques :</p>
+<ul>
+<li><strong>Lignes de vie verticales</strong> par participant, avec en-tête (icône + nom + kind), lignes pointillées</li>
+<li><strong>Flèches horizontales</strong> entre lignes de vie, dessinées de haut en bas par ordre chrono</li>
+<li><strong>Animation d'entrée</strong> : chaque flèche se dessine via <code>pathLength</code> Framer Motion (0→1 en 400ms), la pointe apparaît après le tracé, le label glisse en place</li>
+<li><strong>Auto-scroll</strong> : le canvas scrolle pour garder le dernier événement visible (si l'utilisateur est près du bas)</li>
+<li><strong>Curseur live</strong> : pendant un run <code>running</code>, un point phosphore balaie la ligne du bas</li>
+<li><strong>Clic sur une flèche</strong> → ouvre le panneau latéral (desktop) ou la sheet (mobile) avec le payload complet</li>
+<li><strong>Sélection</strong> : la flèche cliquée est surlignée (halo coloré)</li>
+<li><strong>Grille d'oscilloscope</strong> : fond CRT avec graticule + scanlines, cohérent avec l'identité du produit</li>
+<li><strong>Axe temporel</strong> : horodatage HH:MM:SS.ms à gauche de chaque événement</li>
+<li><strong>Self-loop</strong> : si <code>source === target</code>, la flèche fait une boucle courbe</li>
+</ul>
+<p><strong>Responsive</strong> : sur écran large (≥768px), lifelines côte à côte ; sur mobile, bascule en <strong>timeline empilée chronologique</strong> (cartes par participant, flèches remplacées par un layout vertical).</p>
+<h3 id="44-mode-replay">4.4 Mode replay<a class="headerlink" href="#44-mode-replay" title="Permanent link">&para;</a></h3>
+<p>Pour tout run (<code>completed</code>, <code>failed</code>, ou même <code>running</code>) :</p>
+<ul>
+<li>Bouton <strong>Replay</strong> → entre en mode replay (gèle la vue live, positionne à la fin)</li>
+<li>Contrôles : <strong>Restart</strong> ⏮ · <strong>Play/Pause</strong> ▶/⏸ · <strong>Skip to end</strong> ⏭ · <strong>scrubber</strong> · <strong>sélecteur de vitesse</strong> · <strong>Exit</strong></li>
+<li>Vitesses : <strong>0.5×</strong> (ralenti), <strong>1×</strong> (temps réel), <strong>2×</strong> (accéléré), <strong>instant</strong> (tout d'un coup)</li>
+<li>La lecture schedule les événements selon leur <code>timestamp</code> réel (offset depuis le 1er événement), donc un run qui a duré 4s se rejoue en 4s à 1×, 8s à 0.5×, 2s à 2×</li>
+<li>L'utilisateur peut <strong>scrubber</strong> n'importe quand pour sauter à un événement précis</li>
+<li>Le serveur socket gère le scheduling par client (un replay n'affecte pas les autres clients abonnés)</li>
+</ul>
+<h3 id="45-panneau-de-detail-devenement">4.5 Panneau de détail d'événement<a class="headerlink" href="#45-panneau-de-detail-devenement" title="Permanent link">&para;</a></h3>
+<p>Au clic sur une flèche (ou carte mobile) :</p>
+<ul>
+<li><strong>Badge type</strong> coloré + label</li>
+<li><strong>Source → Target</strong> avec icônes de kind</li>
+<li><strong>Métadonnées</strong> : <code>#seq</code>, <code>status</code>, <code>timestamp</code>, <code>duration</code></li>
+<li><strong>Payload</strong> : JSON formaté et scrollable (prompt, résultat, args, erreur…)</li>
+</ul>
+<h3 id="46-etat-listening">4.6 État "listening"<a class="headerlink" href="#46-etat-listening" title="Permanent link">&para;</a></h3>
+<p>Quand un run <code>running</code> n'a pas encore d'événement, le canvas affiche un <strong>radar animé</strong> (cercles concentriques + sweep rotatif) avec le message <em>"Listening for your agent's first event"</em> et un rappel du endpoint <code>POST /api/events</code>. Le 1er événement qui arrive remplace immédiatement cet état par le diagramme.</p>
+<h3 id="47-authentification">4.7 Authentification<a class="headerlink" href="#47-authentification" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Email/mot de passe</strong> via NextAuth credentials provider (bcrypt hash)</li>
+<li><strong>Mode signup</strong> : crée le user + <strong>auto-seed 3 projets de démo</strong> (Customer Support Agent, Research Assistant, Code Review Bot)</li>
+<li><strong>"Explore the live demo"</strong> : bouton one-click qui crée/identifie un compte <code>demo@agenttrace.dev</code> préchargé</li>
+<li><strong>Session JWT</strong> (pas de DB session pour rester léger)</li>
+<li><strong>Pas d'OAuth Google</strong> dans cette version (le type OAuth est prêt côté NextAuth mais le provider n'est pas configuré — voir §Limitations)</li>
+</ul>
+<h3 id="48-gestion-des-projets-crud">4.8 Gestion des projets (CRUD)<a class="headerlink" href="#48-gestion-des-projets-crud" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Liste</strong> : cartes avec nom, description, nb de runs, dernière activité, actions (éditer/supprimer)</li>
+<li><strong>Création</strong> : dialog nom + description → génère aussi une clé API par défaut</li>
+<li><strong>Édition</strong> : renomme / change la description (optimistic update + rollback)</li>
+<li><strong>Suppression</strong> : confirmation required, cascade (runs + events + keys)</li>
+<li><strong>Accès</strong> : un user ne voit que ses propres projets (filter <code>userId</code> à chaque query)</li>
+</ul>
+<h3 id="49-gestion-des-runs">4.9 Gestion des runs<a class="headerlink" href="#49-gestion-des-runs" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Création</strong> : bouton "Start a run" dans la vue projet → ouvre directement la vue run en mode listening</li>
+<li><strong>Fermeture</strong> : bouton "Close run" (marquer completed ou failed)</li>
+<li><strong>Suppression</strong> : avec confirmation</li>
+<li><strong>Filtre</strong> par nom dans la liste</li>
+</ul>
+<h3 id="410-dashboard">4.10 Dashboard<a class="headerlink" href="#410-dashboard" title="Permanent link">&para;</a></h3>
+<p>Stats agrégées pour l'utilisateur connecté :
+- <strong>5 cartes</strong> : Projects, Total runs, Success rate, Avg duration, Events captured
+- <strong>Signal mix</strong> : barres horizontales par type d'événement (% du total)
+- <strong>Recent activity</strong> : 8 derniers runs (cliquables → vue run)
+- <strong>Per-project grid</strong> : cartes projet avec runs + success rate + dernière activité
+- <strong>Empty state</strong> : si 0 projet → radar + CTA "Create your first project"</p>
+<h3 id="411-page-integration">4.11 Page Integration<a class="headerlink" href="#411-page-integration" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Sélecteur de projet</strong></li>
+<li><strong>Bouton "Regenerate key"</strong> → crée une nouvelle clé, l'affiche une fois (bannière ambre avec copie)</li>
+<li><strong>Liste des clés</strong> : prefix, label, dernière utilisation, bouton revoke</li>
+<li><strong>3 snippets</strong> copiables : Python (HTTP brut), TypeScript (fetch), <strong>DeepAgents</strong> (<code>AgentTraceMiddleware</code>, package publié <code>agenttrace-langchain</code>)</li>
+<li><strong>Référence API</strong> : endpoints + schéma du body d'événement</li>
+</ul>
+<h3 id="412-optimistic-updates">4.12 Optimistic updates<a class="headerlink" href="#412-optimistic-updates" title="Permanent link">&para;</a></h3>
+<p>Création/édition de projet et création de run se font en <strong>optimistic</strong> : l'UI se met à jour instantanément avec un objet temporaire, et <strong>rollback</strong> proprement avec un toast explicatif si le serveur échoue (ex. <em>"Couldn't create the project — rolled back."</em>). Pas d'excuses apologétiques, juste l'état réel.</p>
+<h3 id="413-etats-vides">4.13 États vides<a class="headerlink" href="#413-etats-vides" title="Permanent link">&para;</a></h3>
+<p>Traités comme des <strong>invitations à agir</strong>, pas des placeholders :
+- 0 projet → radar + "Create your first project"
+- Projet sans run → radar + "Listening for your agent's first event" + snippet inline
+- Run sans événement → radar + endpoint de reminder</p>
+<h3 id="414-loading-states">4.14 Loading states<a class="headerlink" href="#414-loading-states" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Skeletons</strong> sur le dashboard, la liste de projets, le détail projet, la vue run</li>
+<li><strong>Boot screen</strong> animé pendant le check de session</li>
+<li><strong>"listening…"</strong> pulsant avant le 1er événement d'un run</li>
+</ul>
+<h3 id="415-design-system">4.15 Design system<a class="headerlink" href="#415-design-system" title="Permanent link">&para;</a></h3>
+<p><strong>Identité visuelle</strong> : oscilloscope / trace-debugger, pas SaaS générique.
+- Fond : charcoal-teal profond (<code>oklch(0.16 0.012 195)</code>)
+- Primaire : vert phosphore (<code>oklch(0.78 0.17 155)</code>) avec glow
+- Événements : cyan/violet/vert/ambre/rouge/rose (cf §4.1)
+- Texture : grille graticule CRT, scanlines, glow text, pulse rings, radar sweep
+- Typo : Geist Sans + Geist Mono (labels en mono uppercase tracking-widest)
+- Scrollbar custom phosphore</p>
+<h3 id="416-responsive">4.16 Responsive<a class="headerlink" href="#416-responsive" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Sidebar</strong> : fixe sur desktop (≥1024px), drawer Sheet sur mobile (bouton hamburger)</li>
+<li><strong>Diagramme</strong> : lifelines côte à côte sur ≥768px, timeline empilée en dessous</li>
+<li><strong>Panneau détail</strong> : sidebar fixe sur ≥1280px, Sheet plein écran sur mobile</li>
+<li><strong>Footer</strong> : sticky en bas, pousse naturellement si contenu long</li>
+</ul>
+<hr />
+<h2 id="5-api-dingestion">5. API d'ingestion<a class="headerlink" href="#5-api-dingestion" title="Permanent link">&para;</a></h2>
+<h3 id="51-endpoint">5.1 Endpoint<a class="headerlink" href="#51-endpoint" title="Permanent link">&para;</a></h3>
+<p><code>POST /api/events</code></p>
+<p><strong>Auth</strong> : <code>Authorization: Bearer atr_&lt;clé projet&gt;</code></p>
+<h3 id="52-corps-json">5.2 Corps (JSON)<a class="headerlink" href="#52-corps-json" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>{
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>  &quot;runId&quot;: &quot;run_abc123&quot;,        // null/omit → crée un nouveau run
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>  &quot;source&quot;: &quot;Orchestrator&quot;,
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>  &quot;target&quot;: &quot;web_search&quot;,
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>  &quot;type&quot;: &quot;tool_call&quot;,          // llm_call | tool_call | tool_result | handoff | error | final_answer
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>  &quot;label&quot;: &quot;web_search(query)&quot;, // court, affiché sur la flèche
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>  &quot;payload&quot;: { &quot;args&quot;: {...} }, // any JSON
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>  &quot;durationMs&quot;: 720,
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>  &quot;status&quot;: &quot;ok&quot;,               // ok | error | pending (defaut: ok, ou &quot;error&quot; si type=error)
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>  &quot;endRun&quot;: &quot;completed&quot;         // optionnel: &quot;completed&quot; | &quot;failed&quot; pour fermer le run
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>}
+</code></pre></div>
+<h3 id="53-reponses">5.3 Réponses<a class="headerlink" href="#53-reponses" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Cas</th>
+<th>Status</th>
+<th>Body</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Création de run (<code>runId: null</code>)</td>
+<td>201</td>
+<td><code>{ runId, event: null }</code></td>
+</tr>
+<tr>
+<td>Événement ingéré</td>
+<td>201</td>
+<td><code>{ runId, event }</code></td>
+</tr>
+<tr>
+<td>Fermeture de run (<code>endRun</code>)</td>
+<td>200</td>
+<td><code>{ runId, closed: true, status }</code></td>
+</tr>
+<tr>
+<td>Clé invalide</td>
+<td>401</td>
+<td><code>{ error }</code></td>
+</tr>
+<tr>
+<td>Run non trouvé / mauvais projet</td>
+<td>404</td>
+<td><code>{ error }</code></td>
+</tr>
+<tr>
+<td>Champ manquant</td>
+<td>400</td>
+<td><code>{ error }</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="54-autres-endpoints">5.4 Autres endpoints<a class="headerlink" href="#54-autres-endpoints" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Méthode</th>
+<th>Path</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/projects</code></td>
+<td>Liste projets user (avec counts)</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/projects</code></td>
+<td>Créer projet (+ clé auto)</td>
+</tr>
+<tr>
+<td>GET/PATCH/DELETE</td>
+<td><code>/api/projects/[id]</code></td>
+<td>Détail / renomme / supprime</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/api/projects/[id]/runs</code></td>
+<td>Liste runs / crée run</td>
+</tr>
+<tr>
+<td>GET/PATCH/DELETE</td>
+<td><code>/api/runs/[id]</code></td>
+<td>Détail (avec events) / update status / supprime</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/runs/[id]/events</code></td>
+<td>Events d'un run</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/api/keys?projectId=</code></td>
+<td>Liste / régénère clés</td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td><code>/api/keys/[id]?projectId=</code></td>
+<td>Révoque une clé</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/stats</code></td>
+<td>Stats dashboard</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/seed</code></td>
+<td>Re-seed les 3 projets démo</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/api/auth/*</code></td>
+<td>NextAuth (signin, signup, session)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6-securite">6. Sécurité<a class="headerlink" href="#6-securite" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Mots de passe</strong> : bcrypt (cost 10)</li>
+<li><strong>Clés API</strong> : hash SHA-256 stocké, clé complète jamais persistée, montrée une seule fois à la création</li>
+<li><strong>Isolation</strong> : chaque query filtre par <code>userId</code> (un user ne peut pas accéder aux projets/runs d'un autre)</li>
+<li><strong>Auth ingestion</strong> : la clé API authentifie le projet, pas la session user — un agent externe n'a pas besoin de credentials user</li>
+<li><strong>NextAuth secret</strong> : requis (<code>NEXTAUTH_SECRET</code>), utilisé pour signer les JWT</li>
+<li><strong>Limitations</strong> (à durcir pour prod) :</li>
+<li>Pas de rate limiting sur <code>/api/events</code></li>
+<li>Pas de CSRF custom (NextAuth gère le sien)</li>
+<li>SQLite par défaut (voir §7 pour Postgres)</li>
+</ul>
+<hr />
+<h2 id="7-deploiement">7. Déploiement<a class="headerlink" href="#7-deploiement" title="Permanent link">&para;</a></h2>
+<h3 id="71-docker">7.1 Docker<a class="headerlink" href="#71-docker" title="Permanent link">&para;</a></h3>
+<p>Deux images depuis un <code>Dockerfile</code> multi-stage :</p>
+<table>
+<thead>
+<tr>
+<th>Image</th>
+<th>Target</th>
+<th>Port</th>
+<th>Rôle</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agenttrace-web</code></td>
+<td><code>web</code></td>
+<td>3000</td>
+<td>Next.js standalone + Prisma</td>
+</tr>
+<tr>
+<td><code>agenttrace-socket</code></td>
+<td><code>socket</code></td>
+<td>3003</td>
+<td>Socket.IO service</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>--build
+</code></pre></div>
+<p>Le <code>docker-compose.yml</code> câble <code>SOCKET_SERVICE_URL=http://socket:3003</code> côté web, et un volume persiste la base SQLite.</p>
+<h3 id="72-production">7.2 Production<a class="headerlink" href="#72-production" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Base</strong> : basculer sur Postgres — <code>DATABASE_URL=postgresql://...</code> + <code>provider = "postgresql"</code> dans <code>schema.prisma</code></li>
+<li><strong>Secrets</strong> : <code>NEXTAUTH_SECRET</code> via <code>openssl rand -base64 32</code>, <code>NEXTAUTH_URL</code> = URL publique</li>
+<li><strong>Reverse proxy</strong> : Caddy/Nginx devant, qui route <code>?XTransformPort=3003</code> vers le service socket (comme en dev)</li>
+</ul>
+<h3 id="73-ci">7.3 CI<a class="headerlink" href="#73-ci" title="Permanent link">&para;</a></h3>
+<p><code>.github/workflows/ci.yml</code> : lint → typecheck → build → docker build + smoke test, sur chaque push/PR. Cache GHA activé.</p>
+<hr />
+<h2 id="8-limitations-roadmap">8. Limitations &amp; roadmap<a class="headerlink" href="#8-limitations-roadmap" title="Permanent link">&para;</a></h2>
+<h3 id="81-implemente">8.1 Implémenté<a class="headerlink" href="#81-implemente" title="Permanent link">&para;</a></h3>
+<p>Tout le périmètre du prompt initial : diagramme live, replay, CRUD, ingestion API, 3 projets seed, auth, design oscilloscope, responsive, Docker, CI, snippets Python/TS/DeepAgents.</p>
+<h3 id="82-nice-to-haves-non-faits">8.2 Nice-to-haves non faits<a class="headerlink" href="#82-nice-to-haves-non-faits" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Team/workspace sharing</strong> : les projets sont privés par user (pas de partage multi-user)</li>
+<li><strong>OpenTelemetry</strong> : ingestion uniquement via le format AgentTrace natif (pas de receiver OTel)</li>
+<li><strong>Export</strong> : pas d'export en lien partageable read-only ni en image statique du diagramme</li>
+<li><strong>OAuth Google</strong> : provider credentials uniquement (l'ajout Google OAuth = 10 lignes dans <code>auth.ts</code>)</li>
+</ul>
+<h3 id="83-axes-damelioration">8.3 Axes d'amélioration<a class="headerlink" href="#83-axes-damelioration" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Rate limiting + quotas par clé</li>
+<li>Search full-text dans les payloads</li>
+<li>Diff entre deux runs</li>
+<li>Streaming des payloads volumineux (truncation actuelle à 500 chars côté callback DeepAgents)</li>
+<li>Alerting (notification Slack/email sur <code>error</code> ou run failed)</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.sections", "navigation.top", "content.code.copy", "content.code.annotate", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

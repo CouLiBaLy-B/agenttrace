@@ -1,0 +1,2 @@
+# Build dependencies for the documentation site (MkDocs Material).
+mkdocs-material>=9.5

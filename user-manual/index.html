@@ -1,0 +1,3273 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Observability for AI agents — a live sequence-diagram dashboard for deepagents / LangChain runs.">
+      
+      
+      
+        <link rel="canonical" href="https://coulibaly-b.github.io/agenttrace/user-manual/">
+      
+      
+        <link rel="prev" href="../deployment/">
+      
+      
+        <link rel="next" href="../functional-documentation/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>User manual - AgentTrace</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="teal">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#agenttrace-mode-demploi" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="AgentTrace" class="md-header__button md-logo" aria-label="AgentTrace" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            AgentTrace
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              User manual
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/CouLiBaLy-B/agenttrace" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    CouLiBaLy-B/agenttrace
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="AgentTrace" class="md-nav__button md-logo" aria-label="AgentTrace" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    AgentTrace
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/CouLiBaLy-B/agenttrace" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    CouLiBaLy-B/agenttrace
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LangChain integration
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    LangChain integration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration-middleware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Middleware
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration-callback/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Callback handler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operating
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operating
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User manual
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User manual
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#sommaire" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sommaire
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-demarrage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Démarrage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Démarrage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-premier-acces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Premier accès
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-trois-facons-dentrer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Trois façons d'entrer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.2 Trois façons d&#39;entrer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-a-explorer-la-demo-recommande-pour-decouvrir" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option A — Explorer la démo (recommandé pour découvrir)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-b-creer-un-compte" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option B — Créer un compte
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-c-se-connecter-a-un-compte-existant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option C — Se connecter à un compte existant
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-navigation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Navigation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-creer-un-projet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Créer un projet
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Créer un projet">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-editer-supprimer-un-projet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Éditer / supprimer un projet
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-demarrer-et-suivre-un-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Démarrer et suivre un run
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Démarrer et suivre un run">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-demarrer-un-run-depuis-lui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Démarrer un run depuis l'UI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-demarrer-un-run-depuis-votre-agent-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Démarrer un run depuis votre agent (API)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-letat-listening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 L'état "listening"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-fermer-un-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 Fermer un run
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-supprimer-un-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 Supprimer un run
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-lire-le-diagramme-de-sequence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Lire le diagramme de séquence
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Lire le diagramme de séquence">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-anatomie" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Anatomie
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-comportement-live" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Comportement live
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-plus-de-6-participants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Plus de 6 participants
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-version-mobile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Version mobile
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-rejouer-un-run-mode-replay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Rejouer un run (mode replay)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Rejouer un run (mode replay)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-entrer-en-replay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Entrer en replay
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-controles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Contrôles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-comment-ca-marche" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Comment ça marche
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64-cas-dusage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 Cas d'usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-inspecter-un-evenement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Inspecter un événement
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Inspecter un événement">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-ouvrir-le-panneau-detail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Ouvrir le panneau détail
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-contenu-du-panneau" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Contenu du panneau
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-gerer-les-cles-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Gérer les clés API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Gérer les clés API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-selectionner-un-projet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Sélectionner un projet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-regenerer-une-cle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Régénérer une clé
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-liste-des-cles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Liste des clés
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#84-securite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.4 Sécurité
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-instrumenter-un-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Instrumenter un agent
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Instrumenter un agent">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-python-http-brut" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 Python (HTTP brut)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#92-typescript" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.2 TypeScript
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#93-deepagents-langchain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.3 DeepAgents (LangChain)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9.3 DeepAgents (LangChain)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#utilisation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Utilisation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ce-que-le-middleware-capture-automatiquement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ce que le middleware capture automatiquement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#variables-denvironnement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variables d'environnement
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-dashboard-stats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Dashboard &amp; stats
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Dashboard &amp; stats">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-les-5-cartes-de-stats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 Les 5 cartes de stats
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-signal-mix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 Signal mix
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#103-recent-activity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3 Recent activity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#104-grille-projets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.4 Grille projets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#105-etat-vide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.5 État vide
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Settings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#111-account" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.1 Account
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#112-demo-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.2 Demo data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#113-preferences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.3 Preferences
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#114-about" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.4 About
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-deploiement-docker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Déploiement Docker
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="12. Déploiement Docker">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#121-build-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12.1 Build &amp; run
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#122-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12.2 Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#123-production-avec-postgres" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12.3 Production avec Postgres
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#124-reverse-proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12.4 Reverse proxy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-faq" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. FAQ
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="13. FAQ">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#q-jai-cree-un-compte-mais-je-ne-vois-aucun-projet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : J'ai créé un compte mais je ne vois aucun projet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-mon-agent-emet-des-evenements-mais-rien-napparait-dans-le-diagramme" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Mon agent émet des événements mais rien n'apparaît dans le diagramme
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-le-badge-indique-connecting-au-lieu-de-listening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Le badge indique "connecting…" au lieu de "listening"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-puis-je-suivre-plusieurs-runs-en-parallele" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Puis-je suivre plusieurs runs en parallèle ?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-les-evenements-arrivent-trop-vite-le-diagramme-lag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Les événements arrivent trop vite, le diagramme lag
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-comment-supprimer-un-run-sans-supprimer-le-projet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Comment supprimer un run sans supprimer le projet ?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-ma-cle-api-a-fuite-que-faire" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Ma clé API a fuité, que faire ?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-puis-je-partager-un-projet-avec-un-collegue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Puis-je partager un projet avec un collègue ?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-le-replay-ne-marche-pas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Le replay ne marche pas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-comment-basculer-en-theme-clair" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Comment basculer en thème clair ?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-mes-evenements-ont-des-payloads-enormes-ca-rame" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Mes événements ont des payloads énormes, ça rame
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-puis-je-exporter-un-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Puis-je exporter un run ?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference-rapide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Référence rapide
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../functional-documentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Functional documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#sommaire" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sommaire
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-demarrage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Démarrage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Démarrage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-premier-acces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Premier accès
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-trois-facons-dentrer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Trois façons d'entrer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.2 Trois façons d&#39;entrer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-a-explorer-la-demo-recommande-pour-decouvrir" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option A — Explorer la démo (recommandé pour découvrir)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-b-creer-un-compte" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option B — Créer un compte
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-c-se-connecter-a-un-compte-existant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option C — Se connecter à un compte existant
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-navigation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Navigation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-creer-un-projet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Créer un projet
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Créer un projet">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-editer-supprimer-un-projet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Éditer / supprimer un projet
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-demarrer-et-suivre-un-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Démarrer et suivre un run
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Démarrer et suivre un run">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-demarrer-un-run-depuis-lui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Démarrer un run depuis l'UI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-demarrer-un-run-depuis-votre-agent-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Démarrer un run depuis votre agent (API)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-letat-listening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 L'état "listening"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-fermer-un-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 Fermer un run
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-supprimer-un-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 Supprimer un run
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-lire-le-diagramme-de-sequence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Lire le diagramme de séquence
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Lire le diagramme de séquence">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-anatomie" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Anatomie
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-comportement-live" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Comportement live
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-plus-de-6-participants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Plus de 6 participants
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-version-mobile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Version mobile
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-rejouer-un-run-mode-replay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Rejouer un run (mode replay)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Rejouer un run (mode replay)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-entrer-en-replay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Entrer en replay
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-controles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Contrôles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-comment-ca-marche" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Comment ça marche
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64-cas-dusage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 Cas d'usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-inspecter-un-evenement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Inspecter un événement
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Inspecter un événement">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-ouvrir-le-panneau-detail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Ouvrir le panneau détail
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-contenu-du-panneau" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Contenu du panneau
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-gerer-les-cles-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Gérer les clés API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Gérer les clés API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-selectionner-un-projet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Sélectionner un projet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-regenerer-une-cle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Régénérer une clé
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-liste-des-cles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Liste des clés
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#84-securite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.4 Sécurité
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-instrumenter-un-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Instrumenter un agent
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Instrumenter un agent">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-python-http-brut" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 Python (HTTP brut)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#92-typescript" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.2 TypeScript
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#93-deepagents-langchain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.3 DeepAgents (LangChain)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9.3 DeepAgents (LangChain)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#utilisation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Utilisation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ce-que-le-middleware-capture-automatiquement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ce que le middleware capture automatiquement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#variables-denvironnement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variables d'environnement
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-dashboard-stats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Dashboard &amp; stats
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Dashboard &amp; stats">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-les-5-cartes-de-stats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 Les 5 cartes de stats
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-signal-mix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 Signal mix
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#103-recent-activity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3 Recent activity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#104-grille-projets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.4 Grille projets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#105-etat-vide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.5 État vide
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Settings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#111-account" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.1 Account
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#112-demo-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.2 Demo data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#113-preferences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.3 Preferences
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#114-about" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.4 About
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-deploiement-docker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Déploiement Docker
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="12. Déploiement Docker">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#121-build-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12.1 Build &amp; run
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#122-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12.2 Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#123-production-avec-postgres" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12.3 Production avec Postgres
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#124-reverse-proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12.4 Reverse proxy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-faq" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. FAQ
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="13. FAQ">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#q-jai-cree-un-compte-mais-je-ne-vois-aucun-projet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : J'ai créé un compte mais je ne vois aucun projet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-mon-agent-emet-des-evenements-mais-rien-napparait-dans-le-diagramme" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Mon agent émet des événements mais rien n'apparaît dans le diagramme
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-le-badge-indique-connecting-au-lieu-de-listening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Le badge indique "connecting…" au lieu de "listening"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-puis-je-suivre-plusieurs-runs-en-parallele" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Puis-je suivre plusieurs runs en parallèle ?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-les-evenements-arrivent-trop-vite-le-diagramme-lag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Les événements arrivent trop vite, le diagramme lag
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-comment-supprimer-un-run-sans-supprimer-le-projet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Comment supprimer un run sans supprimer le projet ?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-ma-cle-api-a-fuite-que-faire" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Ma clé API a fuité, que faire ?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-puis-je-partager-un-projet-avec-un-collegue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Puis-je partager un projet avec un collègue ?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-le-replay-ne-marche-pas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Le replay ne marche pas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-comment-basculer-en-theme-clair" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Comment basculer en thème clair ?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-mes-evenements-ont-des-payloads-enormes-ca-rame" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Mes événements ont des payloads énormes, ça rame
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-puis-je-exporter-un-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q : Puis-je exporter un run ?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference-rapide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Référence rapide
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="agenttrace-mode-demploi">AgentTrace — Mode d'emploi<a class="headerlink" href="#agenttrace-mode-demploi" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>Guide pratique pour démarrer, utiliser au quotidien et instrumenter vos agents.</p>
+</blockquote>
+<hr />
+<h2 id="sommaire">Sommaire<a class="headerlink" href="#sommaire" title="Permanent link">&para;</a></h2>
+<ol>
+<li><a href="#1-démarrage">Démarrage</a></li>
+<li><a href="#2-navigation">Navigation</a></li>
+<li><a href="#3-créer-un-projet">Créer un projet</a></li>
+<li><a href="#4-démarrer-et-suivre-un-run">Démarrer et suivre un run</a></li>
+<li><a href="#5-lire-le-diagramme-de-séquence">Lire le diagramme de séquence</a></li>
+<li><a href="#6-rejouer-un-run-mode-replay">Rejouer un run (mode replay)</a></li>
+<li><a href="#7-inspecter-un-événement">Inspecter un événement</a></li>
+<li><a href="#8-gérer-les-clés-api">Gérer les clés API</a></li>
+<li><a href="#9-instrumenter-un-agent">Instrumenter un agent</a></li>
+<li>9.1 <a href="#91-python-http-brut">Python (HTTP brut)</a></li>
+<li>9.2 <a href="#92-typescript">TypeScript</a></li>
+<li>9.3 <a href="#93-deepagents-langchain">DeepAgents (LangChain)</a></li>
+<li><a href="#10-dashboard--stats">Dashboard &amp; stats</a></li>
+<li><a href="#11-settings">Settings</a></li>
+<li><a href="#12-déploiement-docker">Déploiement Docker</a></li>
+<li><a href="#13-faq">FAQ</a></li>
+</ol>
+<hr />
+<h2 id="1-demarrage">1. Démarrage<a class="headerlink" href="#1-demarrage" title="Permanent link">&para;</a></h2>
+<h3 id="11-premier-acces">1.1 Premier accès<a class="headerlink" href="#11-premier-acces" title="Permanent link">&para;</a></h3>
+<p>Ouvrez l'application dans le panneau de preview (à droite). Vous arrivez sur l'écran d'authentification, divisé en deux :</p>
+<ul>
+<li><strong>À gauche</strong> : panneau signal avec le logo, le pitch produit et un waveform décoratif (vibe oscilloscope)</li>
+<li><strong>À droite</strong> : le formulaire avec deux onglets</li>
+</ul>
+<h3 id="12-trois-facons-dentrer">1.2 Trois façons d'entrer<a class="headerlink" href="#12-trois-facons-dentrer" title="Permanent link">&para;</a></h3>
+<h4 id="option-a-explorer-la-demo-recommande-pour-decouvrir">Option A — Explorer la démo (recommandé pour découvrir)<a class="headerlink" href="#option-a-explorer-la-demo-recommande-pour-decouvrir" title="Permanent link">&para;</a></h4>
+<p>Cliquez le bouton <strong>"Explore the live demo"</strong> en bas du formulaire. Cela crée (ou réutilise) un compte <code>demo@agenttrace.dev</code> <strong>préchargé avec 3 projets de démonstration</strong> :</p>
+<ol>
+<li><strong>Customer Support Agent</strong> — flux de remboursement avec retry sur timeout de passerelle</li>
+<li><strong>Research Assistant</strong> — délégation à un sous-agent "Web Search" (web_search + 3 fetch_page parallèles)</li>
+<li><strong>Code Review Bot</strong> — déclenché par webhook PR (fetch_diff → analyse LLM → post_comment)</li>
+</ol>
+<p>Chaque projet a 3–5 runs complétés. Vous pouvez tout de suite ouvrir un run et voir le diagramme.</p>
+<h4 id="option-b-creer-un-compte">Option B — Créer un compte<a class="headerlink" href="#option-b-creer-un-compte" title="Permanent link">&para;</a></h4>
+<ol>
+<li>Onglet <strong>"Create account"</strong></li>
+<li>Remplissez <strong>Name</strong>, <strong>Email</strong>, <strong>Password</strong> (≥6 caractères)</li>
+<li>Cliquez <strong>"Create account"</strong></li>
+</ol>
+<p>Le compte est créé et <strong>les mêmes 3 projets de démo sont chargés automatiquement</strong> pour que l'app soit vivante immédiatement. Vous pourrez les supprimer et créer les vôtres.</p>
+<h4 id="option-c-se-connecter-a-un-compte-existant">Option C — Se connecter à un compte existant<a class="headerlink" href="#option-c-se-connecter-a-un-compte-existant" title="Permanent link">&para;</a></h4>
+<p>Onglet <strong>"Sign in"</strong> → email + password → <strong>"Sign in"</strong>.</p>
+<blockquote>
+<p>En cas d'échec, le toast indique clairement : <em>"Invalid email or password. If you're new, switch to Create account."</em></p>
+</blockquote>
+<hr />
+<h2 id="2-navigation">2. Navigation<a class="headerlink" href="#2-navigation" title="Permanent link">&para;</a></h2>
+<p>L'app est une SPA (single page) avec navigation par état. La <strong>sidebar</strong> (à gauche sur desktop, drawer sur mobile) contient 4 entrées :</p>
+<table>
+<thead>
+<tr>
+<th>Entrée</th>
+<th>Rôle</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Dashboard</strong></td>
+<td>Vue d'ensemble : stats, activité récente, projets</td>
+</tr>
+<tr>
+<td><strong>Projects</strong></td>
+<td>Liste et CRUD des projets → détail projet → runs → run</td>
+</tr>
+<tr>
+<td><strong>Integration</strong></td>
+<td>Clés API + snippets de code (Python/TS/DeepAgents)</td>
+</tr>
+<tr>
+<td><strong>Settings</strong></td>
+<td>Compte, rechargement démo, préférences</td>
+</tr>
+</tbody>
+</table>
+<p>En bas de la sidebar : un indicateur <strong>"ingestion online"</strong> pulsant (le service socket est joignable) et votre profil avec bouton <strong>sign out</strong>.</p>
+<p>Le <strong>footer</strong> (sticky en bas) rappelle l'état d'ingestion, le port socket, la vue courante et la version.</p>
+<hr />
+<h2 id="3-creer-un-projet">3. Créer un projet<a class="headerlink" href="#3-creer-un-projet" title="Permanent link">&para;</a></h2>
+<p>Un <strong>projet</strong> = un agent. Il regroupe tous les runs d'un même agent et porte une clé d'API d'ingestion.</p>
+<ol>
+<li>Allez dans <strong>Projects</strong> (sidebar)</li>
+<li>Cliquez <strong>"New project"</strong> (en haut à droite)</li>
+<li>Dans le dialog :</li>
+<li><strong>Name</strong> (requis) — ex. "Customer Support Agent"</li>
+<li><strong>Description</strong> (optionnel) — ex. "Handles refund requests end-to-end"</li>
+<li>Cliquez <strong>"Create project"</strong></li>
+</ol>
+<p>Une <strong>clé API est générée automatiquement</strong>. Vous êtes redirigé vers la vue détail du projet.</p>
+<blockquote>
+<p>La création est <strong>optimistic</strong> : le projet apparaît instantanément dans la liste. Si le serveur échoue, il disparaît avec un toast <em>"Couldn't create the project — rolled back."</em></p>
+</blockquote>
+<h3 id="31-editer-supprimer-un-projet">3.1 Éditer / supprimer un projet<a class="headerlink" href="#31-editer-supprimer-un-projet" title="Permanent link">&para;</a></h3>
+<p>Sur chaque carte projet, au survol :
+- ✏️ <strong>Éditer</strong> (icône crayon) → dialog de renommage
+- 🗑️ <strong>Supprimer</strong> (icône poubelle) → confirmation requise</p>
+<p>La suppression est en cascade : tous les runs, événements et clés du projet sont supprimés.</p>
+<hr />
+<h2 id="4-demarrer-et-suivre-un-run">4. Démarrer et suivre un run<a class="headerlink" href="#4-demarrer-et-suivre-un-run" title="Permanent link">&para;</a></h2>
+<h3 id="41-demarrer-un-run-depuis-lui">4.1 Démarrer un run depuis l'UI<a class="headerlink" href="#41-demarrer-un-run-depuis-lui" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Ouvrez un projet</li>
+<li>Cliquez <strong>"Start a run"</strong> (en haut à droite)</li>
+<li>Donnez un nom (ex. "Refund — Order #4821")</li>
+<li>Cliquez <strong>"Start run"</strong></li>
+</ol>
+<p>Vous arrivez sur la <strong>vue run</strong> avec le canvas affichant l'état <strong>"Listening for your agent's first event"</strong> (radar animé). Le run a le statut <code>running</code>.</p>
+<h3 id="42-demarrer-un-run-depuis-votre-agent-api">4.2 Démarrer un run depuis votre agent (API)<a class="headerlink" href="#42-demarrer-un-run-depuis-votre-agent-api" title="Permanent link">&para;</a></h3>
+<p>C'est le cas normal en production : votre agent crée le run et émet les événements via <code>POST /api/events</code>. Voir §9.</p>
+<h3 id="43-letat-listening">4.3 L'état "listening"<a class="headerlink" href="#43-letat-listening" title="Permanent link">&para;</a></h3>
+<p>Tant qu'aucun événement n'est arrivé, le canvas montre :
+- Un <strong>radar</strong> (cercles concentriques + sweep rotatif vert phosphore)
+- Le message <em>"Listening for your agent's first event"</em>
+- Le rappel <code>POST /api/events · run &lt;id&gt;…</code></p>
+<p>Dès le 1er événement, le diagramme le remplace. Si votre agent ne répond pas, vérifiez :
+- la clé API (page Integration)
+- le <code>runId</code> passé (doit correspondre à un run du bon projet)
+- que le service socket tourne (port 3003)</p>
+<h3 id="44-fermer-un-run">4.4 Fermer un run<a class="headerlink" href="#44-fermer-un-run" title="Permanent link">&para;</a></h3>
+<p>Un run ouvert depuis l'UI reste <code>running</code> jusqu'à :
+- la réception d'un événement avec <code>endRun: "completed"</code> ou <code>"failed"</code> depuis votre agent (recommandé)
+- <strong>ou</strong> le bouton <strong>"Close run"</strong> dans la vue run → choisir "Mark completed" ou "Mark failed"</p>
+<h3 id="45-supprimer-un-run">4.5 Supprimer un run<a class="headerlink" href="#45-supprimer-un-run" title="Permanent link">&para;</a></h3>
+<p>Bouton poubelle dans la vue run, avec confirmation.</p>
+<hr />
+<h2 id="5-lire-le-diagramme-de-sequence">5. Lire le diagramme de séquence<a class="headerlink" href="#5-lire-le-diagramme-de-sequence" title="Permanent link">&para;</a></h2>
+<p>Le diagramme est le composant central. Voici comment le lire.</p>
+<h3 id="51-anatomie">5.1 Anatomie<a class="headerlink" href="#51-anatomie" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌────────┬─────────────┬─────────────┬─────────────┬──────────┐
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│ temps  │   User      │ Orchestrator│     LLM     │ web_search│
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│        │  👤 user    │  🖥️ orch.   │  🧠 llm     │  🔧 tool  │
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│        │  ┊          │  ┊          │  ┊          │  ┊        │
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│ 10:24  │  ┊──────────▶┊            │            │           │ ← handoff
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│        │            │  ┊──────────▶┊            │           │ ← llm_call
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│        │            │  ┊───────────┊───────────▶┊           │ ← tool_call
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│        │            │  ┊◀──────────┊────────────┊           │ ← tool_result
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│        │  ┊◀─────────┊            │            │           │ ← final_answer
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│        │  ┊          │  ┊          │  ┊          │  ┊        │
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>└────────┴─────────────┴─────────────┴─────────────┴──────────┘
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>                                               cursor live ▶ (si running)
+</code></pre></div>
+<ul>
+<li><strong>Colonnes</strong> = participants, une par ligne de vie verticale (pointillée)</li>
+<li><strong>En-tête</strong> : icône + nom + kind (en mono, coloré par kind)</li>
+<li><strong>Flèches</strong> = événements, de haut en bas dans l'ordre chrono</li>
+<li><strong>Couleur</strong> = type d'événement (cf. légende en haut de la vue run)</li>
+<li><strong>Label</strong> au-dessus de la flèche : court résumé (<code>web_search(query)</code>)</li>
+<li><strong>Sous-label</strong> : <code>type · durationMs</code> (ex. <code>tool call · 640ms</code>)</li>
+<li><strong>Axe temps</strong> à gauche : <code>HH:MM:SS.ms</code></li>
+</ul>
+<h3 id="52-comportement-live">5.2 Comportement live<a class="headerlink" href="#52-comportement-live" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Les nouvelles flèches <strong>s'animent</strong> à l'arrivée (draw-in 400ms + apparition pointe/label)</li>
+<li><strong>Auto-scroll</strong> garde le dernier événement visible si vous êtes près du bas</li>
+<li>Un <strong>curseur phosphore</strong> balaie la ligne du bas tant que le run est <code>running</code></li>
+<li>Le badge en haut à gauche indique <strong>"listening"</strong> (vert pulsant) ou <strong>"connecting…"</strong> si le socket se reconnecte</li>
+</ul>
+<h3 id="53-plus-de-6-participants">5.3 Plus de 6 participants<a class="headerlink" href="#53-plus-de-6-participants" title="Permanent link">&para;</a></h3>
+<p>Si le flux fait apparaître beaucoup de participants, le canvas <strong>scroll horizontalement</strong> automatiquement (les lignes de vie ont une largeur fixe de 150px). L'auto-scroll suit aussi horizontalement le dernier événement.</p>
+<h3 id="54-version-mobile">5.4 Version mobile<a class="headerlink" href="#54-version-mobile" title="Permanent link">&para;</a></h3>
+<p>Sur écran &lt; 768px, le diagramme bascule en <strong>timeline empilée</strong> : chaque événement est une carte avec numéro de séquence, badge type coloré, <code>source → target</code> (icônes + noms), label, et durée. Le clic ouvre la même fiche détail (en Sheet plein écran).</p>
+<hr />
+<h2 id="6-rejouer-un-run-mode-replay">6. Rejouer un run (mode replay)<a class="headerlink" href="#6-rejouer-un-run-mode-replay" title="Permanent link">&para;</a></h2>
+<p>Le replay permet de revivre un run image par image, pour debug ou démo.</p>
+<h3 id="61-entrer-en-replay">6.1 Entrer en replay<a class="headerlink" href="#61-entrer-en-replay" title="Permanent link">&para;</a></h3>
+<p>Sur n'importe quelle vue run, cliquez <strong>"Replay"</strong> (en haut à droite de la toolbar du canvas). La vue passe en mode replay :
+- Le diagramme se fige à la fin
+- Les contrôles replay apparaissent</p>
+<h3 id="62-controles">6.2 Contrôles<a class="headerlink" href="#62-controles" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>[⏮ Restart]  [▶ Play/Pause]  [⏭ Skip to end]  ━━●━━━━━━ 5/13  [1× ▼]  [Exit]
+</code></pre></div>
+<ul>
+<li><strong>Restart</strong> ⏮ : revient au 1er événement</li>
+<li><strong>Play/Pause</strong> ▶/⏸ : lance la lecture ou la pause</li>
+<li><strong>Skip to end</strong> ⏭ : saute au dernier événement</li>
+<li><strong>Scrubber</strong> : glissez pour naviguer librement dans la timeline</li>
+<li><strong>Compteur</strong> <code>5/13</code> : position courante / total</li>
+<li><strong>Vitesse</strong> : cliquez <code>1×</code> → menu déroulant</li>
+<li><strong>0.5×</strong> : ralenti (2× plus lent que le réel)</li>
+<li><strong>1×</strong> : temps réel (un run de 4s se rejoue en 4s)</li>
+<li><strong>2×</strong> : accéléré</li>
+<li><strong>instant</strong> : tous les événements d'un coup</li>
+<li><strong>Exit</strong> : quitte le replay, revient en vue live</li>
+</ul>
+<h3 id="63-comment-ca-marche">6.3 Comment ça marche<a class="headerlink" href="#63-comment-ca-marche" title="Permanent link">&para;</a></h3>
+<p>Le replay est <strong>par client</strong> : le serveur socket schedule l'émission des événements uniquement vers votre navigateur, selon les timestamps réels. Les autres clients abonnés au même run ne sont pas affectés.</p>
+<h3 id="64-cas-dusage">6.4 Cas d'usage<a class="headerlink" href="#64-cas-dusage" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Debug</strong> : replay à 0.5× pour bien voir l'enchaînement avant l'erreur</li>
+<li><strong>Démo</strong> : replay à 2× pour montrer un run long en accéléré</li>
+<li><strong>Analyse</strong> : scrubber pour sauter directement à l'événement suspect</li>
+</ul>
+<hr />
+<h2 id="7-inspecter-un-evenement">7. Inspecter un événement<a class="headerlink" href="#7-inspecter-un-evenement" title="Permanent link">&para;</a></h2>
+<h3 id="71-ouvrir-le-panneau-detail">7.1 Ouvrir le panneau détail<a class="headerlink" href="#71-ouvrir-le-panneau-detail" title="Permanent link">&para;</a></h3>
+<p>Cliquez sur <strong>n'importe quelle flèche</strong> du diagramme (ou carte en mobile).</p>
+<ul>
+<li><strong>Desktop large (≥1280px)</strong> : un <strong>panneau latéral</strong> s'ouvre à droite</li>
+<li><strong>Mobile / desktop étroit</strong> : une <strong>Sheet</strong> glisse depuis la droite</li>
+</ul>
+<h3 id="72-contenu-du-panneau">7.2 Contenu du panneau<a class="headerlink" href="#72-contenu-du-panneau" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>┌─ EVENT PAYLOAD ──────────────────┐
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>│ [tool_call]                       │ ← badge type coloré
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>│ web_search(query)                 │ ← label
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>│                                   │
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>│ ┌─────────────────────────────┐  │
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>│ │ 🖥️ Orchestrator  →  🔧 web_search │ ← source → target
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>│ └─────────────────────────────┘  │
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>│                                   │
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>│ sequence   status      timestamp  duration
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>│ #2         ok          10:24:11   640ms    ← métadonnées
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>│                                   │
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>│ PAYLOAD                           │
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>│ ┌─────────────────────────────┐  │
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>│ │ {                           │  │
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>│ │   &quot;args&quot;: {                 │  │ ← JSON formaté scrollable
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>│ │     &quot;query&quot;: &quot;Rust web...&quot;  │  │
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>│ │   }                         │  │
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>│ │ }                           │  │
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>│ └─────────────────────────────┘  │
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>└───────────────────────────────────┘
+</code></pre></div>
+<p>Pour fermer : bouton <strong>×</strong> (desktop) ou tap hors de la Sheet (mobile).</p>
+<hr />
+<h2 id="8-gerer-les-cles-api">8. Gérer les clés API<a class="headerlink" href="#8-gerer-les-cles-api" title="Permanent link">&para;</a></h2>
+<p>Allez dans <strong>Integration</strong> (sidebar).</p>
+<h3 id="81-selectionner-un-projet">8.1 Sélectionner un projet<a class="headerlink" href="#81-selectionner-un-projet" title="Permanent link">&para;</a></h3>
+<p>Le sélecteur en haut affiche tous vos projets. La clé et les snippets se mettent à jour pour le projet sélectionné.</p>
+<h3 id="82-regenerer-une-cle">8.2 Régénérer une clé<a class="headerlink" href="#82-regenerer-une-cle" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Cliquez <strong>"Regenerate key"</strong></li>
+<li>Une <strong>bannière ambre</strong> apparaît avec la clé complète : <code>atr_&lt;32 hex&gt;</code></li>
+<li><strong>Copiez-la maintenant</strong> avec le bouton "Copy" — elle ne sera plus jamais affichée</li>
+<li>Cliquez "Dismiss" quand vous l'avez stockée</li>
+</ol>
+<blockquote>
+<p>Toast : <em>"Key regenerated"</em></p>
+</blockquote>
+<p>L'ancienne clé continue de fonctionner (elle reste dans la liste). Pour la révoquer, voir §8.3.</p>
+<h3 id="83-liste-des-cles">8.3 Liste des clés<a class="headerlink" href="#83-liste-des-cles" title="Permanent link">&para;</a></h3>
+<p>Sous le bouton, la liste affiche chaque clé :
+- <strong>Prefix</strong> : <code>atr_xxxxxxxx…</code> (les 8 premiers chars)
+- <strong>Label</strong> : "Default key" par défaut
+- <strong>Dernière utilisation</strong> : "used 2m ago" (mis à jour à chaque ingestion)
+- 🗑️ <strong>Revoke</strong> : supprime la clé immédiatement</p>
+<blockquote>
+<p>Toast : <em>"Key revoked"</em></p>
+</blockquote>
+<h3 id="84-securite">8.4 Sécurité<a class="headerlink" href="#84-securite" title="Permanent link">&para;</a></h3>
+<ul>
+<li>La clé complète n'est <strong>jamais stockée</strong> en base (seulement son hash SHA-256)</li>
+<li>Elle est <strong>scopée par projet</strong>, pas par utilisateur → un agent n'a pas besoin de vos credentials user</li>
+<li>Si une clé fuite : revokez-la et régénérez (les runs existants restent accessibles, seule l'ingestion future est bloquée)</li>
+</ul>
+<hr />
+<h2 id="9-instrumenter-un-agent">9. Instrumenter un agent<a class="headerlink" href="#9-instrumenter-un-agent" title="Permanent link">&para;</a></h2>
+<p>La page <strong>Integration</strong> fournit 3 snippets copiables, avec votre clé pré-remplie.</p>
+<h3 id="91-python-http-brut">9.1 Python (HTTP brut)<a class="headerlink" href="#91-python-http-brut" title="Permanent link">&para;</a></h3>
+<p>Le plus simple pour démarrer. Copiez l'onglet <strong>Python</strong> :</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">AGENTTRACE_URL</span> <span class="o">=</span> <span class="s2">&quot;http://localhost:3000/api/events&quot;</span>  <span class="c1"># votre URL de déploiement</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">API_KEY</span> <span class="o">=</span> <span class="s2">&quot;atr_votre_clé&quot;</span>                             <span class="c1"># depuis la page Integration</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">API_KEY</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">}</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">emit</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">AGENTTRACE_URL</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">event</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    <span class="k">return</span> <span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="c1"># 1. Démarrer un run (runId=None → le serveur en crée un)</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="n">run</span> <span class="o">=</span> <span class="n">emit</span><span class="p">({</span><span class="s2">&quot;runId&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;demo refund flow&quot;</span><span class="p">})</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="n">run_id</span> <span class="o">=</span> <span class="n">run</span><span class="p">[</span><span class="s2">&quot;runId&quot;</span><span class="p">]</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="c1"># 2. User → Orchestrator (handoff)</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="n">emit</span><span class="p">({</span><span class="s2">&quot;runId&quot;</span><span class="p">:</span> <span class="n">run_id</span><span class="p">,</span> <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="s2">&quot;User&quot;</span><span class="p">,</span> <span class="s2">&quot;target&quot;</span><span class="p">:</span> <span class="s2">&quot;Orchestrator&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>      <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;handoff&quot;</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;incoming message&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>      <span class="s2">&quot;payload&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;please refund order #4821&quot;</span><span class="p">},</span> <span class="s2">&quot;durationMs&quot;</span><span class="p">:</span> <span class="mi">90</span><span class="p">})</span>
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>
+<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="c1"># 3. Orchestrator → LLM (llm_call)</span>
+<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="n">emit</span><span class="p">({</span><span class="s2">&quot;runId&quot;</span><span class="p">:</span> <span class="n">run_id</span><span class="p">,</span> <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="s2">&quot;Orchestrator&quot;</span><span class="p">,</span> <span class="s2">&quot;target&quot;</span><span class="p">:</span> <span class="s2">&quot;LLM&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a>      <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;llm_call&quot;</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;classify intent&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>      <span class="s2">&quot;payload&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;result&quot;</span><span class="p">:</span> <span class="s2">&quot;refund_request&quot;</span><span class="p">,</span> <span class="s2">&quot;tokens&quot;</span><span class="p">:</span> <span class="mi">184</span><span class="p">},</span> <span class="s2">&quot;durationMs&quot;</span><span class="p">:</span> <span class="mi">480</span><span class="p">})</span>
+<a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a>
+<a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a><span class="c1"># 4. Orchestrator → tool (tool_call)</span>
+<a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a><span class="n">emit</span><span class="p">({</span><span class="s2">&quot;runId&quot;</span><span class="p">:</span> <span class="n">run_id</span><span class="p">,</span> <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="s2">&quot;Orchestrator&quot;</span><span class="p">,</span> <span class="s2">&quot;target&quot;</span><span class="p">:</span> <span class="s2">&quot;lookup_order&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a>      <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;tool_call&quot;</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;lookup_order(#4821)&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a>      <span class="s2">&quot;payload&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;args&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;orderId&quot;</span><span class="p">:</span> <span class="s2">&quot;4821&quot;</span><span class="p">}},</span> <span class="s2">&quot;durationMs&quot;</span><span class="p">:</span> <span class="mi">310</span><span class="p">})</span>
+<a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a>
+<a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a><span class="c1"># 5. tool → Orchestrator (tool_result)</span>
+<a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a><span class="n">emit</span><span class="p">({</span><span class="s2">&quot;runId&quot;</span><span class="p">:</span> <span class="n">run_id</span><span class="p">,</span> <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="s2">&quot;lookup_order&quot;</span><span class="p">,</span> <span class="s2">&quot;target&quot;</span><span class="p">:</span> <span class="s2">&quot;Orchestrator&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a>      <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;tool_result&quot;</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;order found&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a>      <span class="s2">&quot;payload&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;orderId&quot;</span><span class="p">:</span> <span class="s2">&quot;4821&quot;</span><span class="p">,</span> <span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="mf">89.99</span><span class="p">},</span> <span class="s2">&quot;durationMs&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">})</span>
+<a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a>
+<a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a><span class="c1"># 6. Orchestrator → User (final_answer)</span>
+<a id="__codelineno-3-38" name="__codelineno-3-38" href="#__codelineno-3-38"></a><span class="n">emit</span><span class="p">({</span><span class="s2">&quot;runId&quot;</span><span class="p">:</span> <span class="n">run_id</span><span class="p">,</span> <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="s2">&quot;Orchestrator&quot;</span><span class="p">,</span> <span class="s2">&quot;target&quot;</span><span class="p">:</span> <span class="s2">&quot;User&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-39" name="__codelineno-3-39" href="#__codelineno-3-39"></a>      <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;final_answer&quot;</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;refund issued&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-40" name="__codelineno-3-40" href="#__codelineno-3-40"></a>      <span class="s2">&quot;payload&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="s2">&quot;Refund of $89.99 processed.&quot;</span><span class="p">},</span> <span class="s2">&quot;durationMs&quot;</span><span class="p">:</span> <span class="mi">80</span><span class="p">})</span>
+<a id="__codelineno-3-41" name="__codelineno-3-41" href="#__codelineno-3-41"></a>
+<a id="__codelineno-3-42" name="__codelineno-3-42" href="#__codelineno-3-42"></a><span class="c1"># 7. Fermer le run</span>
+<a id="__codelineno-3-43" name="__codelineno-3-43" href="#__codelineno-3-43"></a><span class="n">emit</span><span class="p">({</span><span class="s2">&quot;runId&quot;</span><span class="p">:</span> <span class="n">run_id</span><span class="p">,</span> <span class="s2">&quot;endRun&quot;</span><span class="p">:</span> <span class="s2">&quot;completed&quot;</span><span class="p">})</span>
+</code></pre></div>
+<p>Ouvrez le run dans AgentTrace <strong>avant</strong> de lancer le script : vous verrez chaque flèche apparaître en direct.</p>
+<h3 id="92-typescript">9.2 TypeScript<a class="headerlink" href="#92-typescript" title="Permanent link">&para;</a></h3>
+<p>Même logique avec <code>fetch</code>. Onglet <strong>TypeScript</strong> de la page Integration. Idéal si votre agent est en Node/Bun.</p>
+<h3 id="93-deepagents-langchain">9.3 DeepAgents (LangChain)<a class="headerlink" href="#93-deepagents-langchain" title="Permanent link">&para;</a></h3>
+<p>C'est l'intégration la plus puissante. Le package publié
+<a href="https://pypi.org/project/agenttrace-langchain/"><code>agenttrace-langchain</code></a>
+fournit <code>AgentTraceMiddleware</code>, un <code>AgentMiddleware</code> (système de middleware
+actuel de deepagents/LangChain — <code>before_agent</code> / <code>wrap_model_call</code> /
+<code>wrap_tool_call</code> / <code>after_agent</code>), à attacher à votre agent.</p>
+<h4 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pip<span class="w"> </span>install<span class="w"> </span>agenttrace-langchain<span class="w"> </span>deepagents<span class="w"> </span>langchain-openai
+</code></pre></div>
+<h4 id="utilisation">Utilisation<a class="headerlink" href="#utilisation" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">agenttrace_langchain</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentTraceMiddleware</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">deepagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_deep_agent</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">langchain_openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChatOpenAI</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">langchain_core.tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">tool</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="nd">@tool</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">web_search</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Search the web.&quot;&quot;&quot;</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="k">return</span> <span class="s2">&quot;...&quot;</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="nd">@tool</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="k">def</span><span class="w"> </span><span class="nf">fetch_page</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetch a web page.&quot;&quot;&quot;</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>    <span class="k">return</span> <span class="s2">&quot;...&quot;</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="n">agent</span> <span class="o">=</span> <span class="n">create_deep_agent</span><span class="p">(</span>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>    <span class="n">model</span><span class="o">=</span><span class="n">ChatOpenAI</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4o-mini&quot;</span><span class="p">),</span>
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>    <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">web_search</span><span class="p">,</span> <span class="n">fetch_page</span><span class="p">],</span>
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>    <span class="n">system_prompt</span><span class="o">=</span><span class="s2">&quot;You are a research assistant.&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>    <span class="c1"># 👇 UNE instance de middleware = UN run AgentTrace</span>
+<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a>    <span class="n">middleware</span><span class="o">=</span><span class="p">[</span><span class="n">AgentTraceMiddleware</span><span class="p">(</span><span class="n">run_name</span><span class="o">=</span><span class="s2">&quot;research — Rust frameworks&quot;</span><span class="p">)],</span>
+<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="p">)</span>
+<a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a>
+<a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="n">result</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span>
+<a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a>    <span class="p">{</span><span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;State of Rust web frameworks?&quot;</span><span class="p">}]}</span>
+<a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a><span class="p">)</span>
+</code></pre></div>
+<p>Fonctionne aussi avec <code>await agent.ainvoke(...)</code> — les hooks async
+(<code>awrap_model_call</code>/<code>awrap_tool_call</code>) se déclenchent automatiquement, sans
+câblage supplémentaire.</p>
+<h4 id="ce-que-le-middleware-capture-automatiquement">Ce que le middleware capture automatiquement<a class="headerlink" href="#ce-que-le-middleware-capture-automatiquement" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Hook <code>AgentMiddleware</code></th>
+<th>Événement AgentTrace</th>
+<th>Flèche dans le diagramme</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>wrap_model_call</code></td>
+<td><code>llm_call</code></td>
+<td>Orchestrator → LLM (+ tokens, output preview)</td>
+</tr>
+<tr>
+<td><code>wrap_tool_call</code> (avant)</td>
+<td><code>tool_call</code></td>
+<td>Orchestrator → tool</td>
+</tr>
+<tr>
+<td><code>wrap_tool_call</code> (après)</td>
+<td><code>tool_result</code></td>
+<td>tool → Orchestrator (+ latence)</td>
+</tr>
+<tr>
+<td><code>wrap_tool_call</code> (exception)</td>
+<td><code>error</code></td>
+<td>tool → Orchestrator (rouge)</td>
+</tr>
+<tr>
+<td><code>wrap_tool_call</code> (tool = handoff/delegate)</td>
+<td><code>handoff</code></td>
+<td>Orchestrator → Sub-agent</td>
+</tr>
+<tr>
+<td><code>after_agent</code></td>
+<td><code>final_answer</code> + ferme le run</td>
+<td>Orchestrator → User</td>
+</tr>
+</tbody>
+</table>
+<p>Vous n'avez <strong>rien à coder de plus</strong> : tout agent <code>create_deep_agent</code>/
+<code>create_agent</code> avec ce middleware est instrumenté automatiquement.</p>
+<p>Émission non bloquante (thread + queue en arrière-plan) et jamais fatale
+(une instance AgentTrace injoignable ou mal configurée désactive juste la
+trace pour ce run, sans casser l'agent) — voir le
+<a href="https://github.com/CouLiBaLy-B/agenttrace/tree/main/integrations/agenttrace-langchain#reliability">README du package</a>.</p>
+<p>Pour un serveur qui <strong>cache et réutilise un agent compilé</strong> entre plusieurs
+requêtes (le middleware est figé dans le graph au moment du build, donc mal
+adapté à ce cas), utilisez plutôt <code>AsyncAgentTraceRun</code> — voir la section
+<a href="https://github.com/CouLiBaLy-B/agenttrace/tree/main/integrations/agenttrace-langchain#servers-with-a-cachedreused-agent-dont-use-the-middleware">"Servers with a cached/reused agent"</a>
+du même README.</p>
+<h4 id="variables-denvironnement">Variables d'environnement<a class="headerlink" href="#variables-denvironnement" title="Permanent link">&para;</a></h4>
+<p>Le middleware lit (sauf si passé explicitement au constructeur) :
+- <code>AGENTTRACE_URL</code> (défaut : <code>http://localhost:3000/api/events</code>)
+- <code>AGENTTRACE_KEY</code> (obligatoire — clé projet, <code>atr_...</code>)</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">AGENTTRACE_URL</span><span class="o">=</span>https://votre-deploiement/api/events
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">AGENTTRACE_KEY</span><span class="o">=</span>atr_votre_clé
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>python<span class="w"> </span>votre_agent.py
+</code></pre></div>
+<hr />
+<h2 id="10-dashboard-stats">10. Dashboard &amp; stats<a class="headerlink" href="#10-dashboard-stats" title="Permanent link">&para;</a></h2>
+<p>La vue <strong>Dashboard</strong> (premier item sidebar) donne une vue d'ensemble.</p>
+<h3 id="101-les-5-cartes-de-stats">10.1 Les 5 cartes de stats<a class="headerlink" href="#101-les-5-cartes-de-stats" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Carte</th>
+<th>Ce qu'elle montre</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Projects</strong></td>
+<td>Nombre total de vos projets</td>
+</tr>
+<tr>
+<td><strong>Total runs</strong></td>
+<td>Tous runs confondus (running + completed + failed)</td>
+</tr>
+<tr>
+<td><strong>Success rate</strong></td>
+<td>% de <code>completed</code> parmi tous les runs</td>
+</tr>
+<tr>
+<td><strong>Avg duration</strong></td>
+<td>Durence moyenne des runs terminés</td>
+</tr>
+<tr>
+<td><strong>Events captured</strong></td>
+<td>Total d'événements tous runs confondus</td>
+</tr>
+</tbody>
+</table>
+<h3 id="102-signal-mix">10.2 Signal mix<a class="headerlink" href="#102-signal-mix" title="Permanent link">&para;</a></h3>
+<p>Barres horizontales montrant la <strong>répartition par type d'événement</strong> (llm_call, tool_call, tool_result, handoff, error, final_answer). Utile pour voir si un agent fait beaucoup d'erreurs ou trop d'appels LLM.</p>
+<h3 id="103-recent-activity">10.3 Recent activity<a class="headerlink" href="#103-recent-activity" title="Permanent link">&para;</a></h3>
+<p>Les 8 derniers runs, cliquables → ouvrent la vue run directement. Affiche : statut (dot coloré), nom, projet, nb events, durée, timestamp relatif.</p>
+<h3 id="104-grille-projets">10.4 Grille projets<a class="headerlink" href="#104-grille-projets" title="Permanent link">&para;</a></h3>
+<p>Une carte par projet avec runs count, success rate, dernière activité. Clic → vue détail projet.</p>
+<h3 id="105-etat-vide">10.5 État vide<a class="headerlink" href="#105-etat-vide" title="Permanent link">&para;</a></h3>
+<p>Si vous supprimez tous vos projets : un radar avec <em>"No projects yet"</em> + bouton <strong>"Create your first project"</strong>.</p>
+<hr />
+<h2 id="11-settings">11. Settings<a class="headerlink" href="#11-settings" title="Permanent link">&para;</a></h2>
+<h3 id="111-account">11.1 Account<a class="headerlink" href="#111-account" title="Permanent link">&para;</a></h3>
+<p>Affiche votre nom et email (en lecture seule). Bouton <strong>"Sign out"</strong> pour déconnexion.</p>
+<h3 id="112-demo-data">11.2 Demo data<a class="headerlink" href="#112-demo-data" title="Permanent link">&para;</a></h3>
+<p>Bouton <strong>"Reload demo projects"</strong> : re-crée les 3 projets de démo (idempotent — vos projets existants ne sont pas touchés). Utile si vous avez tout supprimé et voulez revoir des exemples.</p>
+<h3 id="113-preferences">11.3 Preferences<a class="headerlink" href="#113-preferences" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Phosphor theme</strong> : le thème oscilloscope sombre (recommandé, fixé à on)</li>
+<li><strong>Live event toasts</strong> : notifications quand un run se termine (placeholder pour future feature)</li>
+</ul>
+<h3 id="114-about">11.4 About<a class="headerlink" href="#114-about" title="Permanent link">&para;</a></h3>
+<p>Version, stack technique, signature <em>"trace · replay · debug"</em>.</p>
+<hr />
+<h2 id="12-deploiement-docker">12. Déploiement Docker<a class="headerlink" href="#12-deploiement-docker" title="Permanent link">&para;</a></h2>
+<h3 id="121-build-run">12.1 Build &amp; run<a class="headerlink" href="#121-build-run" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Depuis la racine du projet</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>--build
+</code></pre></div>
+<p>Deux conteneurs démarrent :
+- <code>web</code> sur le port 3000 (Next.js + Prisma)
+- <code>socket</code> sur le port 3003 (Socket.IO)</p>
+<p>La base SQLite est persistée dans un volume nommé <code>agenttrace-data</code>.</p>
+<h3 id="122-configuration">12.2 Configuration<a class="headerlink" href="#122-configuration" title="Permanent link">&para;</a></h3>
+<p>Créez un <code>.env</code> (ou passez les vars au compose) :</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>NEXTAUTH_SECRET=&lt;openssl rand -base64 32&gt;
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>NEXTAUTH_URL=https://votre-domaine.com
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>DATABASE_URL=file:/app/data/agenttrace.db    # ou postgresql://...
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>SOCKET_SERVICE_URL=http://socket:3003
+</code></pre></div>
+<h3 id="123-production-avec-postgres">12.3 Production avec Postgres<a class="headerlink" href="#123-production-avec-postgres" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Dans <code>prisma/schema.prisma</code>, changez <code>provider = "sqlite"</code> → <code>provider = "postgresql"</code></li>
+<li><code>DATABASE_URL=postgresql://user:pass@host:5432/agenttrace</code></li>
+<li><code>bun run db:push</code> (ou <code>db:migrate</code>) pour créer le schéma</li>
+<li>Redémarrez le conteneur <code>web</code></li>
+</ol>
+<h3 id="124-reverse-proxy">12.4 Reverse proxy<a class="headerlink" href="#124-reverse-proxy" title="Permanent link">&para;</a></h3>
+<p>Mettez Caddy/Nginx devant les deux services. Le gateway doit router :
+- <code>/?XTransformPort=3003</code> (WebSocket) → conteneur <code>socket:3003</code>
+- tout le reste → conteneur <code>web:3000</code></p>
+<p>Le <code>Caddyfile</code> à la racine du projet montre la config de référence (utilisée en dev).</p>
+<hr />
+<h2 id="13-faq">13. FAQ<a class="headerlink" href="#13-faq" title="Permanent link">&para;</a></h2>
+<h3 id="q-jai-cree-un-compte-mais-je-ne-vois-aucun-projet">Q : J'ai créé un compte mais je ne vois aucun projet<a class="headerlink" href="#q-jai-cree-un-compte-mais-je-ne-vois-aucun-projet" title="Permanent link">&para;</a></h3>
+<p><strong>R</strong> : Les projets démo sont censés se charger à l'inscription. Si ce n'est pas le cas, allez dans <strong>Settings → Reload demo projects</strong>. Si ça échoue, vérifiez la console (F12) pour une erreur réseau.</p>
+<h3 id="q-mon-agent-emet-des-evenements-mais-rien-napparait-dans-le-diagramme">Q : Mon agent émet des événements mais rien n'apparaît dans le diagramme<a class="headerlink" href="#q-mon-agent-emet-des-evenements-mais-rien-napparait-dans-le-diagramme" title="Permanent link">&para;</a></h3>
+<p><strong>R</strong> : Vérifiez dans l'ordre :
+1. La clé API est valide (page Integration → la clé doit apparaître dans la liste)
+2. Le <code>runId</code> appartient bien au projet de cette clé (404 sinon)
+3. Le service socket tourne (port 3003 — l'indicateur "ingestion online" dans la sidebar doit pulser)
+4. Vous avez bien ouvert le <strong>bon run</strong> dans l'UI (le <code>runId</code> correspond)
+5. Le <code>type</code> d'événement est valide (<code>llm_call | tool_call | tool_result | handoff | error | final_answer</code>)</p>
+<h3 id="q-le-badge-indique-connecting-au-lieu-de-listening">Q : Le badge indique "connecting…" au lieu de "listening"<a class="headerlink" href="#q-le-badge-indique-connecting-au-lieu-de-listening" title="Permanent link">&para;</a></h3>
+<p><strong>R</strong> : Le navigateur n'arrive pas à joindre le service socket. Vérifiez que <code>socket:3003</code> est démarré et que le gateway route bien <code>?XTransformPort=3003</code>.</p>
+<h3 id="q-puis-je-suivre-plusieurs-runs-en-parallele">Q : Puis-je suivre plusieurs runs en parallèle ?<a class="headerlink" href="#q-puis-je-suivre-plusieurs-runs-en-parallele" title="Permanent link">&para;</a></h3>
+<p><strong>R</strong> : Ouvrez plusieurs onglets, un par run. Chaque onglet s'abonne à son propre <code>runId</code> via le socket.</p>
+<h3 id="q-les-evenements-arrivent-trop-vite-le-diagramme-lag">Q : Les événements arrivent trop vite, le diagramme lag<a class="headerlink" href="#q-les-evenements-arrivent-trop-vite-le-diagramme-lag" title="Permanent link">&para;</a></h3>
+<p><strong>R</strong> : Le diagramme est optimisé (SVG incrémental, pas de re-render complet). Si vous avez des centaines d'événements/sec, utilisez le replay pour les revisiter à vitesse réduite. En live, l'auto-scroll garde le dernier visible.</p>
+<h3 id="q-comment-supprimer-un-run-sans-supprimer-le-projet">Q : Comment supprimer un run sans supprimer le projet ?<a class="headerlink" href="#q-comment-supprimer-un-run-sans-supprimer-le-projet" title="Permanent link">&para;</a></h3>
+<p><strong>R</strong> : Ouvrez le run → bouton poubelle (en haut à droite) → confirmation.</p>
+<h3 id="q-ma-cle-api-a-fuite-que-faire">Q : Ma clé API a fuité, que faire ?<a class="headerlink" href="#q-ma-cle-api-a-fuite-que-faire" title="Permanent link">&para;</a></h3>
+<p><strong>R</strong> : Page Integration → bouton poubelle sur la clé concernée (la révoque immédiatement) → "Regenerate key" pour en créer une nouvelle. Mettez à jour votre agent avec la nouvelle clé. Les runs existants restent accessibles.</p>
+<h3 id="q-puis-je-partager-un-projet-avec-un-collegue">Q : Puis-je partager un projet avec un collègue ?<a class="headerlink" href="#q-puis-je-partager-un-projet-avec-un-collegue" title="Permanent link">&para;</a></h3>
+<p><strong>R</strong> : Pas dans cette version. Les projets sont privés par utilisateur. (Roadmap : team/workspaces.)</p>
+<h3 id="q-le-replay-ne-marche-pas">Q : Le replay ne marche pas<a class="headerlink" href="#q-le-replay-ne-marche-pas" title="Permanent link">&para;</a></h3>
+<p><strong>R</strong> : Le replay nécessite au moins 2 événements. Si le run n'en a qu'un, le bouton Replay est désactivé.</p>
+<h3 id="q-comment-basculer-en-theme-clair">Q : Comment basculer en thème clair ?<a class="headerlink" href="#q-comment-basculer-en-theme-clair" title="Permanent link">&para;</a></h3>
+<p><strong>R</strong> : Le thème phosphore sombre est fixé (Settings → Preferences → "Phosphor theme" est grisé). Le produit est pensé dark-first (oscilloscope). Un thème clair existe dans le CSS mais n'est pas exposé dans l'UI.</p>
+<h3 id="q-mes-evenements-ont-des-payloads-enormes-ca-rame">Q : Mes événements ont des payloads énormes, ça rame<a class="headerlink" href="#q-mes-evenements-ont-des-payloads-enormes-ca-rame" title="Permanent link">&para;</a></h3>
+<p><strong>R</strong> : Le panneau détail tronque l'affichage mais stocke tout. Côté agent, le callback DeepAgents tronque à 500 chars pour les <code>tool_result</code> et 240 pour les <code>llm_call</code> previews — adaptez ces limites dans votre copie du callback si besoin.</p>
+<h3 id="q-puis-je-exporter-un-run">Q : Puis-je exporter un run ?<a class="headerlink" href="#q-puis-je-exporter-un-run" title="Permanent link">&para;</a></h3>
+<p><strong>R</strong> : Pas encore (roadmap : lien partageable read-only + export image du diagramme). En attendant, vous pouvez copier le payload d'un événement via le panneau détail.</p>
+<hr />
+<h2 id="reference-rapide">Référence rapide<a class="headerlink" href="#reference-rapide" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Je veux…</th>
+<th>Je fais…</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Démarrer</td>
+<td>"Explore the live demo" sur l'écran d'accueil</td>
+</tr>
+<tr>
+<td>Créer un projet</td>
+<td>Projects → "New project"</td>
+</tr>
+<tr>
+<td>Démarrer un run</td>
+<td>Ouvrir un projet → "Start a run"</td>
+</tr>
+<tr>
+<td>Voir le live</td>
+<td>Ouvrir le run → le diagramme stream automatiquement</td>
+</tr>
+<tr>
+<td>Rejouer</td>
+<td>Vue run → "Replay" → Play</td>
+</tr>
+<tr>
+<td>Inspecter un event</td>
+<td>Cliquer la flèche</td>
+</tr>
+<tr>
+<td>Récupérer ma clé</td>
+<td>Integration → sélectionner le projet</td>
+</tr>
+<tr>
+<td>Instrumenter mon agent</td>
+<td>Integration → onglet Python/TS/DeepAgents → Copy</td>
+</tr>
+<tr>
+<td>Voir les stats</td>
+<td>Dashboard</td>
+</tr>
+<tr>
+<td>Supprimer un run</td>
+<td>Vue run → poubelle</td>
+</tr>
+<tr>
+<td>Fermer un run</td>
+<td>Vue run → "Close run" → completed/failed</td>
+</tr>
+<tr>
+<td>Recharger la démo</td>
+<td>Settings → "Reload demo projects"</td>
+</tr>
+<tr>
+<td>Déployer</td>
+<td><code>docker compose up --build</code></td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.sections", "navigation.top", "content.code.copy", "content.code.annotate", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
