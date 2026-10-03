@@ -8,9 +8,17 @@ module-level SQLAlchemy engine gets created.
 
 from __future__ import annotations
 
+import importlib.util
 import os
+import sys
 
 import click
+
+
+def _require_server_extra() -> None:
+    if importlib.util.find_spec("fastapi") is None or importlib.util.find_spec("uvicorn") is None:
+        click.echo("[AgentTrace] The server isn't installed: pip install 'deepagents-trace[server]'", err=True)
+        sys.exit(1)
 
 
 @click.group()
@@ -30,6 +38,7 @@ def main() -> None:
 )
 def ui(host: str, port: int, database_url: str | None) -> None:
     """Start the AgentTrace web UI + API (and the /ws live-stream)."""
+    _require_server_extra()
     if database_url:
         os.environ["DATABASE_URL"] = database_url
 

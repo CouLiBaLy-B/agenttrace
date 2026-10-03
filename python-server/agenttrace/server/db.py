@@ -9,31 +9,21 @@ already runs locally (see README "Database profiles").
 Zero-config default: a local `agenttrace.db` SQLite file, so `agenttrace ui`
 works immediately after `pip install` with no external database required —
 this is the `mlflow ui`-style zero-friction default.
+
+Engines now come from `agenttrace.store.db`, cached per URL.
 """
 
 from __future__ import annotations
 
-import os
 from collections.abc import Iterator
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
-DEFAULT_SQLITE_URL = "sqlite:///./agenttrace.db"
+from ..store.db import DEFAULT_SQLITE_URL, database_url, get_engine, get_sessionmaker  # noqa: F401
+from ..store.db import init_db as _init_db
 
-
-def _database_url() -> str:
-    return os.getenv("DATABASE_URL", DEFAULT_SQLITE_URL)
-
-
-def _make_engine():
-    url = _database_url()
-    connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
-    return create_engine(url, connect_args=connect_args)
-
-
-engine = _make_engine()
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+engine = get_engine(database_url())
+SessionLocal = get_sessionmaker(database_url())
 
 
 def get_db() -> Iterator[Session]:
@@ -46,6 +36,4 @@ def get_db() -> Iterator[Session]:
 
 def init_db() -> None:
     """Create all tables if they don't exist yet (schema-push style)."""
-    from . import models  # noqa: F401 - ensure models are registered on Base.metadata
-
-    models.Base.metadata.create_all(bind=engine)
+    _init_db(database_url())
