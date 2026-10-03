@@ -43,29 +43,41 @@ def _start(tmp_path: Path, auth: str):
         subprocess.run([*cli, "demo", "--database-url", db_url], check=True, env=env)
     proc = subprocess.Popen([*cli, "ui", "--port", str(port), "--auth", auth], env=env)
     base = f"http://127.0.0.1:{port}"
-    for _ in range(100):
+    deadline = time.monotonic() + 30
+    while True:
+        code = proc.poll()
+        if code is not None:
+            raise RuntimeError(f"agenttrace ui exited during startup (code {code})")
         try:
             if requests.get(f"{base}/api/auth/session", timeout=1).ok:
                 break
         except requests.RequestException:
-            time.sleep(0.1)
-    else:
-        proc.kill()
-        raise RuntimeError("agenttrace ui did not start")
+            pass
+        if time.monotonic() > deadline:
+            _stop(proc)
+            raise RuntimeError("agenttrace ui did not start within 30 s")
+        time.sleep(0.1)
     return proc, base, db_url
+
+
+def _stop(proc: subprocess.Popen) -> None:
+    proc.terminate()
+    try:
+        proc.wait(10)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait()
 
 
 @pytest.fixture
 def local_server(tmp_path):
     proc, base, db_url = _start(tmp_path, "none")
     yield base, db_url
-    proc.terminate()
-    proc.wait(10)
+    _stop(proc)
 
 
 @pytest.fixture
 def password_server(tmp_path):
     proc, base, db_url = _start(tmp_path, "password")
     yield base, db_url
-    proc.terminate()
-    proc.wait(10)
+    _stop(proc)

@@ -152,5 +152,8 @@ jobs:
           uv venv .venv --python 3.12
           uv pip install --python .venv "python-server[dev,e2e]"
           .venv/bin/playwright install --with-deps chromium
+      # The suite skips without the bundle; in CI a missing bundle must fail.
+      - name: Installed package ships the UI bundle
+        run: .venv/bin/python -c "import agenttrace.server.app as a, pathlib; assert (pathlib.Path(a.__file__).parent/'static'/'index.html').is_file()"
       - name: E2E
         run: .venv/bin/pytest python-server/tests_e2e -q
