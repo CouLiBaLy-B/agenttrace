@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { requireUser } from "@/lib/session"
+import { requireUser } from "@/lib/server-session"
 
 // GET /api/stats — dashboard home stats for the current user
 export async function GET() {

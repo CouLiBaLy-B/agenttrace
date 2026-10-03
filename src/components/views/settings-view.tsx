@@ -1,6 +1,6 @@
 "use client"
 
-import { useSession } from "next-auth/react"
+import { useSession, useAuthActions } from "@/lib/session"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { Card } from "@/components/ui/card"
@@ -9,11 +9,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { User, Database, Sparkles, LogOut, Bell, Palette } from "lucide-react"
-import { signOut } from "next-auth/react"
 import { Switch } from "@/components/ui/switch"
 
 export function SettingsView() {
-  const { data: session } = useSession()
+  const { user, authMode } = useSession()
+  const { signOut } = useAuthActions()
   const qc = useQueryClient()
 
   const seedMut = useMutation({
@@ -41,37 +41,47 @@ export function SettingsView() {
           <User className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-medium">Account</h2>
         </div>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-              Name
-            </Label>
-            <Input value={session?.user?.name || ""} readOnly className="bg-card" />
+        {authMode === "none" ? (
+          <p className="text-sm text-muted-foreground">
+            Local mode — no account (started with <span className="font-mono">agenttrace ui --auth none</span>).
+          </p>
+        ) : (
+          <>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                Name
+              </Label>
+              <Input value={user?.name || ""} readOnly className="bg-card" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                Email
+              </Label>
+              <Input value={user?.email || ""} readOnly className="bg-card" />
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-              Email
-            </Label>
-            <Input value={session?.user?.email || ""} readOnly className="bg-card" />
+          <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">Sign out of AgentTrace on this device.</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={async () => {
+                try {
+                  await signOut()
+                  toast.success("Signed out")
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : "Sign out failed")
+                }
+              }}
+            >
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </Button>
           </div>
-        </div>
-        <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">Sign out of AgentTrace on this device.</p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => {
-              signOut({ redirect: false }).then(() => {
-                toast.success("Signed out")
-                setTimeout(() => window.location.reload(), 300)
-              })
-            }}
-          >
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </Button>
-        </div>
+          </>
+        )}
       </Card>
 
       {/* Demo data */}

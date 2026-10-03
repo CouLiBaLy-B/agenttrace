@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { requireUser } from "@/lib/session"
+import { requireUser } from "@/lib/server-session"
 import { emitRunEvent } from "@/lib/socket-client"
 
 type Ctx = { params: Promise<{ id: string }> }

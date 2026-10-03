@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { requireUser } from "@/lib/session"
+import { requireUser } from "@/lib/server-session"
 import { generateApiKey, hashApiKey, keyPrefix } from "@/lib/keys"
 
 // GET /api/keys?projectId=... — list keys for a project

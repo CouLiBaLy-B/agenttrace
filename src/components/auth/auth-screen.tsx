@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { signIn } from "next-auth/react"
+import { useAuthActions } from "@/lib/session"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import { Activity, Mail, Lock, User, ArrowRight } from "lucide-react"
+import { Mail, Lock, User, ArrowRight } from "lucide-react"
 
 export function AuthScreen() {
   const [mode, setMode] = useState<"signin" | "signup">("signin")
@@ -15,6 +15,7 @@ export function AuthScreen() {
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
   const [loading, setLoading] = useState(false)
+  const { signIn, signUp } = useAuthActions()
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,54 +28,15 @@ export function AuthScreen() {
       return
     }
     setLoading(true)
-    const res = await signIn("credentials", {
-      email,
-      password,
-      name: mode === "signup" ? name : undefined,
-      mode,
-      redirect: false,
-    })
-    setLoading(false)
-    if (res?.error) {
-      toast.error(
-        mode === "signup"
-          ? "Couldn't create the account — an account with this email may already exist."
-          : "Invalid email or password. If you're new, switch to Create account."
-      )
-      return
+    try {
+      if (mode === "signup") await signUp(email, password, name)
+      else await signIn(email, password)
+      toast.success(mode === "signup" ? "Account created" : "Signed in")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong")
+    } finally {
+      setLoading(false)
     }
-    toast.success(mode === "signup" ? "Account created — demo projects loaded" : "Signed in")
-    setTimeout(() => window.location.reload(), 400)
-  }
-
-  const DEMO_EMAIL = process.env.NEXT_PUBLIC_DEMO_EMAIL ?? "demo@agenttrace.dev"
-  const DEMO_PASSWORD = process.env.NEXT_PUBLIC_DEMO_PASSWORD ?? "demo1234"
-
-  const demoLogin = async () => {
-    setLoading(true)
-    const res = await signIn("credentials", {
-      email: DEMO_EMAIL,
-      password: DEMO_PASSWORD,
-      mode: "signin",
-      redirect: false,
-    })
-    if (res?.error) {
-      const res2 = await signIn("credentials", {
-        email: DEMO_EMAIL,
-        password: DEMO_PASSWORD,
-        name: "Demo Engineer",
-        mode: "signup",
-        redirect: false,
-      })
-      if (res2?.error) {
-        setLoading(false)
-        toast.error("Couldn't start the demo. Try creating an account manually.")
-        return
-      }
-    }
-    setLoading(false)
-    toast.success("Demo session ready — three sample projects loaded")
-    setTimeout(() => window.location.reload(), 400)
   }
 
   return (
@@ -142,7 +104,7 @@ export function AuthScreen() {
           <p className="text-sm text-muted-foreground mt-1">
             {mode === "signin"
               ? "Sign in to open your traces."
-              : "We'll load three demo projects to get you started."}
+              : "Tip: run `agenttrace demo` to load sample projects."}
           </p>
 
           <Tabs value={mode} onValueChange={(v) => setMode(v as any)} className="mt-6">
@@ -216,31 +178,6 @@ export function AuthScreen() {
               )}
             </Button>
           </form>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center">
-              <span className="bg-background px-3 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                or
-              </span>
-            </div>
-          </div>
-
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            disabled={loading}
-            onClick={demoLogin}
-          >
-            <Activity className="mr-2 h-4 w-4 text-primary" />
-            Explore the live demo
-          </Button>
-          <p className="text-center text-[11px] text-muted-foreground mt-3">
-            Creates a throwaway account preloaded with sample traces.
-          </p>
         </div>
       </div>
     </div>

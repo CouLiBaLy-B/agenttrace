@@ -2,7 +2,7 @@
 
 import { useNav, ViewId } from "@/lib/store"
 import { cn } from "@/lib/utils"
-import { signOut, useSession } from "next-auth/react"
+import { useSession, useAuthActions } from "@/lib/session"
 import {
   LayoutDashboard,
   FolderGit2,
@@ -33,7 +33,8 @@ export function Sidebar({
   onToggle?: () => void
 }) {
   const { view, go } = useNav()
-  const { data: session } = useSession()
+  const { user, authMode } = useSession()
+  const { signOut } = useAuthActions()
 
   return (
     <div className="flex h-full w-full min-w-0 flex-col bg-sidebar text-sidebar-foreground">
@@ -153,38 +154,42 @@ export function Sidebar({
           <div className="flex flex-col items-center gap-2">
             <div
               className="h-8 w-8 shrink-0 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center font-mono text-xs text-primary"
-              title={session?.user?.name || session?.user?.email || "Account"}
+              title={user?.name || user?.email || "Account"}
             >
-              {(session?.user?.name || session?.user?.email || "?").slice(0, 1).toUpperCase()}
+              {(user?.name || user?.email || "?").slice(0, 1).toUpperCase()}
             </div>
+            {authMode !== "none" && (
             <Button
               variant="ghost"
               size="icon"
               className="h-7 w-7 text-muted-foreground hover:text-foreground"
               title="Sign out"
-              onClick={() => handleSignOut()}
+              onClick={() => handleSignOut(signOut)}
             >
               <LogOut className="h-4 w-4" />
             </Button>
+            )}
           </div>
         ) : (
           <div className="flex items-center gap-3 px-2 py-1.5">
             <div className="h-8 w-8 shrink-0 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center font-mono text-xs text-primary">
-              {(session?.user?.name || session?.user?.email || "?").slice(0, 1).toUpperCase()}
+              {(user?.name || user?.email || "?").slice(0, 1).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{session?.user?.name || "Engineer"}</p>
-              <p className="truncate text-[11px] text-muted-foreground">{session?.user?.email}</p>
+              <p className="truncate text-sm font-medium">{user?.name || "Engineer"}</p>
+              <p className="truncate text-[11px] text-muted-foreground">{user?.email}</p>
             </div>
+            {authMode !== "none" && (
             <Button
               variant="ghost"
               size="icon"
               className="h-7 w-7 text-muted-foreground hover:text-foreground"
               title="Sign out"
-              onClick={() => handleSignOut()}
+              onClick={() => handleSignOut(signOut)}
             >
               <LogOut className="h-4 w-4" />
             </Button>
+            )}
           </div>
         )}
       </div>
@@ -192,11 +197,13 @@ export function Sidebar({
   )
 }
 
-function handleSignOut() {
-  signOut({ redirect: false }).then(() => {
+async function handleSignOut(signOut: () => Promise<void>) {
+  try {
+    await signOut()
     toast.success("Signed out")
-    setTimeout(() => window.location.reload(), 300)
-  })
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : "Sign out failed")
+  }
 }
 
 export function MobileTopBar() {

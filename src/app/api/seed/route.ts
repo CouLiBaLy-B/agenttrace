@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { requireUser } from "@/lib/session"
+import { requireUser } from "@/lib/server-session"
 import { seedDemoData } from "@/lib/seed"
 
 // POST /api/seed — re-seed demo data for the current user (idempotent)
