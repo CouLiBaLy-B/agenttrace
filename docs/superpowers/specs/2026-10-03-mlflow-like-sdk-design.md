@@ -61,7 +61,7 @@ format to maintain, no live view).
 
 `python-server/` remains the root of the `deepagents-trace` distribution.
 
-```
+```text
 agenttrace/
   __init__.py            # public fluent API (see below) + AgentTraceClient
   store/                 # shared by client and server
