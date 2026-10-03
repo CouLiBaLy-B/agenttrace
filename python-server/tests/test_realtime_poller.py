@@ -1,9 +1,22 @@
 import os
+import uuid
 
+import pytest
+from starlette.websockets import WebSocketDisconnect
 from fastapi.testclient import TestClient
 
 from agenttrace.server.app import app
 from agenttrace.tracking.stores.sql import SqlStore
+
+
+@pytest.fixture(autouse=True)
+def _local_mode(request, monkeypatch):
+    # Runs created via SqlStore belong to the `local` user, so use keyless mode
+    # (except in the password-mode authorization tests below).
+    if "password_mode" in request.node.name:
+        return
+    monkeypatch.setenv("AGENTTRACE_AUTH", "none")
+    monkeypatch.setenv("AGENTTRACE_ALLOWED_HOSTS", "testserver")
 
 
 def test_events_written_directly_to_db_are_streamed():
@@ -106,3 +119,45 @@ def test_poll_does_not_resurrect_cursor_of_forgotten_run():
     mgr._forget_if_empty(run_id)
     mgr._apply(updates)
     assert run_id not in mgr._last_seq and run_id not in mgr._run_state
+
+
+def _signup(client):
+    resp = client.post(
+        "/api/auth/signup",
+        json={"email": f"{uuid.uuid4().hex}@example.com", "password": "secret123", "name": "T"},
+    )
+    assert resp.status_code == 201, resp.text
+
+
+def _make_run(client):
+    project = client.post("/api/projects", json={"name": "p"}).json()
+    headers = {"Authorization": f"Bearer {project['apiKey']}"}
+    return client.post("/api/events", json={"runId": None, "name": "r"}, headers=headers).json()["runId"], headers
+
+
+def test_ws_refused_without_session_password_mode():
+    with TestClient(app) as client:
+        with pytest.raises(WebSocketDisconnect) as exc:
+            with client.websocket_connect("/ws"):
+                pass
+        assert exc.value.code == 1008
+
+
+def test_ws_owner_subscribes_and_other_user_gets_not_found_password_mode():
+    with TestClient(app) as owner, TestClient(app) as other:
+        _signup(owner)
+        _signup(other)
+        run_id, headers = _make_run(owner)
+        with other.websocket_connect("/ws") as ws:
+            assert _subscribe(ws, run_id) == {"type": "error", "runId": run_id, "error": "Run not found"}
+        with owner.websocket_connect("/ws") as ws:
+            assert _subscribe(ws, run_id)["type"] == "subscribed"
+            owner.post(
+                "/api/events",
+                json={"runId": run_id, "source": "a", "target": "b", "type": "tool_call"},
+                headers=headers,
+            )
+            assert ws.receive_json()["type"] == "event"
+            # a cached cursor must not let another user in
+            with other.websocket_connect("/ws") as ws2:
+                assert _subscribe(ws2, run_id)["error"] == "Run not found"

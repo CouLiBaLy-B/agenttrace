@@ -16,8 +16,10 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from .db import init_db
+from .deps import auth_mode
 from .local_guard import LocalGuardMiddleware
 from .realtime import manager
+from .security import SESSION_COOKIE_NAME, read_session_token
 from .routes import auth, events, keys, projects, runs, stats
 
 PLACEHOLDER_HTML = """<!doctype html>
@@ -68,6 +70,13 @@ def create_app() -> FastAPI:
 
     @app.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket):
+        user_id = None
+        if auth_mode() != "none":
+            token = websocket.cookies.get(SESSION_COOKIE_NAME)
+            user_id = read_session_token(token) if token else None
+            if not user_id:
+                await websocket.close(code=1008)
+                return
         await manager.connect(websocket)
         try:
             while True:
@@ -75,7 +84,7 @@ def create_app() -> FastAPI:
                 action = message.get("action")
                 run_id = message.get("runId")
                 if action == "subscribe" and run_id:
-                    await manager.subscribe(websocket, run_id)
+                    await manager.subscribe(websocket, run_id, user_id)
                 elif action == "unsubscribe" and run_id:
                     manager.unsubscribe(websocket, run_id)
                 elif action == "replay" and run_id:

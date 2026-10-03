@@ -54,14 +54,15 @@ class ConnectionManager:
     async def connect(self, websocket: WebSocket) -> None:
         await websocket.accept()
 
-    async def subscribe(self, websocket: WebSocket, run_id: str) -> None:
+    async def subscribe(self, websocket: WebSocket, run_id: str, user_id: Optional[str] = None) -> None:
         already = websocket in self._rooms.get(run_id, ())
         if not already and sum(1 for room in self._rooms.values() if websocket in room) >= MAX_SUBSCRIPTIONS_PER_SOCKET:
             await websocket.send_json({"type": "error", "runId": run_id, "error": "Too many subscriptions"})
             return
         initial = None
-        if run_id not in self._last_seq:
-            initial = await asyncio.to_thread(self._read_cursor, run_id)
+        # With a user_id (password mode) ownership is always re-checked, even if the cursor is cached.
+        if user_id is not None or run_id not in self._last_seq:
+            initial = await asyncio.to_thread(self._read_cursor, run_id, user_id)
             if initial is None:
                 await websocket.send_json({"type": "error", "runId": run_id, "error": "Run not found"})
                 return
@@ -90,12 +91,16 @@ class ConnectionManager:
             self._run_state.pop(run_id, None)
 
     @staticmethod
-    def _read_cursor(run_id: str) -> Optional[tuple[int, tuple[str, Optional[str]]]]:
+    def _read_cursor(run_id: str, user_id: Optional[str] = None) -> Optional[tuple[int, tuple[str, Optional[str]]]]:
         """Pure DB read (thread-safe): (last seq, run state), or None if the run does not exist."""
         with SessionLocal() as db:
             run = db.get(models.Run, run_id)
             if run is None:
                 return None
+            if user_id is not None:
+                project = db.get(models.Project, run.project_id)
+                if project is None or project.user_id != user_id:
+                    return None
             last = (
                 db.query(models.Event.seq)
                 .filter(models.Event.run_id == run_id)
