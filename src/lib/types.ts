@@ -46,6 +46,14 @@ export const EVENT_COLORS: Record<EventType, { color: string; text: string; labe
   final_answer: { color: "var(--ev-answer)", text: "var(--ev-answer-text)", label: "Final answer" },
 }
 
+// Label and colour per run status (dots, rings, borders: --st-* reach 3:1, not
+// the 4.5:1 text needs, so status text stays in --ink).
+export const RUN_STATUS: Record<RunStatus, { label: string; color: string }> = {
+  running: { label: "Running", color: "var(--st-running)" },
+  completed: { label: "Completed", color: "var(--st-ok)" },
+  failed: { label: "Failed", color: "var(--st-failed)" },
+}
+
 const UNKNOWN_EVENT = { color: "var(--ink-3)", text: "var(--ink-2)" }
 
 /** An event's colours and label: an error status turns any type to the error

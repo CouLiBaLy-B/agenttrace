@@ -4,7 +4,7 @@ import { TraceEvent, EVENT_COLORS } from "@/lib/types"
 import { Participant } from "@/lib/types"
 import { PARTICIPANT_ICON, KIND_COLOR } from "./participants"
 import { useState } from "react"
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { ArrowRight, Clock, X, PanelRightClose, PanelRightOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -18,19 +18,31 @@ interface Props {
   onClose: () => void
   // desktop side panel vs mobile sheet
   variant: "panel" | "sheet"
+  /** Sheet only: false keeps focus where it is (the diagram's keyboard selection
+   * keeps driving it) and leaves the page usable behind it. */
+  modal?: boolean
 }
 
-export function EventDetailPanel({ event, onClose, variant }: Props) {
+export function EventDetailPanel({ event, onClose, variant, modal = true }: Props) {
   const { detailCollapsed, detailWidth, toggleDetail, setDetailWidth } = useLayout()
   const [dragging, setDragging] = useState(false)
   const content = event ? <EventBody event={event} /> : <EmptyDetail />
 
   if (variant === "sheet") {
     return (
-      <Sheet open={!!event} onOpenChange={(o) => !o && onClose()}>
-        <SheetContent side="right" className="w-full sm:max-w-md p-0">
+      <Sheet open={!!event} onOpenChange={(o) => !o && onClose()} modal={modal}>
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-md p-0"
+          onOpenAutoFocus={modal ? undefined : (e) => e.preventDefault()}
+          // Selecting another arrow updates the sheet instead of closing it.
+          onInteractOutside={
+            modal ? undefined : (e) => (e.target as Element | null)?.closest?.('[data-testid="diagram"]') && e.preventDefault()
+          }
+        >
           <SheetHeader className="px-4 py-3 border-b border-border">
             <SheetTitle className="font-mono text-sm">Event payload</SheetTitle>
+            <SheetDescription className="sr-only">Details and payload of the selected event.</SheetDescription>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto at-scroll">{content}</div>
         </SheetContent>

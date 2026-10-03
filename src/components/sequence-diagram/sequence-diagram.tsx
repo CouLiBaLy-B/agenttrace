@@ -3,16 +3,43 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import { subscribeRun } from "@/lib/live"
 import { api } from "@/lib/api"
-import { TraceEvent } from "@/lib/types"
+import { filterEvents } from "@/lib/run-filters"
+import { EVENT_COLORS, type EventType, type TraceEvent } from "@/lib/types"
 import { extractParticipants } from "./participants"
 import { ThemedDiagram } from "./themed-diagram"
 import { StackedTimeline } from "./stacked-timeline"
 import { EventDetailPanel } from "./event-detail-panel"
+import { FilterBar, type LiveState } from "./filter-bar"
 import { ReplayControls, ReplaySpeed } from "./replay-controls"
 import { useMediaQuery } from "@/lib/hooks"
 import { motion, AnimatePresence } from "framer-motion"
-import { Radio, Play, History, Search } from "lucide-react"
+import { History } from "lucide-react"
 import { Button } from "@/components/ui/button"
+
+// Hidden event types last for the browser session (across runs), not longer.
+const HIDDEN_TYPES_KEY = "agenttrace-hidden-types"
+
+function readHiddenTypes(): Set<EventType> {
+  try {
+    const stored: unknown = JSON.parse(sessionStorage.getItem(HIDDEN_TYPES_KEY) ?? "[]")
+    return new Set(Array.isArray(stored) ? stored.filter((t): t is EventType => t in EVENT_COLORS) : [])
+  } catch {
+    return new Set()
+  }
+}
+
+function writeHiddenTypes(types: ReadonlySet<EventType>) {
+  try {
+    sessionStorage.setItem(HIDDEN_TYPES_KEY, JSON.stringify([...types]))
+  } catch {}
+}
+
+export interface RunStats {
+  /** Events in the merged list (REST load, live stream and refetches). */
+  count: number
+  /** Timestamp of the latest of them. */
+  lastTimestamp: string | null
+}
 
 function mergeById(prev: TraceEvent[], incoming: TraceEvent[]): TraceEvent[] {
   const seen = new Set(prev.map((e) => e.id))
@@ -30,6 +57,8 @@ interface Props {
   initialEvents: TraceEvent[]
   initialStatus: "running" | "completed" | "failed"
   onRunUpdate?: (patch: any) => void
+  /** The merged event list's size and latest timestamp, whenever they change (the run header). */
+  onStats?: (stats: RunStats) => void
 }
 
 export function SequenceDiagram({
@@ -41,6 +70,7 @@ export function SequenceDiagram({
   initialEvents,
   initialStatus,
   onRunUpdate,
+  onStats,
 }: Props) {
   const [events, setEvents] = useState<TraceEvent[]>(initialEvents)
   const [status, setStatus] = useState(initialStatus)
@@ -50,12 +80,16 @@ export function SequenceDiagram({
   const [replayIdx, setReplayIdx] = useState(initialEvents.length - 1)
   const [replaySpeed, setReplaySpeed] = useState<ReplaySpeed>(1)
   const [connected, setConnected] = useState(false)
+  const [everConnected, setEverConnected] = useState(false)
+  const [hidden, setHidden] = useState<Set<EventType>>(readHiddenTypes)
+  const [query, setQuery] = useState("")
   // A live run opened before its first event: those events arrive (theme
   // animation) rather than play the opening cascade.
   const [openedEmpty] = useState(initialEvents.length === 0)
   const isDesktop = useMediaQuery("(min-width: 768px)")
+  // From xl the inspector is the side panel; below it, a sheet.
+  const isWide = useMediaQuery("(min-width: 1280px)")
 
-  const scrollRef = useRef<HTMLDivElement>(null)
   const replayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const live = status === "running"
 
@@ -65,6 +99,28 @@ export function SequenceDiagram({
     return events.slice(0, replayIdx + 1)
   }, [events, isReplay, replayIdx])
 
+  // ---- filters: hidden types leave the diagram; a search marks matches ----
+  const { visible: shownEvents, matches } = useMemo(
+    () => filterEvents(visibleEvents, hidden, query),
+    [visibleEvents, hidden, query]
+  )
+  const searching = query.trim() !== ""
+  // The stacked timeline is a list: there a search narrows it instead of dimming.
+  const listEvents = useMemo(
+    () => (searching ? shownEvents.filter((e) => matches.has(e.id)) : shownEvents),
+    [searching, shownEvents, matches]
+  )
+
+  const toggleType = useCallback(
+    (type: EventType) => {
+      const next = new Set(hidden)
+      if (!next.delete(type)) next.add(type)
+      setHidden(next)
+      writeHiddenTypes(next)
+    },
+    [hidden]
+  )
+
   const participants = useMemo(() => extractParticipants(events), [events])
 
   const selectedEvent = useMemo(
@@ -73,9 +129,17 @@ export function SequenceDiagram({
   )
 
   const onRunUpdateRef = useRef(onRunUpdate)
+  const onStatsRef = useRef(onStats)
   useEffect(() => {
     onRunUpdateRef.current = onRunUpdate
-  }, [onRunUpdate])
+    onStatsRef.current = onStats
+  }, [onRunUpdate, onStats])
+
+  // The header counts the merged list, so it never lags behind the diagram.
+  const lastTimestamp = events.at(-1)?.timestamp ?? null
+  useEffect(() => {
+    onStatsRef.current?.({ count: events.length, lastTimestamp })
+  }, [events.length, lastTimestamp])
 
   const mountedRef = useRef(true)
   useEffect(() => {
@@ -114,7 +178,9 @@ export function SequenceDiagram({
     let active = true
     const unsubscribe = subscribeRun(runId, {
       onConnectionChange: (c) => {
-        if (active) setConnected(c)
+        if (!active) return
+        setConnected(c)
+        if (c) setEverConnected(true)
       },
       // Events/status changes between the page's REST load (or a reconnect)
       // and the subscription are not streamed, so re-read the run.
@@ -157,20 +223,6 @@ export function SequenceDiagram({
       unsubscribe()
     }
   }, [runId, live, mergeEvents])
-
-  // ---- auto-scroll to newest on live events ----
-  useEffect(() => {
-    if (isReplay) return
-    const el = scrollRef.current
-    if (!el) return
-    // scroll the inner svg container
-    const target = el.querySelector(".at-scroll") as HTMLElement | null
-    const scroller = target || el
-    const nearBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 200
-    if (nearBottom) {
-      scroller.scrollTop = scroller.scrollHeight
-    }
-  }, [visibleEvents, isReplay])
 
   // ---- replay playback scheduler ----
   useEffect(() => {
@@ -235,34 +287,28 @@ export function SequenceDiagram({
   )
 
   const progress = events.length > 1 ? replayIdx / (events.length - 1) : 1
+  const liveState: LiveState | null = !live ? null : connected ? "listening" : everConnected ? "reconnecting" : "connecting"
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* toolbar */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-card/40 flex-wrap">
-        <div className="flex items-center gap-2 mr-auto">
-          {live ? (
-            <span className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-primary">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-60 at-pulse-ring" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-              </span>
-              {connected ? "listening" : "connecting…"}
-            </span>
-          ) : (
-            <span className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-              <Radio className="h-3.5 w-3.5" />
-              {events.length} events · {status}
-            </span>
-          )}
-        </div>
-
-        {!isReplay ? (
-          <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={enterReplay} disabled={events.length < 2}>
+      <FilterBar
+        hidden={hidden}
+        onToggle={toggleType}
+        query={query}
+        onQuery={setQuery}
+        matchCount={searching ? matches.size : null}
+        live={liveState}
+      >
+        {/* Until the transport bar replaces it. */}
+        {!isReplay && (
+          <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={enterReplay} disabled={events.length < 2}>
             <History className="h-3.5 w-3.5" />
             Replay
           </Button>
-        ) : (
+        )}
+      </FilterBar>
+      {isReplay && (
+        <div className="flex items-center px-3 py-2 border-b border-[var(--line)]">
           <ReplayControls
             isReplay={isReplay}
             isPlaying={isPlaying}
@@ -275,31 +321,45 @@ export function SequenceDiagram({
             onSpeed={handleSpeed}
             onExit={exitReplay}
           />
-        )}
-      </div>
+        </div>
+      )}
 
       {/* canvas + detail panel */}
       <div className="flex flex-1 min-h-0">
-        <div ref={scrollRef} className="flex-1 min-w-0 relative">
+        <div className="flex-1 min-w-0 relative">
           {events.length === 0 ? (
             <ListeningState runId={runId} live={live} />
           ) : isDesktop ? (
             <ThemedDiagram
-              events={visibleEvents}
+              events={shownEvents}
               participants={participants}
               selectedId={selectedId}
               onSelect={setSelectedId}
+              onKeySelect={setSelectedId}
+              matches={searching ? matches : null}
               live={live && !isReplay}
-              run={{ name: runName, project: projectName, status, startedAt, endedAt }}
+              follow={live && !isReplay}
+              run={{
+                name: runName,
+                project: projectName,
+                status,
+                startedAt,
+                endedAt,
+                eventCount: events.length,
+                lastEventAt: lastTimestamp,
+              }}
               speed={isReplay ? replaySpeed : 1}
               openingCascade={!openedEmpty}
+              keepSeen={!isReplay}
+              unfilteredEvents={visibleEvents}
             />
           ) : (
             <StackedTimeline
-              events={visibleEvents}
+              events={listEvents}
               participants={participants}
               selectedId={selectedId}
               onSelect={setSelectedId}
+              follow={live && !isReplay}
             />
           )}
         </div>
@@ -313,13 +373,16 @@ export function SequenceDiagram({
         />
       </div>
 
-      {/* mobile sheet detail */}
-      <EventDetailPanel
-        event={selectedEvent}
-        participants={participants}
-        onClose={() => setSelectedId(null)}
-        variant="sheet"
-      />
+      {/* sheet detail below xl: non-modal beside the diagram, so the keyboard keeps moving the selection */}
+      {!isWide && (
+        <EventDetailPanel
+          event={selectedEvent}
+          participants={participants}
+          onClose={() => setSelectedId(null)}
+          variant="sheet"
+          modal={!isDesktop}
+        />
+      )}
     </div>
   )
 }

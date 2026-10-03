@@ -91,7 +91,7 @@ export function Sidebar({
       </div>
 
       {/* Nav */}
-      <nav className={cn("flex-1 min-h-0 overflow-y-auto at-scroll py-4 space-y-1", collapsed ? "px-2" : "px-3")}>
+      <nav className={cn("flex-1 min-h-0 overflow-y-auto overflow-x-hidden at-scroll py-4 space-y-1", collapsed ? "px-2" : "px-3")}>
         {!collapsed && (
           <div className="px-2 pb-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground/60">
             monitor

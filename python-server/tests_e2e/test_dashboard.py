@@ -75,10 +75,14 @@ def test_polling_fallback_when_websocket_is_blocked(page: Page, local_server):
     client.log_event(run_id, source="Orchestrator", target="web_search", type="tool_call", label="polled second")
     expect(page.get_by_text("polled second").first).to_be_visible(timeout=8_000)
 
-    # ending the run flips the diagram out of live mode
+    # the run header counts the diagram's events
+    expect(page.locator("header p")).to_have_text(re.compile(r"^2 events · "), timeout=8_000)
+
+    # ending the run flips the diagram out of live mode: the header says so and
+    # the filter row's live-stream indicator goes away
     client.end_run(run_id, status="completed")
-    expect(page.get_by_text(re.compile(r"^\d+ events · completed$"))).to_be_visible(timeout=8_000)
-    expect(page.get_by_text(re.compile(r"^(listening|connecting…)$"))).to_have_count(0)
+    expect(page.locator("header").get_by_text("Completed", exact=True)).to_be_visible(timeout=8_000)
+    expect(page.get_by_text(re.compile(r"^(Listening|Connecting…|Reconnecting…)$"))).to_have_count(0)
 
 
 def test_password_mode_signup_and_sign_out(page: Page, password_server):

@@ -76,6 +76,11 @@ export interface TrackOptions {
   now: number
   /** First update only: false makes the events already there arrivals (a live run opened while empty). */
   openingCascade?: boolean
+  /** A shorter list was filtered, not rewound: ids trimmed from its end stay seen. */
+  keepSeen?: boolean
+  /** Ids to count as seen without drawing them (events a filter hides as they
+   * come in): showing them later doesn't play them as arrivals. */
+  alsoSeen?: readonly string[]
 }
 
 /** Works out which events animate after the event list changed, and how. Pure
@@ -125,13 +130,14 @@ export function advanceTrack(prev: ArrivalTrack | null, events: TraceEvent[], o:
   }
 
   // Events cut from the end of the list (replay rewinding) are forgotten, so
-  // they arrive again; events hidden from the middle (a filter) stay seen.
+  // they arrive again; events hidden by a filter stay seen.
   const seen = new Set(prev?.seen)
-  if (prev) {
+  if (prev && !o.keepSeen) {
     const present = new Set(ids)
     for (let i = prev.ids.length - 1; i >= 0 && !present.has(prev.ids[i]); i--) seen.delete(prev.ids[i])
   }
   for (const id of ids) seen.add(id)
+  for (const id of o.alsoSeen ?? []) seen.add(id)
 
   return { ids, seen, plans, flashes }
 }

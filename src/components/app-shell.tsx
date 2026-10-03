@@ -21,6 +21,25 @@ export function AppShell() {
   const { navCollapsed, navWidth, toggleNav, setNavWidth } = useLayout()
   const [dragging, setDragging] = useState(false)
 
+  // Run focus: the run view collapses the sidebar to its rail, leaving the
+  // diagram room. Expanding it there lasts until the reader leaves the view;
+  // the saved preference (navCollapsed) is left alone unless they expand a
+  // sidebar they had collapsed everywhere.
+  const runFocus = view === "run"
+  const [runNavExpanded, setRunNavExpanded] = useState(false)
+  const [wasRunFocus, setWasRunFocus] = useState(runFocus)
+  if (wasRunFocus !== runFocus) {
+    setWasRunFocus(runFocus)
+    if (!runFocus) setRunNavExpanded(false)
+  }
+  const collapsed = navCollapsed || (runFocus && !runNavExpanded)
+  const toggleSidebar = () => {
+    if (!runFocus) return toggleNav()
+    if (!collapsed) return setRunNavExpanded(false)
+    setRunNavExpanded(true)
+    if (navCollapsed) toggleNav()
+  }
+
   // Persisted layout is rehydrated after mount to avoid SSR hydration mismatch.
   useEffect(() => {
     useLayout.persist.rehydrate()
@@ -35,12 +54,12 @@ export function AppShell() {
         <aside
           className={cn(
             "relative hidden lg:flex shrink-0 border-r border-sidebar-border",
-            dragging ? "" : "transition-[width] duration-200 ease-out"
+            dragging ? "" : "transition-[width] duration-200 ease-out motion-reduce:transition-none"
           )}
-          style={{ width: navCollapsed ? NAV_SIZE.rail : navWidth }}
+          style={{ width: collapsed ? NAV_SIZE.rail : navWidth }}
         >
-          <Sidebar collapsed={navCollapsed} onToggle={toggleNav} />
-          {!navCollapsed && (
+          <Sidebar collapsed={collapsed} onToggle={toggleSidebar} />
+          {!collapsed && (
             <ResizeHandle
               width={navWidth}
               setWidth={setNavWidth}

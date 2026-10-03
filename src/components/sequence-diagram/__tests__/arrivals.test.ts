@@ -97,6 +97,20 @@ describe("advanceTrack", () => {
     const hidden = advanceTrack(t0, [all[0], all[2], all[3], all[4]], opts())
     expect(advanceTrack(hidden, all, opts()).plans.size).toBe(0)
   })
+  it("with keepSeen (a filter, not a rewind) events trimmed from the end don't arrive again", () => {
+    const all = evs(5)
+    const t0 = advanceTrack(null, all, opts())
+    const filtered = advanceTrack(t0, all.slice(0, 3), opts({ keepSeen: true }))
+    expect(filtered.seen.size).toBe(5)
+    expect(advanceTrack(filtered, all, opts({ keepSeen: true })).plans.size).toBe(0)
+  })
+  it("events that came in while filtered out (alsoSeen) don't arrive when shown again", () => {
+    const all = evs(4)
+    const t0 = advanceTrack(null, all.slice(0, 2), opts())
+    // e2 and e3 come in while their type is hidden
+    const hidden = advanceTrack(t0, all.slice(0, 2), opts({ keepSeen: true, alsoSeen: all.map((e) => e.id) }))
+    expect(advanceTrack(hidden, all, opts({ keepSeen: true, alsoSeen: all.map((e) => e.id) })).plans.size).toBe(0)
+  })
   it("in a style with LEDs an arrival lights its target's LED until it is replaced", () => {
     const studio = DIAGRAM_STYLES.studio
     const call = ev(0, "Orch", "search", "tool_call")

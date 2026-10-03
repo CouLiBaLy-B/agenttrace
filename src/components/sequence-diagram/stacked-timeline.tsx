@@ -1,22 +1,28 @@
 "use client"
 
+import { useRef } from "react"
 import { motion } from "framer-motion"
 import { TraceEvent, EVENT_COLORS } from "@/lib/types"
 import { Participant } from "@/lib/types"
 import { PARTICIPANT_ICON, KIND_COLOR } from "./participants"
 import { ArrowRight, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useFollowEnd } from "./follow"
 
 interface Props {
   events: TraceEvent[]
   participants: Participant[]
   selectedId: string | null
   onSelect: (id: string) => void
+  /** Open at the end and keep new events in view while the reader stays there (a live run). */
+  follow?: boolean
 }
 
-export function StackedTimeline({ events, participants: _participants, selectedId, onSelect }: Props) {
+export function StackedTimeline({ events, participants: _participants, selectedId, onSelect, follow = false }: Props) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  useFollowEnd(scrollRef, follow, events.length)
   return (
-    <div className="at-graticule p-3 space-y-2 at-scroll overflow-y-auto h-full">
+    <div ref={scrollRef} className="at-graticule p-3 space-y-2 at-scroll overflow-y-auto h-full">
       {events.map((ev, i) => {
         const meta = EVENT_COLORS[ev.type as keyof typeof EVENT_COLORS] || { color: "var(--ink-3)", text: "var(--ink-2)", label: ev.type }
         const isError = ev.status === "error"

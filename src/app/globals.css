@@ -132,6 +132,9 @@
 .at-pulse-ring {
   animation: at-pulse-ring 1.8s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
 }
+@media (prefers-reduced-motion: reduce) {
+  .at-pulse-ring { animation: none; opacity: 0; }
+}
 
 /* Radar sweep */
 @keyframes at-radar-sweep {
@@ -167,10 +170,30 @@
    arrow's own colour (the <g> sets `color` to the event colour). --halo is the
    colour behind its text (label knockouts): the canvas, or the canvas under the
    hover / selection tint. sRGB mixes, so they match the alpha-blended tints. */
-.at-arrow { cursor: pointer; outline: none; --halo: var(--canvas); }
-.at-arrow:not([aria-pressed="true"]):hover { --halo: color-mix(in srgb, currentColor 7%, var(--canvas)); }
-.at-arrow:not([aria-pressed="true"]):hover > .at-arrow-hit { fill: color-mix(in srgb, currentColor 7%, transparent); }
-.at-arrow[aria-pressed="true"] { --halo: color-mix(in srgb, currentColor 10%, var(--canvas)); }
+.at-arrow { cursor: pointer; outline: none; --halo: var(--canvas); transition: opacity 150ms ease-out; }
+.at-arrow:not([aria-current="true"]):hover { --halo: color-mix(in srgb, currentColor 7%, var(--canvas)); }
+.at-arrow:not([aria-current="true"]):hover > .at-arrow-hit { fill: color-mix(in srgb, currentColor 7%, transparent); }
+.at-arrow[aria-current="true"] { --halo: color-mix(in srgb, currentColor 10%, var(--canvas)); }
+@media (prefers-reduced-motion: reduce) { .at-arrow { transition: none; } }
+
+/* Run view: keyboard focus stays on the canvas. While it has keyboard focus the
+   selected arrow's highlight is the focus indicator (in --focus-ring); with no
+   selection drawn, the canvas is framed — over its wrapper, since the sticky
+   lane headers would cover an outline drawn inside the canvas. */
+.at-diagram-keys { outline: none; }
+.at-diagram-frame:has(> .at-diagram-keys:focus-visible):not(:has(.at-arrow[aria-current="true"]))::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  border: 2px solid var(--focus-ring);
+  pointer-events: none;
+}
+.at-diagram-keys:focus-visible .at-arrow[aria-current="true"] > .at-arrow-sel {
+  stroke: var(--focus-ring);
+  stroke-opacity: 1;
+  stroke-width: 2px;
+}
 
 /* Blinking cursor for "listening" states */
 @keyframes at-blink {

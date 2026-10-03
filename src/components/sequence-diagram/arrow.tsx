@@ -220,6 +220,14 @@ function Animated({ m, onDone, children }: { m?: MotionSpec; onDone: () => void;
   )
 }
 
+/** DOM id of an event's arrow (the canvas points aria-activedescendant at it). */
+export function arrowDomId(eventId: string) {
+  return `at-ev-${eventId.replace(/[^\w-]/g, "_")}`
+}
+
+/** Opacity of an arrow that doesn't match the active search. */
+const MISS_OPACITY = 0.35
+
 export interface ArrowProps {
   a: ArrowGeom
   /** Participant names as the event sent them (an unknown one is drawn on the first lane). */
@@ -230,10 +238,12 @@ export interface ArrowProps {
   onSelect: (id: string) => void
   /** How the event arrives when it is new (arrivals.ts). Read once, when the arrow mounts. */
   arrival?: ArrivalPlan
+  /** With a search active: whether this event matches it (ringed) or not (dimmed). */
+  match?: boolean
 }
 
 /** One event: its line (dashed for a tool result), head, error cross, label and duration. */
-export const Arrow = memo(function Arrow({ a, source, target, style, selected, onSelect, arrival }: ArrowProps) {
+export const Arrow = memo(function Arrow({ a, source, target, style, selected, onSelect, arrival, match }: ArrowProps) {
   const { color, text: textColor, label: typeLabel } = eventPaint(a.type, a.isError)
   const detail = DETAIL[style.theme]
   const s = shapeOf(a, style)
@@ -265,20 +275,25 @@ export const Arrow = memo(function Arrow({ a, source, target, style, selected, o
     if (m && finished.current.size >= Object.keys(m).length) setSettled(true)
   }
 
+  // Keyboard focus stays on the canvas (it names the selected arrow through
+  // aria-activedescendant), so arrows take no focus: a click focuses the canvas.
   return (
     <g
+      id={arrowDomId(a.id)}
       role="button"
-      tabIndex={-1}
       aria-label={`${typeLabel} ${source} to ${target}: ${a.title}`}
-      aria-pressed={selected}
+      aria-current={selected ? "true" : undefined}
       data-event-id={a.id}
       data-arrival={m && plan!.kind !== "cascade" ? plan!.kind : undefined}
+      data-match={match === undefined ? undefined : match}
       className="at-arrow"
-      style={{ color }}
+      style={{ color, opacity: match === false ? MISS_OPACITY : undefined }}
       onClick={() => onSelect(a.id)}
     >
       {selected && (
+        // The selection; with the canvas focused it also shows keyboard focus (globals.css).
         <rect
+          className="at-arrow-sel"
           x={s.box.x0}
           y={s.box.y0}
           width={s.box.x1 - s.box.x0}
@@ -289,6 +304,20 @@ export const Arrow = memo(function Arrow({ a, source, target, style, selected, o
           stroke={color}
           strokeOpacity={0.5}
           strokeWidth={1}
+        />
+      )}
+      {match && (
+        // A search hit: ringed in its own colour (selected too: the ring outlines the tint).
+        <rect
+          data-match-ring
+          x={s.box.x0}
+          y={s.box.y0}
+          width={s.box.x1 - s.box.x0}
+          height={s.box.y1 - s.box.y0}
+          rx={detail.radius}
+          fill="none"
+          stroke={color}
+          strokeWidth={1.25}
         />
       )}
       <rect
@@ -330,7 +359,7 @@ export const Arrow = memo(function Arrow({ a, source, target, style, selected, o
             strokeWidth={style.arrow.width}
             strokeDasharray={a.isReturn ? style.arrow.returnDash : undefined}
             strokeLinecap={open || a.isReturn ? "butt" : "round"}
-            opacity={m?.line ? undefined : style.afterglow && !selected ? AFTERGLOW_REST : 1}
+            opacity={m?.line ? undefined : style.afterglow && !selected && !match ? AFTERGLOW_REST : 1}
             mask={m?.draw ? `url(#${maskId})` : undefined}
           />
         </Animated>
