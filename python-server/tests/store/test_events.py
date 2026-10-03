@@ -77,3 +77,20 @@ def test_append_event_encodes_non_json_payload_values(session):
     run = events.create_run(session, local.get_or_create_project(session, user, "p").id, "r")
     event = events.append_event(session, run.id, {"source": "a", "target": "b", "type": "tool_call", "payload": {"p": Path("/a")}})
     assert json.loads(event.payload) == {"p": "/a"}
+
+
+def test_project_created_by_another_process_meanwhile_wins(session, monkeypatch):
+    """Cross-process race: the older same-name project is kept, ours is deleted."""
+    user = local.get_or_create_local_user(session)
+    older = local.get_or_create_project(session, user, "p")
+    real = local._projects_named
+    calls = []
+
+    def racing(db, u, name):
+        calls.append(name)
+        query = real(db, u, name)
+        return query.filter(models.Project.id == "none") if len(calls) == 1 else query
+
+    monkeypatch.setattr(local, "_projects_named", racing)
+    assert local.get_or_create_project(session, user, "p").id == older.id
+    assert session.query(models.Project).filter(models.Project.name == "p").count() == 1

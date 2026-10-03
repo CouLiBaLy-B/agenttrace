@@ -6,7 +6,6 @@ from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableLambda
 
 import agenttrace.langchain
-from agenttrace.store.db import init_db
 from tests.conftest import read_runs
 
 
@@ -48,7 +47,6 @@ def test_autolog_traces_invocations_from_other_threads(tracking_db):
 
 
 def test_autolog_does_not_double_trace_an_explicit_handler(tracking_db):
-    init_db(tracking_db)  # so two concurrent runs could both be stored, were both handlers called
     agenttrace.langchain.autolog()
     try:
         explicit = agenttrace.langchain.AgentTraceCallbackHandler(orchestrator="Boss")

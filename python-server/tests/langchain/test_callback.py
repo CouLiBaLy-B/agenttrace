@@ -8,7 +8,6 @@ from langchain_core.tools import tool
 
 import agenttrace
 from agenttrace.langchain import AgentTraceCallbackHandler
-from agenttrace.store.db import init_db
 from tests.conftest import read_runs
 
 
@@ -87,7 +86,6 @@ def test_handler_errors_never_propagate(tracking_db, monkeypatch):
 
 
 def test_never_joins_the_implicit_fluent_run(tracking_db):
-    init_db(tracking_db)  # avoid racing two first-time schema creations
     agenttrace.log_event(source="me", target="you", type="tool_call")  # creates the implicit run
     handler = AgentTraceCallbackHandler()
     RunnableLambda(lambda x: add.invoke({"a": 1, "b": 2}), name="first").invoke(None, config={"callbacks": [handler]})
@@ -100,7 +98,6 @@ def test_never_joins_the_implicit_fluent_run(tracking_db):
 
 
 def test_concurrent_roots_on_one_handler_stay_separate(tracking_db):
-    init_db(tracking_db)  # avoid racing two first-time schema creations
     handler = AgentTraceCallbackHandler()
     barrier = threading.Barrier(2, timeout=10)
 

@@ -4,12 +4,16 @@ found or created by name, like MLflow experiments."""
 
 from __future__ import annotations
 
+import threading
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from . import models
 
 LOCAL_USER_EMAIL = "local@agenttrace"
+
+_project_lock = threading.Lock()
 
 
 def get_or_create_local_user(db: Session) -> models.User:
@@ -28,17 +32,29 @@ def get_or_create_local_user(db: Session) -> models.User:
     return user
 
 
-def get_or_create_project(db: Session, user: models.User, name: str) -> models.Project:
-    project = (
+def _projects_named(db: Session, user: models.User, name: str):
+    return (
         db.query(models.Project)
         .filter(models.Project.user_id == user.id, models.Project.name == name)
-        .order_by(models.Project.created_at)
-        .first()
+        .order_by(models.Project.created_at, models.Project.id)
     )
-    if project:
+
+
+def get_or_create_project(db: Session, user: models.User, name: str) -> models.Project:
+    # Names aren't unique in the schema (accounts may reuse them), so
+    # find-or-create is serialized in-process, and a cross-process race is
+    # resolved after the fact: the oldest same-name project wins.
+    with _project_lock:
+        project = _projects_named(db, user, name).first()
+        if project:
+            return project
+        project = models.Project(name=name, user_id=user.id)
+        db.add(project)
+        db.commit()
+        oldest = _projects_named(db, user, name).first()
+        if oldest is not None and oldest.id != project.id:
+            db.delete(project)
+            db.commit()
+            return oldest
+        db.refresh(project)
         return project
-    project = models.Project(name=name, user_id=user.id)
-    db.add(project)
-    db.commit()
-    db.refresh(project)
-    return project

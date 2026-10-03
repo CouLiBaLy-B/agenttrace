@@ -170,3 +170,41 @@ def test_trace_on_method_with_non_json_values_keeps_the_run(tracking_db):
     assert stored["events"][0]["payload"]["args"][1] == "/tmp/x"
     assert stored["events"][1]["payload"]["result"] == "2026-01-02 03:04:05"
     assert stored["events"][2]["payload"] == {"path": "/tmp/y"}
+
+
+def _concurrent_first_runs(project_for):
+    barrier = threading.Barrier(8)
+    errors = []
+
+    def work(i):
+        try:
+            barrier.wait()
+            with agenttrace.start_run(f"r{i}", project=project_for(i)):
+                agenttrace.log_event(source="a", target="b", type="tool_call")
+        except Exception as exc:  # noqa: BLE001
+            errors.append(exc)
+
+    threads = [threading.Thread(target=work, args=(i,)) for i in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert errors == []
+
+
+def test_concurrent_first_runs_on_a_fresh_db_are_all_stored(tracking_db):
+    _concurrent_first_runs(lambda i: "p")
+    runs = read_runs(tracking_db)
+    assert sorted(r["name"] for r in runs) == [f"r{i}" for i in range(8)]
+    assert all(len(r["events"]) == 1 for r in runs)
+
+
+def test_concurrent_first_runs_do_not_duplicate_projects(tracking_db):
+    from agenttrace.store import db as store_db
+    from agenttrace.store import models
+
+    _concurrent_first_runs(lambda i: f"proj{i % 3}")
+    with store_db.get_sessionmaker(tracking_db)() as db:
+        names = sorted(p.name for p in db.query(models.Project).all())
+    assert names == ["proj0", "proj1", "proj2"]
+    assert len(read_runs(tracking_db)) == 8

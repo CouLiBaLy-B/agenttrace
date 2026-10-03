@@ -55,3 +55,22 @@ def test_concurrent_writer_and_reader_on_same_sqlite_file(tmp_path):
             conn.execute(text("select count(*) from users")).scalar()
     thread.join()
     assert errors == []
+
+
+def test_init_db_is_once_per_url_and_retries_a_cross_process_race(tmp_path, monkeypatch):
+    from sqlalchemy.exc import OperationalError
+
+    url = f"sqlite:///{tmp_path}/race.db"
+    real = models.Base.metadata.create_all
+    calls = []
+
+    def create_all(bind):
+        calls.append(bind)
+        if len(calls) == 1:
+            raise OperationalError("CREATE TABLE users", {}, Exception("table users already exists"))
+        real(bind=bind)
+
+    monkeypatch.setattr(models.Base.metadata, "create_all", create_all)
+    store_db.init_db(url)
+    store_db.init_db(url)
+    assert len(calls) == 2  # one failed attempt, one retry, then cached

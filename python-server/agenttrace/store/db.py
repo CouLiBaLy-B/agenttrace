@@ -13,6 +13,7 @@ import os
 import threading
 
 from sqlalchemy import Engine, create_engine
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
 
 DEFAULT_SQLITE_URL = "sqlite:///./agenttrace.db"
@@ -20,6 +21,8 @@ DEFAULT_SQLITE_URL = "sqlite:///./agenttrace.db"
 _lock = threading.Lock()
 _engines: dict[str, Engine] = {}
 _sessionmakers: dict[str, sessionmaker] = {}
+_init_lock = threading.Lock()
+_initialized: set[str] = set()
 
 
 def database_url() -> str:
@@ -47,7 +50,22 @@ def get_sessionmaker(url: str) -> sessionmaker:
 
 
 def init_db(url: str) -> None:
-    """Create all tables if they don't exist yet (schema-push style)."""
+    """Create all tables if they don't exist yet (schema-push style).
+
+    Once per URL per process, under a lock: concurrent first runs would
+    otherwise race `create_all` (check-then-create) and lose writes to
+    "table already exists". Another *process* can still win that race, so
+    that error is retried once (the second pass sees the tables)."""
     from . import models
 
-    models.Base.metadata.create_all(bind=get_engine(url))
+    with _init_lock:
+        if url in _initialized:
+            return
+        engine = get_engine(url)
+        try:
+            models.Base.metadata.create_all(bind=engine)
+        except OperationalError as exc:
+            if "already exists" not in str(exc):
+                raise
+            models.Base.metadata.create_all(bind=engine)
+        _initialized.add(url)
