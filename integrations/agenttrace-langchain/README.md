@@ -1,3 +1,11 @@
+> **Deprecated.** This package is now a thin shim. Use
+> `pip install 'deepagents-trace[langchain]'` and `import agenttrace.langchain`
+> (or `agenttrace.langchain.autolog()`). Existing top-level imports
+> (`from agenttrace_langchain import AgentTraceMiddleware`, `AgentTraceRun`,
+> `AgentTraceClient`, `AsyncAgentTraceRun`, `AsyncAgentTraceClient`) keep
+> working and emit a `DeprecationWarning`. Old submodule paths such as
+> `agenttrace_langchain.run` or `agenttrace_langchain.client` no longer exist.
+
 # agenttrace-langchain
 
 `AgentTraceMiddleware` — an `AgentMiddleware` for LangChain's `create_agent` /
@@ -57,10 +65,9 @@ The middleware is built to never affect the agent it instruments:
   disables tracing for that run (one warning logged via the standard
   `logging` module), the agent keeps running normally.
 - **Bounded payloads** — tool args/results, LLM output previews and the
-  final answer are truncated (`agenttrace_langchain.run.truncate`/`compact`)
-  before being sent, so a single large value can't blow up an event body.
+  final answer are truncated before being sent, so a single large value can't blow up an event body.
 
-`AgentTraceRun` (`run.py`) implements this contract and can be reused
+`AgentTraceRun` implements this contract and can be reused
 directly if you're not going through the middleware (e.g. to trace a custom
 orchestration loop):
 
@@ -73,7 +80,7 @@ run.end("completed")
 run.close()  # bounded wait for the queue to drain
 ```
 
-`AgentTraceClient` (`client.py`) itself stays a thin, fail-loud HTTP
+`AgentTraceClient` itself stays a thin, fail-loud HTTP
 primitive (raises on a missing key or a failed request) — the right
 behavior when called directly; `AgentTraceRun` is the layer that adds the
 non-blocking/never-fatal guarantees on top.

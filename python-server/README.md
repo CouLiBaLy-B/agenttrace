@@ -8,7 +8,7 @@ module, the CLI command, and the product itself are still called
 
 `pip install deepagents-trace && agenttrace ui` — starts the AgentTrace web
 API (and a `/ws` live-stream) with **zero Node/Bun process**, `mlflow ui`-style.
-For local development against this checkout: `pip install -e python-server`.
+For local development against this checkout: `pip install -e "python-server[dev]"`.
 
 This is **Phase 1 + 3** of the Python migration plan: a FastAPI backend that
 is a 1:1 contract port of the Next.js API (`src/app/api/*` in the main repo),
@@ -17,11 +17,58 @@ plus the CLI. **Phase 2 is not done yet** — there is no bundled frontend, so
 directly (`/api/*`) or the existing Next.js dashboard against this backend's
 data once Phase 2 lands.
 
-## Install & run
+## Quick start (MLflow-style)
 
 ```bash
-pip install -e python-server
-agenttrace ui                      # http://127.0.0.1:3000, SQLite by default (./agenttrace.db)
+pip install 'deepagents-trace[langchain,server]'
+```
+
+```python
+import agenttrace
+import agenttrace.langchain
+
+agenttrace.set_project("support-bot")      # like mlflow.set_experiment
+agenttrace.langchain.autolog()             # like mlflow.langchain.autolog
+agent.invoke({"messages": [...]})          # traced into ./agenttrace.db
+```
+
+```bash
+agenttrace ui                              # http://127.0.0.1:3000, reads ./agenttrace.db, no login
+```
+
+Manual tracing:
+
+```python
+with agenttrace.start_run("triage"):
+    agenttrace.log_event(source="Orchestrator", target="LLM", type="llm_call", duration_ms=420)
+
+@agenttrace.trace                          # tool_call -> tool_result | error
+def web_search(query: str) -> str: ...
+```
+
+| MLflow | AgentTrace |
+| --- | --- |
+| `mlflow.set_tracking_uri()` / `MLFLOW_TRACKING_URI` | `agenttrace.set_tracking_uri()` / `AGENTTRACE_TRACKING_URI` |
+| `mlflow.set_experiment()` | `agenttrace.set_project()` / `AGENTTRACE_PROJECT` |
+| `mlflow.start_run()` / `active_run()` / `end_run()` | same names |
+| `@mlflow.trace` | `@agenttrace.trace` |
+| `mlflow.langchain.autolog()` | `agenttrace.langchain.autolog()` |
+| `MlflowClient` | `agenttrace.AgentTraceClient` |
+| `mlflow ui` | `agenttrace ui` |
+
+Tracking URIs: unset -> `sqlite:///./agenttrace.db`; any SQLAlchemy URL (e.g.
+`postgresql://...`) -> written directly; `http(s)://host:port` -> sent to a
+running `agenttrace ui` (set `AGENTTRACE_KEY` if that server uses
+`--auth password`). The legacy `AGENTTRACE_URL` is still honored as a fallback.
+
+`agenttrace ui --auth none` (default on localhost) needs no account or API
+key; in this mode the server only accepts loopback `Host`/`Origin` headers.
+When serving behind a reverse proxy, add the public hostnames with
+`AGENTTRACE_ALLOWED_HOSTS` (comma-separated). `--auth password` (default on any
+other host) keeps accounts and `atr_` project keys, and `/ws` requires a
+session cookie.
+
+```bash
 agenttrace ui --database-url postgresql://user:pass@localhost:5432/agenttrace
 agenttrace ui --port 8080 --host 0.0.0.0
 ```
@@ -82,6 +129,7 @@ from here:
 ## Known gaps vs. the Next.js backend (tracked for later phases)
 
 - No frontend bundle yet (Phase 2).
+- Live updates are polled from the database every 0.5 s (so direct SQLite writes appear live).
 - No demo-account seeding on signup (the Next.js version seeds 3 sample
   projects — intentionally skipped here to keep this phase scoped to the API
   contract).

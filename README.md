@@ -24,6 +24,10 @@ it, zero Node/Bun required — see [python-server/README.md](python-server/READM
 It's Phase 1+3 of a larger migration (no bundled frontend yet — that's Phase
 2); the Next.js app in this README stays the full-featured path until then.
 
+For an MLflow-style local flow (no key, no server: `agenttrace.langchain.autolog()`
+writes to `./agenttrace.db`, `agenttrace ui` reads it) see the
+[quick start](python-server/README.md#quick-start-mlflow-style).
+
 ## Quick start — without Docker
 
 No container required to run AgentTrace locally: it's a Bun/Next.js app plus one
@@ -146,12 +150,13 @@ Same flow with `fetch` — see the Integration tab in the app.
 The DeepAgents tab provides a drop-in `AgentMiddleware` (deepagents' current
 middleware system — `before_agent` / `wrap_model_call` / `wrap_tool_call` /
 `after_agent`) that instruments a `create_deep_agent` run. It's also published
-as an installable package: [`integrations/agenttrace-langchain`](integrations/agenttrace-langchain).
+as part of `deepagents-trace` (`agenttrace.langchain`); the old
+[`integrations/agenttrace-langchain`](integrations/agenttrace-langchain) package is a deprecated shim.
 Attach one instance per agent:
 
 ```python
-# pip install -e integrations/agenttrace-langchain
-from agenttrace_langchain import AgentTraceMiddleware
+# pip install 'deepagents-trace[langchain]'
+from agenttrace.langchain import AgentTraceMiddleware
 from deepagents import create_deep_agent
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
@@ -178,6 +183,8 @@ to a model/tool call) and never fatal (a misconfigured or unreachable
 AgentTrace instance silently disables tracing for the run instead of breaking
 the agent) — see the package
 [README](integrations/agenttrace-langchain/README.md#reliability) for details.
+
+Or skip the middleware entirely: `agenttrace.langchain.autolog()`.
 
 The middleware streams, in real time:
 
