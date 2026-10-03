@@ -29,7 +29,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         {/* Sets data-theme from the stored preference / OS before first paint. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
       </head>
-      <body className="antialiased bg-background text-foreground min-h-screen font-sans">
+      <body className="antialiased bg-background text-foreground min-h-dvh font-sans">
         <Providers>{children}</Providers>
       </body>
     </html>

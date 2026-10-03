@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { applyTheme, revealOrigin, useTheme } from "@/lib/theme"
 import { THEME_STORAGE_KEY } from "@/lib/theme-core"
+
+// applyTheme keeps module state (the theme most recently requested), so every
+// test imports a fresh copy of the module together with a fresh store.
+type ThemeModule = typeof import("@/lib/theme")
+let applyTheme: ThemeModule["applyTheme"]
+let revealOrigin: ThemeModule["revealOrigin"]
+let useTheme: ThemeModule["useTheme"]
 
 // The store drives the real <html> element; the vitest environment is plain
 // Node, so give it a minimal fake document/window (no jsdom needed).
@@ -37,13 +43,24 @@ function setup({
   vi.stubGlobal("document", { documentElement: root, ...(viewTransitions ? { startViewTransition } : {}) })
   vi.stubGlobal("window", globalThis)
   vi.stubGlobal("localStorage", storage ?? { getItem: (k: string) => saved.get(k) ?? null, setItem: (k: string, v: string) => void saved.set(k, v) })
-  vi.stubGlobal("matchMedia", (q: string) => ({ matches: q.includes("reduced-motion") ? reduce : dark }))
-  return { attributes, styles, saved, startViewTransition, transitions }
+  let reduceNow = reduce
+  vi.stubGlobal("matchMedia", (q: string) => ({ matches: q.includes("reduced-motion") ? reduceNow : dark }))
+  return {
+    attributes,
+    styles,
+    saved,
+    startViewTransition,
+    transitions,
+    setReduce: (value: boolean) => void (reduceNow = value),
+    runTransitions: (order: "in order" | "reversed" = "in order") =>
+      (order === "in order" ? [...transitions] : [...transitions].reverse()).forEach((run) => run()),
+  }
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+  vi.resetModules()
+  ;({ applyTheme, revealOrigin, useTheme } = await import("@/lib/theme"))
   vi.useFakeTimers()
-  useTheme.setState({ preference: "auto", resolved: "cyanotype", systemDark: true })
 })
 afterEach(() => {
   vi.useRealTimers()
@@ -99,6 +116,41 @@ describe("applyTheme", () => {
       process.off("unhandledRejection", onUnhandled)
     }
     expect(unhandled).toEqual([])
+  })
+
+  // With View Transitions the attribute only changes inside the deferred update
+  // callback, so overlapping switches must be tracked by what was requested.
+  it("lets a switch back to the starting theme win over the reveal still pending", () => {
+    const env = setup({ attrs: { "data-theme": "cyanotype", "data-theme-pref": "cyanotype" } })
+    useTheme.getState().setPreference("studio")
+    useTheme.getState().setPreference("cyanotype") // same tick, before the first callback ran
+    env.runTransitions()
+    expect(env.attributes.get("data-theme")).toBe("cyanotype")
+    expect(useTheme.getState()).toMatchObject({ preference: "cyanotype", resolved: "cyanotype" })
+  })
+
+  it("does not start a second reveal for a theme that is already on its way", () => {
+    const env = setup({ attrs: { "data-theme": "cyanotype" } })
+    applyTheme("studio")
+    applyTheme("studio")
+    expect(env.startViewTransition).toHaveBeenCalledTimes(1)
+  })
+
+  it("applies the latest request whichever update callback runs last", () => {
+    const env = setup({ attrs: { "data-theme": "cyanotype" } })
+    applyTheme("studio")
+    applyTheme("phosphore")
+    env.runTransitions("reversed")
+    expect(env.attributes.get("data-theme")).toBe("phosphore")
+  })
+
+  it("is not undone by an older reveal when the next switch is instant", () => {
+    const env = setup({ attrs: { "data-theme": "cyanotype" } })
+    applyTheme("studio") // reveal pending
+    env.setReduce(true)
+    applyTheme("phosphore") // instant
+    env.runTransitions()
+    expect(env.attributes.get("data-theme")).toBe("phosphore")
   })
 
   it("falls back to a 200 ms colour transition without view transitions", () => {
@@ -164,6 +216,23 @@ describe("syncFromDocument", () => {
     const env = setup({ dark: false })
     useTheme.getState().syncFromDocument()
     expect(env.attributes.get("data-theme")).toBe("studio")
+  })
+
+  it("brings the page in line when the OS changed between the boot script and now", () => {
+    // boot script saw a dark OS (cyanotype); by the time ThemeSync runs it is light
+    const env = setup({ attrs: { "data-theme": "cyanotype", "data-theme-pref": "auto" }, dark: false })
+    useTheme.getState().syncFromDocument()
+    expect(useTheme.getState()).toMatchObject({ preference: "auto", resolved: "studio", systemDark: false })
+    expect(env.attributes.get("data-theme")).toBe("studio")
+    expect(env.startViewTransition).not.toHaveBeenCalled() // no reveal while hydrating
+  })
+
+  it("forgets an earlier request so the next switch is not dropped", () => {
+    const env = setup({ attrs: { "data-theme": "cyanotype", "data-theme-pref": "auto" }, dark: true })
+    applyTheme("studio") // asked for, but its callback never ran
+    useTheme.getState().syncFromDocument()
+    applyTheme("studio")
+    expect(env.startViewTransition).toHaveBeenCalledTimes(2)
   })
 })
 

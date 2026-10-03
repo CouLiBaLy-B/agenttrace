@@ -13,10 +13,18 @@ function safeStorage(): Storage | null {
   }
 }
 
+// The theme most recently asked for. With View Transitions the attribute only
+// changes inside the deferred update callback, so it can lag behind a request.
+// Comparing against this, and having every commit write it, keeps the page and
+// the store in step when switches overlap (Studio, then straight back to
+// Cyanotype) and drops repeats of a theme that is already on its way.
+let requested: ThemeId | null = null
+
 export function applyTheme(next: ThemeId, origin?: { x: number; y: number }): void {
   const root = document.documentElement
-  if (root.getAttribute("data-theme") === next) return
-  const commit = () => root.setAttribute("data-theme", next)
+  if ((requested ?? root.getAttribute("data-theme")) === next) return
+  requested = next
+  const commit = () => root.setAttribute("data-theme", requested ?? next)
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
   const doc = document as Document & { startViewTransition?: (cb: () => void) => { ready?: Promise<unknown> } }
   if (reduce) return commit()
@@ -75,9 +83,11 @@ export const useTheme = create<ThemeState>((set, get) => ({
     const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches
     const preference = parsePreference(root.getAttribute("data-theme-pref"))
     const resolved = resolveTheme(preference, systemDark)
-    // The boot script normally set the theme before first paint; if it was
-    // blocked, theme the page now rather than leave every token undefined.
-    if (!root.getAttribute("data-theme")) root.setAttribute("data-theme", resolved)
+    // The boot script normally set the theme before first paint. If it was
+    // blocked (every token would be undefined), or the OS changed between it
+    // and now, bring the page in line with the store. No reveal while hydrating.
+    if (root.getAttribute("data-theme") !== resolved) root.setAttribute("data-theme", resolved)
+    requested = null // the document is the source of truth again
     set({ preference, systemDark, resolved })
   },
   setSystemDark: (systemDark) => {

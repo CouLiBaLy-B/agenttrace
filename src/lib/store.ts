@@ -1,7 +1,7 @@
 "use client"
 
 import { create } from "zustand"
-import { persist, createJSONStorage } from "zustand/middleware"
+import { persist, createJSONStorage, type StateStorage } from "zustand/middleware"
 
 export type ViewId =
   | "dashboard"
@@ -42,6 +42,22 @@ export const DETAIL_SIZE = { default: 320, min: 264, max: 560, rail: 44 }
 
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n))
 
+// localStorage can be missing or throw (blocked storage, some private modes).
+// Without a storage zustand drops the `persist` API and warns on every update,
+// so fall back to keeping the layout in memory for the session.
+function layoutStorage(): StateStorage {
+  try {
+    return localStorage
+  } catch {
+    const memory = new Map<string, string>()
+    return {
+      getItem: (key) => memory.get(key) ?? null,
+      setItem: (key, value) => void memory.set(key, value),
+      removeItem: (key) => void memory.delete(key),
+    }
+  }
+}
+
 interface LayoutState {
   navCollapsed: boolean
   navWidth: number
@@ -67,7 +83,7 @@ export const useLayout = create<LayoutState>()(
     }),
     {
       name: "agenttrace-layout",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(layoutStorage),
       // Avoid SSR/first-render hydration mismatch: start from defaults, then
       // rehydrate from localStorage after mount (see AppShell).
       skipHydration: true,

@@ -22,13 +22,14 @@ export function AppShell() {
   const [dragging, setDragging] = useState(false)
 
   // Persisted layout is rehydrated after mount to avoid SSR hydration mismatch.
-  // `persist` is absent when localStorage is blocked: keep the defaults then.
   useEffect(() => {
-    useLayout.persist?.rehydrate()
+    useLayout.persist.rehydrate()
   }, [])
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    // Bounded to the viewport: <main> scrolls inside it, so the sidebar (with
+    // the theme switcher and account) and the footer never leave the screen.
+    <div className="h-screen supports-[height:100dvh]:h-dvh overflow-hidden flex flex-col bg-background">
       <div className="flex flex-1 min-h-0">
         {/* Desktop sidebar — retractable (icon rail) + resizable */}
         <aside

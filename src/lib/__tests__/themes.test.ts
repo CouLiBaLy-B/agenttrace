@@ -61,6 +61,11 @@ describe.each(THEMES)("theme %s", (theme) => {
       for (const surface of ["--surface-0", "--surface-1"])
         expect(contrastRatio(hex(name), hex(surface)), `${name} on ${surface}`).toBeGreaterThanOrEqual(4.5)
   })
+  it("toast text reaches 4.5:1 on surface-2, the popover colour sonner draws on", () => {
+    // sonner.tsx sets plain / success / error / info / warning toast text to these tokens
+    for (const name of ["--ink", "--action", "--danger", "--ev-llm-text", "--ev-handoff-text"])
+      expect(contrastRatio(hex(name), hex("--surface-2")), `${name} on --surface-2`).toBeGreaterThanOrEqual(4.5)
+  })
   it("kind tokens alias defined event tokens", () => {
     for (const k of KINDS) {
       const target = t[`--kind-${k}`]?.match(/^var\((--ev-(?:handoff|llm|tool|result|answer|error))\)$/)?.[1]
