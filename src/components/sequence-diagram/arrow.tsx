@@ -1,13 +1,24 @@
 "use client"
 
+import { memo, useEffect, useId, useRef, useState, type ReactNode } from "react"
+import { cubicBezier, easeOut, motion, type MotionProps } from "framer-motion"
 import type { DiagramStyle } from "@/lib/diagram-styles"
 import type { ThemeId } from "@/lib/theme-core"
 import { formatDuration } from "@/lib/api"
 import { EVENT_COLORS } from "@/lib/types"
+import { AFTERGLOW_REST, CASCADE_DRAW_MS, FADE_MS, isFresh, SPRING_REACH, type ArrivalPlan } from "./arrivals"
 import type { ArrowGeom } from "./geometry"
+import { sampleCubic, travelKeyframes, type Pt } from "./travel"
 
-/** Opacity a Phosphore trace rests at once its afterglow has faded (spec: 100 % → 55 %). */
-const AFTERGLOW_REST = 0.55
+const PEN_EASE = cubicBezier(0.4, 0, 0.6, 1)
+const SPRING = { stiffness: 380, damping: 26 }
+const RIPPLE_MS = 700
+const RIPPLE_R = 12
+const QUICK_MS = 150 // a head lighting up, a marker going out
+const DIMENSION_LAG_MS = 150 // Cyanotype: the dimension line is inked after the arrow
+/** Longest arrival (Phosphore: 500 ms draw + 1.6 s afterglow) plus margin: the
+ * arrow settles by then even if an animation never reports completion. */
+const SETTLE_BACKSTOP_MS = 3500
 
 /** Small per-theme touches that don't warrant a DiagramStyle field. */
 const DETAIL: Record<ThemeId, { labelWeight: number; sourceDot: boolean; radius: number }> = {
@@ -46,6 +57,10 @@ interface Shape {
   /** Duration anchor: centred under a straight arrow, left edge beside a self-message. */
   detail: { x: number; y: number }
   box: { x0: number; x1: number; y0: number; y1: number }
+  /** The line as a polyline, source to line end: the path a pulse or pen nib rides. */
+  points: Pt[]
+  /** Horizontal transform origin (0 = left edge, 1 = right) at the source end, for a line springing out. */
+  sourceOrigin: 0 | 1
 }
 
 function shapeOf(a: ArrowGeom, style: DiagramStyle): Shape {
@@ -68,8 +83,11 @@ function shapeOf(a: ArrowGeom, style: DiagramStyle): Shape {
     const top = a.y - LOOP_HALF
     const tail = crossX - dir * (CROSS_GAP + 4) // the curve lands here, then runs straight to the head
     const labelW = a.label.length * LABEL_CH
+    const curve = sampleCubic({ x, y: top }, { x: x + LOOP_REACH, y: top }, { x: x + LOOP_REACH, y: tipY }, { x: tail, y: tipY }, 16)
     return {
       loop, dir, tipX, tipY, endX, crossX,
+      points: [...curve, { x: endX, y: tipY }],
+      sourceOrigin: 0,
       path: (withGap) =>
         `M ${x} ${top} C ${x + LOOP_REACH} ${top}, ${x + LOOP_REACH} ${tipY}, ${tail} ${tipY}` +
         (withGap ? ` L ${gapFrom} ${tipY} M ${gapTo} ${tipY}` : "") +
@@ -83,6 +101,8 @@ function shapeOf(a: ArrowGeom, style: DiagramStyle): Shape {
   const mid = (a.x1 + a.x2) / 2
   return {
     loop, dir, tipX, tipY, endX, crossX,
+    points: [{ x: a.x1, y: a.y }, { x: endX, y: a.y }],
+    sourceOrigin: a.forward ? 0 : 1,
     path: (withGap) =>
       withGap
         ? `M ${a.x1} ${a.y} L ${gapFrom} ${a.y} M ${gapTo} ${a.y} L ${endX} ${a.y}`
@@ -93,6 +113,115 @@ function shapeOf(a: ArrowGeom, style: DiagramStyle): Shape {
   }
 }
 
+type MotionSpec = Pick<MotionProps, "initial" | "animate" | "transition" | "style">
+/** The parts of an arrow that can animate on arrival. */
+type Part = "wrap" | "draw" | "line" | "head" | "source" | "text" | "duration" | "marker" | "ripple"
+type Motions = Partial<Record<Part, MotionSpec>>
+
+/** What each part does while `plan` plays, for this style. Durations divide by
+ * the replay speed (plan.delayMs already does). */
+function arrivalMotions(
+  plan: ArrivalPlan,
+  style: DiagramStyle,
+  s: Shape,
+  o: { selected: boolean; hasDuration: boolean; sourceDot: boolean },
+): Motions {
+  const sec = (ms: number) => ms / 1000 / plan.speed
+  const delay = plan.delayMs / 1000
+  const { drawMs: draw, settleMs: settle } = style.timing
+  const fadeIn = (afterMs: number, overMs: number): MotionSpec => ({
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    transition: { delay: delay + sec(afterMs), duration: sec(overMs) },
+  })
+  const drawLine = (transition: MotionSpec["transition"]): MotionSpec => ({ initial: { pathLength: 0 }, animate: { pathLength: 1 }, transition })
+  const ride = (ease: (t: number) => number): MotionSpec => {
+    const { x, y } = travelKeyframes(s.points, ease)
+    const travel = { delay, duration: sec(draw), ease: "linear" as const }
+    const total = sec(draw + QUICK_MS)
+    return {
+      initial: { x: 0, y: 0, opacity: 0 },
+      // Keyframes start at 0: opacity runs as a WAAPI animation that holds its
+      // first keyframe through the delay.
+      animate: { x, y, opacity: [0, 1, 1, 0] },
+      transition: { x: travel, y: travel, opacity: { delay, duration: total, times: [0, 0.01, sec(draw) / total, 1] } },
+    }
+  }
+  // Only parts the arrow draws: the arrow settles once each of them reports completion.
+  const extras = (m: Motions, text: MotionSpec, source: MotionSpec): Motions => {
+    const out: Motions = { ...m, text }
+    if (o.hasDuration) out.duration = m.duration ?? text
+    else delete out.duration
+    if (o.sourceDot) out.source = source
+    return out
+  }
+
+  switch (plan.kind) {
+    case "fade":
+      return { wrap: { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: FADE_MS / 1000 } } }
+    case "cascade": {
+      const transition = { delay, duration: CASCADE_DRAW_MS / 1000, ease: easeOut }
+      return { wrap: { initial: { opacity: 0 }, animate: { opacity: 1 }, transition }, draw: drawLine(transition) }
+    }
+    case "pulse": {
+      const landed = { delay: delay + sec(draw), duration: sec(RIPPLE_MS) }
+      const m: Motions = {
+        draw: drawLine({ delay, duration: sec(draw), ease: easeOut }),
+        marker: ride(easeOut),
+        head: fadeIn(draw, QUICK_MS),
+        ripple: {
+          initial: { scale: 0.1, opacity: 0 },
+          animate: { scale: [0.1, 1], opacity: [0, 0.9, 0] },
+          transition: { scale: { ...landed, ease: easeOut }, opacity: { ...landed, times: [0, 0.01, 1] } },
+        },
+      }
+      if (style.afterglow) {
+        m.line = {
+          initial: { opacity: 1 },
+          animate: { opacity: o.selected ? 1 : AFTERGLOW_REST },
+          transition: o.selected ? { duration: QUICK_MS / 1000 } : { delay: delay + sec(draw), duration: sec(settle) },
+        }
+      }
+      return extras(m, fadeIn(0, draw), fadeIn(0, QUICK_MS))
+    }
+    case "pen": {
+      const lag = style.duration === "dimension" && !s.loop ? DIMENSION_LAG_MS : 0
+      const m: Motions = {
+        draw: drawLine({ delay, duration: sec(draw), ease: PEN_EASE }),
+        marker: ride(PEN_EASE),
+        head: fadeIn(draw, settle),
+        duration: fadeIn(draw + lag, settle),
+      }
+      return extras(m, fadeIn(draw, settle), fadeIn(0, QUICK_MS))
+    }
+    case "spring": {
+      // A spring s times faster with the same shape: stiffness × s², damping × s.
+      const spring = { type: "spring" as const, stiffness: SPRING.stiffness * plan.speed ** 2, damping: SPRING.damping * plan.speed, delay }
+      const pop = (afterMs: number, originX?: 0 | 1): MotionSpec => ({
+        initial: { scale: 0 },
+        animate: { scale: 1 },
+        transition: { ...spring, delay: delay + sec(afterMs) },
+        ...(originX !== undefined && { style: { originX } }),
+      })
+      const m: Motions = {
+        line: { initial: { scaleX: 0 }, animate: { scaleX: 1 }, transition: spring, style: { originX: s.sourceOrigin } },
+        head: pop(SPRING_REACH * draw, s.dir === 1 ? 1 : 0),
+      }
+      return extras(m, fadeIn(0.25 * draw, 0.5 * draw), pop(0))
+    }
+  }
+}
+
+/** Renders `children` animated by `m`, or as they are when there's nothing to play. */
+function Animated({ m, onDone, children }: { m?: MotionSpec; onDone: () => void; children: ReactNode }) {
+  if (!m) return <>{children}</>
+  return (
+    <motion.g initial={m.initial} animate={m.animate} transition={m.transition} style={m.style} onAnimationComplete={onDone}>
+      {children}
+    </motion.g>
+  )
+}
+
 export interface ArrowProps {
   a: ArrowGeom
   /** Participant names as the event sent them (an unknown one is drawn on the first lane). */
@@ -101,10 +230,12 @@ export interface ArrowProps {
   style: DiagramStyle
   selected: boolean
   onSelect: (id: string) => void
+  /** How the event arrives when it is new (arrivals.ts). Read once, when the arrow mounts. */
+  arrival?: ArrivalPlan
 }
 
 /** One event: its line (dashed for a tool result), head, error cross, label and duration. */
-export function Arrow({ a, source, target, style, selected, onSelect }: ArrowProps) {
+export const Arrow = memo(function Arrow({ a, source, target, style, selected, onSelect, arrival }: ArrowProps) {
   const meta = EVENT_COLORS[a.type] ?? { ...UNKNOWN, label: a.type }
   const color = a.isError ? EVENT_COLORS.error.color : meta.color
   const textColor = a.isError ? EVENT_COLORS.error.text : meta.text
@@ -114,6 +245,26 @@ export function Arrow({ a, source, target, style, selected, onSelect }: ArrowPro
   const open = style.arrow.head === "open"
   const baseX = s.tipX - s.dir * len
 
+  // The arrival plays once, from mount; an arrow mounted later (scrolled into
+  // view) or after the plan has gone stays still.
+  const [plan] = useState(() => (arrival && isFresh(arrival, performance.now()) ? arrival : null))
+  const [settled, setSettled] = useState(plan === null)
+  const finished = useRef(new Set<Part>())
+  const maskId = `at-draw-${useId().replace(/[^\w-]/g, "")}`
+  useEffect(() => {
+    if (!plan) return
+    const backstop = setTimeout(() => setSettled(true), plan.delayMs + SETTLE_BACKSTOP_MS / plan.speed)
+    return () => clearTimeout(backstop)
+  }, [plan])
+
+  const m = plan && !settled
+    ? arrivalMotions(plan, style, s, { selected, hasDuration: a.durationMs != null, sourceDot: detail.sourceDot })
+    : null
+  const done = (part: Part) => () => {
+    finished.current.add(part)
+    if (m && finished.current.size >= Object.keys(m).length) setSettled(true)
+  }
+
   return (
     <g
       role="button"
@@ -121,6 +272,7 @@ export function Arrow({ a, source, target, style, selected, onSelect }: ArrowPro
       aria-label={`${meta.label} ${source} to ${target}: ${a.title}`}
       aria-pressed={selected}
       data-event-id={a.id}
+      data-arrival={m && plan!.kind !== "cascade" ? plan!.kind : undefined}
       className="at-arrow"
       style={{ color }}
       onClick={() => onSelect(a.id)}
@@ -149,53 +301,113 @@ export function Arrow({ a, source, target, style, selected, onSelect }: ArrowPro
         fill="transparent"
       />
 
-      <path
-        d={s.path(a.isError)}
-        fill="none"
-        stroke={color}
-        strokeWidth={style.arrow.width}
-        strokeDasharray={a.isReturn ? style.arrow.returnDash : undefined}
-        strokeLinecap={open || a.isReturn ? "butt" : "round"}
-        opacity={style.afterglow && !selected ? AFTERGLOW_REST : 1}
-      />
-      {open ? (
-        <polyline
-          points={`${s.endX - s.dir * len},${s.tipY - half} ${s.endX},${s.tipY} ${s.endX - s.dir * len},${s.tipY + half}`}
-          fill="none"
-          stroke={color}
-          strokeWidth={style.arrow.width}
-          strokeLinejoin="miter"
-        />
-      ) : (
-        <polygon points={`${s.tipX},${s.tipY} ${baseX},${s.tipY - half} ${baseX},${s.tipY + half}`} fill={color} />
-      )}
-      {a.isError && (
-        <g stroke="var(--ev-error)" strokeWidth={Math.max(1.5, style.arrow.width * 0.75)} strokeLinecap="round">
-          <line x1={s.crossX - CROSS} y1={s.tipY - CROSS} x2={s.crossX + CROSS} y2={s.tipY + CROSS} />
-          <line x1={s.crossX - CROSS} y1={s.tipY + CROSS} x2={s.crossX + CROSS} y2={s.tipY - CROSS} />
-        </g>
-      )}
-      {detail.sourceDot && (
-        <circle cx={a.x1} cy={s.loop ? a.y - LOOP_HALF : a.y} r={style.arrow.width * 1.25} fill={color} />
-      )}
+      <Animated m={m?.wrap} onDone={done("wrap")}>
+        {m?.draw && (
+          // Drawing reveals the line through a mask, so a dashed return keeps its dashes.
+          <mask
+            id={maskId}
+            maskUnits="userSpaceOnUse"
+            x={s.box.x0 - 10}
+            y={s.box.y0 - 10}
+            width={s.box.x1 - s.box.x0 + 20}
+            height={s.box.y1 - s.box.y0 + 20}
+          >
+            <motion.path
+              d={s.path(false)}
+              fill="none"
+              stroke="white"
+              strokeWidth={style.arrow.width + 6}
+              {...m.draw}
+              onAnimationComplete={done("draw")}
+            />
+          </mask>
+        )}
+        <Animated m={m?.line} onDone={done("line")}>
+          <path
+            d={s.path(a.isError)}
+            fill="none"
+            stroke={color}
+            strokeWidth={style.arrow.width}
+            strokeDasharray={a.isReturn ? style.arrow.returnDash : undefined}
+            strokeLinecap={open || a.isReturn ? "butt" : "round"}
+            opacity={m?.line ? undefined : style.afterglow && !selected ? AFTERGLOW_REST : 1}
+            mask={m?.draw ? `url(#${maskId})` : undefined}
+          />
+        </Animated>
+        <Animated m={m?.head} onDone={done("head")}>
+          {open ? (
+            <polyline
+              points={`${s.endX - s.dir * len},${s.tipY - half} ${s.endX},${s.tipY} ${s.endX - s.dir * len},${s.tipY + half}`}
+              fill="none"
+              stroke={color}
+              strokeWidth={style.arrow.width}
+              strokeLinejoin="miter"
+            />
+          ) : (
+            <polygon points={`${s.tipX},${s.tipY} ${baseX},${s.tipY - half} ${baseX},${s.tipY + half}`} fill={color} />
+          )}
+          {a.isError && (
+            <g stroke="var(--ev-error)" strokeWidth={Math.max(1.5, style.arrow.width * 0.75)} strokeLinecap="round">
+              <line x1={s.crossX - CROSS} y1={s.tipY - CROSS} x2={s.crossX + CROSS} y2={s.tipY + CROSS} />
+              <line x1={s.crossX - CROSS} y1={s.tipY + CROSS} x2={s.crossX + CROSS} y2={s.tipY - CROSS} />
+            </g>
+          )}
+        </Animated>
+        {detail.sourceDot && (
+          <Animated m={m?.source} onDone={done("source")}>
+            <circle cx={a.x1} cy={s.loop ? a.y - LOOP_HALF : a.y} r={style.arrow.width * 1.25} fill={color} />
+          </Animated>
+        )}
 
-      <text
-        x={s.label.x}
-        y={s.label.y}
-        textAnchor={s.label.anchor}
-        fontFamily="var(--font-ui)"
-        fontSize={11}
-        fontWeight={detail.labelWeight}
-        fill="var(--ink)"
-        {...HALO}
-      >
-        {a.label}
-      </text>
-      {a.durationMs != null && (
-        <Duration text={formatDuration(a.durationMs)} variant={style.duration} s={s} a={a} color={color} textColor={textColor} />
-      )}
+        <Animated m={m?.text} onDone={done("text")}>
+          <text
+            x={s.label.x}
+            y={s.label.y}
+            textAnchor={s.label.anchor}
+            fontFamily="var(--font-ui)"
+            fontSize={11}
+            fontWeight={detail.labelWeight}
+            fill="var(--ink)"
+            {...HALO}
+          >
+            {a.label}
+          </text>
+        </Animated>
+        {a.durationMs != null && (
+          <Animated m={m?.duration} onDone={done("duration")}>
+            <Duration text={formatDuration(a.durationMs)} variant={style.duration} s={s} a={a} color={color} textColor={textColor} />
+          </Animated>
+        )}
+
+        {m?.marker && (
+          <motion.g {...m.marker} onAnimationComplete={done("marker")}>
+            {plan!.kind === "pen" ? <Nib at={s.points[0]} /> : <PulseDot at={s.points[0]} color={color} />}
+          </motion.g>
+        )}
+        {m?.ripple && (
+          <motion.g {...m.ripple} onAnimationComplete={done("ripple")}>
+            <circle cx={s.tipX} cy={s.tipY} r={RIPPLE_R} fill="none" stroke={color} strokeWidth={1.2} vectorEffect="non-scaling-stroke" />
+          </motion.g>
+        )}
+      </Animated>
       {/* Last child: the tooltip carries the full label without shadowing the visible text. */}
       <title>{a.title}</title>
+    </g>
+  )
+})
+
+/** Phosphore: the bright dot that carries a signal along its trace. */
+function PulseDot({ at, color }: { at: Pt; color: string }) {
+  return <circle cx={at.x} cy={at.y} r={2.6} fill="var(--ink)" style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
+}
+
+/** Cyanotype: a plotter pen's nib, a ring on a crosshair. */
+function Nib({ at }: { at: Pt }) {
+  return (
+    <g stroke="var(--ink)" strokeWidth={0.75} fill="none">
+      <circle cx={at.x} cy={at.y} r={2.8} />
+      <line x1={at.x - 6} x2={at.x + 6} y1={at.y} y2={at.y} />
+      <line x1={at.x} x2={at.x} y1={at.y - 6} y2={at.y + 6} />
     </g>
   )
 }

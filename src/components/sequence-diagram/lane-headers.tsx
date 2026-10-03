@@ -1,6 +1,9 @@
 "use client"
 
+import { useState } from "react"
+import { motion } from "framer-motion"
 import type { DiagramStyle } from "@/lib/diagram-styles"
+import { isFresh, type LedFlash } from "./arrivals"
 import { KIND_COLOR } from "./participants"
 import { laneLabel, truncate, type DiagramGeometry, type Layout } from "./geometry"
 
@@ -9,6 +12,8 @@ const BOX_H = 32
 // Martian Mono 11 px (box), B612 Mono 11 px (titled), Bricolage Grotesque 600 12 px (tile).
 const NAME_CHAR_PX: Record<DiagramStyle["header"], number> = { box: 8, titled: 7, tile: 6.6 }
 const TILE_TEXT_X = 26 // LED + gap, from the tile's left edge
+const LED_R = 2.75
+const LED_OFF_MS = 200 // a lit LED fades back to rest
 
 /** Vertical extent of the participant boxes inside the header row. */
 export function headerBox(layout: Layout) {
@@ -21,10 +26,12 @@ interface Props {
   width: number
   layout: Layout
   style: DiagramStyle
+  /** LEDs lit by arrivals, by lane name (tile headers). */
+  flashes?: Readonly<Record<string, LedFlash>>
 }
 
 /** The participant row. Sticky, so the names stay in view while the events scroll under it. */
-export function LaneHeaders({ lanes, width, layout, style }: Props) {
+export function LaneHeaders({ lanes, width, layout, style, flashes }: Props) {
   const { top, bottom, width: boxW } = headerBox(layout)
   const inner = boxW - (style.header === "tile" ? TILE_TEXT_X + 10 : 20)
   const maxChars = Math.min(17, Math.floor(inner / NAME_CHAR_PX[style.header]))
@@ -88,7 +95,8 @@ export function LaneHeaders({ lanes, width, layout, style }: Props) {
                     />
                   </foreignObject>
                   <circle cx={x0 + 14} cy={mid} r={4.5} fill="var(--surface-1)" stroke="var(--line)" strokeWidth={1} />
-                  <circle data-led cx={x0 + 14} cy={mid} r={2.75} fill="var(--ink-3)" />
+                  <circle data-led cx={x0 + 14} cy={mid} r={LED_R} fill="var(--ink-3)" />
+                  {flashes?.[lane.name] && <LitLed key={flashes[lane.name].key} flash={flashes[lane.name]} cx={x0 + 14} cy={mid} />}
                   <text x={x0 + TILE_TEXT_X} y={mid + 4} fontFamily="var(--font-ui)" fontSize={12} fontWeight={600} fill="var(--ink)">
                     {name}
                   </text>
@@ -100,5 +108,24 @@ export function LaneHeaders({ lanes, width, layout, style }: Props) {
         })}
       </svg>
     </div>
+  )
+}
+
+/** An LED in the colour of the event that just reached its participant, with
+ * a glow, for flash.durationMs; then it goes back to rest. Keyed by the event,
+ * so the next arrival relights it. */
+function LitLed({ flash, cx, cy }: { flash: LedFlash; cx: number; cy: number }) {
+  const [play] = useState(() => isFresh(flash, performance.now()))
+  if (!play) return null
+  const total = flash.durationMs + LED_OFF_MS
+  return (
+    <motion.g
+      initial={{ opacity: 0 }}
+      // From 0: opacity runs on WAAPI, which holds the first keyframe through the delay.
+      animate={{ opacity: [0, 1, 1, 0] }}
+      transition={{ delay: flash.delayMs / 1000, duration: total / 1000, times: [0, 0.01, flash.durationMs / total, 1], ease: "linear" }}
+    >
+      <circle data-led-lit cx={cx} cy={cy} r={LED_R} fill={flash.color} style={{ filter: `drop-shadow(0 0 3px ${flash.color})` }} />
+    </motion.g>
   )
 }

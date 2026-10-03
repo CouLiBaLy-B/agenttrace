@@ -50,6 +50,9 @@ export function SequenceDiagram({
   const [replayIdx, setReplayIdx] = useState(initialEvents.length - 1)
   const [replaySpeed, setReplaySpeed] = useState<ReplaySpeed>(1)
   const [connected, setConnected] = useState(false)
+  // A live run opened before its first event: those events arrive (theme
+  // animation) rather than play the opening cascade.
+  const [openedEmpty] = useState(initialEvents.length === 0)
   const isDesktop = useMediaQuery("(min-width: 768px)")
 
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -288,6 +291,8 @@ export function SequenceDiagram({
               onSelect={setSelectedId}
               live={live && !isReplay}
               run={{ name: runName, project: projectName, status, startedAt, endedAt }}
+              speed={isReplay ? replaySpeed : 1}
+              openingCascade={!openedEmpty}
             />
           ) : (
             <StackedTimeline
