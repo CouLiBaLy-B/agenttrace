@@ -6,7 +6,7 @@ tool — so this package is published under a different name; the importable
 module, the CLI command, and the product itself are still called
 `agenttrace`/AgentTrace).
 
-`pip install deepagents-trace && agenttrace ui` — starts the AgentTrace web
+`pip install 'deepagents-trace[server]' && agenttrace ui` — starts the AgentTrace web
 API (and a `/ws` live-stream) with **zero Node/Bun process**, `mlflow ui`-style.
 For local development against this checkout: `pip install -e "python-server[dev]"`.
 
@@ -68,6 +68,8 @@ When serving behind a reverse proxy, add the public hostnames with
 other host) keeps accounts and `atr_` project keys, and `/ws` requires a
 session cookie.
 
+To serve another database, or listen on another port/interface:
+
 ```bash
 agenttrace ui --database-url postgresql://user:pass@localhost:5432/agenttrace
 agenttrace ui --port 8080 --host 0.0.0.0
@@ -76,6 +78,22 @@ agenttrace ui --port 8080 --host 0.0.0.0
 `agenttrace db init` creates the schema explicitly (also runs automatically
 on `agenttrace ui` startup) — schema-push style (`Base.metadata.create_all`),
 matching how this repo already runs `prisma db push` rather than migrations.
+
+## Upgrading from 0.1
+
+- The server is now the `[server]` extra: `pip install 'deepagents-trace[server]'`
+  (the core package only carries the tracking SDK: SQLAlchemy, requests, click).
+- On localhost, `agenttrace ui` now defaults to `--auth none`: no login, and
+  everything is owned by a single local user, so projects created under
+  existing accounts are hidden. Start it with `agenttrace ui --auth password`
+  to keep using accounts and `atr_` keys.
+- `agenttrace-langchain` is now a deprecation shim over `agenttrace.langchain`
+  (`pip install 'deepagents-trace[langchain]'`); old imports keep working.
+- If only `AGENTTRACE_KEY` is set (no `AGENTTRACE_TRACKING_URI`/`AGENTTRACE_URL`),
+  traces still go to the pre-0.2 default server `http://localhost:3000`
+  (a warning is logged once); set `AGENTTRACE_TRACKING_URI` to choose explicitly.
+- `AgentTraceRun.emit` now raises `ValueError` on an invalid event type
+  instead of silently dropping the event.
 
 ## What's ported
 

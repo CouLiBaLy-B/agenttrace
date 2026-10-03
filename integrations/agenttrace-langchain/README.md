@@ -3,8 +3,9 @@
 > (or `agenttrace.langchain.autolog()`). Existing top-level imports
 > (`from agenttrace_langchain import AgentTraceMiddleware`, `AgentTraceRun`,
 > `AgentTraceClient`, `AsyncAgentTraceRun`, `AsyncAgentTraceClient`) keep
-> working and emit a `DeprecationWarning`. Old submodule paths such as
-> `agenttrace_langchain.run` or `agenttrace_langchain.client` no longer exist.
+> working and emit a `DeprecationWarning`, as do the old submodule paths
+> (`agenttrace_langchain.client`, `.async_client`, `.run`, `.async_run`,
+> `.middleware`), which are now aliases.
 
 # agenttrace-langchain
 
@@ -15,8 +16,11 @@ deepagents' `create_deep_agent` that streams a run to an
 ## Install
 
 ```bash
-pip install -e integrations/agenttrace-langchain
+pip install 'deepagents-trace[langchain]'
 ```
+
+This shim package stays installable (`pip install -e integrations/agenttrace-langchain`)
+for code that still imports `agenttrace_langchain`.
 
 ## Usage
 

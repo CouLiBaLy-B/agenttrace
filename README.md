@@ -18,7 +18,7 @@ Watch signals move through your agents in real time: one vertical lifeline per p
 
 `python-server/` is a from-scratch FastAPI port of this API, published to
 PyPI as **`deepagents-trace`** (`agenttrace` was already taken by an
-unrelated project): `pip install deepagents-trace && agenttrace ui` starts
+unrelated project): `pip install 'deepagents-trace[server]' && agenttrace ui` starts
 it, zero Node/Bun required — see [python-server/README.md](python-server/README.md)
 (including the remaining PyPI publishing steps).
 It's Phase 1+3 of a larger migration (no bundled frontend yet — that's Phase
