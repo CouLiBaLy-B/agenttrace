@@ -1,12 +1,13 @@
 "use client"
 
 import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react"
-import { motion, useReducedMotion } from "framer-motion"
+import { motion } from "framer-motion"
 import { DIAGRAM_STYLES, type DiagramStyle } from "@/lib/diagram-styles"
+import { useMediaQuery } from "@/lib/hooks"
 import { useTheme } from "@/lib/theme"
 import type { Participant, TraceEvent } from "@/lib/types"
 import { computeActivations } from "./activation"
-import { advanceTrack, CASCADE_DRAW_MS, FADE_MS, isFresh, SPRING_REACH, type ArrivalPlan, type ArrivalTrack } from "./arrivals"
+import { advanceTrack, CASCADE_DRAW_MS, FADE_MS, isFresh, QUICK_MS, SPRING_REACH, type ArrivalPlan, type ArrivalTrack } from "./arrivals"
 import { Arrow } from "./arrow"
 import { TitleBlock, Vignette, type RunMeta } from "./decorations"
 import { clockTime } from "./format"
@@ -59,7 +60,8 @@ export function ThemedDiagram({
 }: ThemedDiagramProps) {
   const resolved = useTheme((s) => s.resolved)
   const style = forcedStyle ?? DIAGRAM_STYLES[resolved]
-  const reducedMotion = useReducedMotion() ?? false
+  // Follows the OS setting live (framer's useReducedMotion reads it once per mount).
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)")
   const geometry = useMemo(() => computeGeometry(events, participants, layout), [events, participants, layout])
   const { width, height, lanes, arrows } = geometry
   const bars = useMemo(() => computeActivations(events), [events])
@@ -84,11 +86,11 @@ export function ThemedDiagram({
     }
     read()
     el.addEventListener("scroll", read, { passive: true })
-    const observer = new ResizeObserver(read)
-    observer.observe(el)
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(read)
+    observer?.observe(el)
     return () => {
       el.removeEventListener("scroll", read)
-      observer.disconnect()
+      observer?.disconnect()
     }
   }, [layout.headerHeight, layout.rowHeight])
 
@@ -157,7 +159,8 @@ export function ThemedDiagram({
                   const y0 = arrows[bar.fromIndex].y
                   const y1 = bar.toIndex === null ? lifelineEnd : arrows[bar.toIndex].y
                   return (
-                    <AppearWith key={`${bar.lane}:${bar.fromIndex}`} plan={arrivals?.plans.get(arrows[bar.fromIndex].id)} at="reach" style={style}>
+                    // Keyed by the opening call, not its row: filters shift row indexes.
+                    <AppearWith key={arrows[bar.fromIndex].id} plan={arrivals?.plans.get(arrows[bar.fromIndex].id)} at="reach" style={style}>
                       <rect
                         data-activation={bar.lane}
                         x={x - BAR_W / 2}
@@ -237,7 +240,7 @@ function AppearWith({ plan, at, style, children }: { plan?: ArrivalPlan; at: "st
   if (!appear) return <>{children}</>
   const { drawMs } = style.timing
   const reach = { pulse: drawMs, pen: drawMs, spring: SPRING_REACH * drawMs, cascade: 0, fade: 0 }[appear.kind] / appear.speed
-  const over = appear.kind === "fade" ? FADE_MS : appear.kind === "cascade" ? CASCADE_DRAW_MS : at === "start" ? drawMs / appear.speed : 150
+  const over = appear.kind === "fade" ? FADE_MS : appear.kind === "cascade" ? CASCADE_DRAW_MS : at === "start" ? drawMs / appear.speed : QUICK_MS
   return (
     <motion.g
       initial={{ opacity: 0 }}

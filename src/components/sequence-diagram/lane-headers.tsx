@@ -112,10 +112,10 @@ export function LaneHeaders({ lanes, width, layout, style, flashes }: Props) {
 }
 
 /** An LED in the colour of the event that just reached its participant, with
- * a glow, for flash.durationMs; then it goes back to rest. Keyed by the event,
- * so the next arrival relights it. */
+ * a glow, for flash.durationMs; then it goes back to rest and unmounts.
+ * Keyed by the event, so the next arrival relights it. */
 function LitLed({ flash, cx, cy }: { flash: LedFlash; cx: number; cy: number }) {
-  const [play] = useState(() => isFresh(flash, performance.now()))
+  const [play, setPlay] = useState(() => isFresh(flash, performance.now()))
   if (!play) return null
   const total = flash.durationMs + LED_OFF_MS
   return (
@@ -124,6 +124,7 @@ function LitLed({ flash, cx, cy }: { flash: LedFlash; cx: number; cy: number }) 
       // From 0: opacity runs on WAAPI, which holds the first keyframe through the delay.
       animate={{ opacity: [0, 1, 1, 0] }}
       transition={{ delay: flash.delayMs / 1000, duration: total / 1000, times: [0, 0.01, flash.durationMs / total, 1], ease: "linear" }}
+      onAnimationComplete={() => setPlay(false)}
     >
       <circle data-led-lit cx={cx} cy={cy} r={LED_R} fill={flash.color} style={{ filter: `drop-shadow(0 0 3px ${flash.color})` }} />
     </motion.g>

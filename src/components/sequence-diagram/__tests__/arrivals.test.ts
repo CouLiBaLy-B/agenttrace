@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { advanceTrack, ARRIVAL_BURST, ARRIVAL_STAGGER_MS, classifyArrivals, isFresh, MOUNT_SLACK_MS, SPRING_REACH, type TrackOptions } from "../arrivals"
+import { advanceTrack, ARRIVAL_BURST, ARRIVAL_STAGGER_MS, CASCADE_DRAW_MS, classifyArrivals, isFresh, MOUNT_SLACK_MS, SPRING_REACH, type TrackOptions } from "../arrivals"
 import { DIAGRAM_STYLES } from "@/lib/diagram-styles"
 import type { TraceEvent } from "@/lib/types"
 
@@ -31,11 +31,12 @@ describe("advanceTrack", () => {
   })
   const ids = (from: number, to: number) => Array.from({ length: to - from }, (_, i) => `e${from + i}`)
 
-  it("opening a run cascades the rows in view over cascadeMs", () => {
+  it("opening a run cascades the rows in view, finishing within cascadeMs", () => {
     const t = advanceTrack(null, evs(100), opts({ inView: { start: 50, end: 60 } }))
     expect([...t.plans.keys()]).toEqual(ids(50, 60))
     expect(t.plans.get("e50")).toEqual({ kind: "cascade", delayMs: 0, speed: 1, at: 1000 })
-    expect(t.plans.get("e55")!.delayMs).toBe((5 * 400) / 10)
+    expect(t.plans.get("e55")!.delayMs).toBe((5 * (400 - CASCADE_DRAW_MS)) / 9)
+    expect(t.plans.get("e59")!.delayMs + CASCADE_DRAW_MS).toBe(400)
     expect(t.seen.size).toBe(100)
   })
   it("the opening cascade stops after 40 rows", () => {
@@ -54,6 +55,18 @@ describe("advanceTrack", () => {
       ["e4", { kind: "pen", delayMs: ARRIVAL_STAGGER_MS, speed: 1, at: 2000 }],
     ])
     expect(advanceTrack(t1, evs(5), opts()).plans.size).toBe(0)
+  })
+  it.each([1, 10, 40])("a cascade of %i rows ends within cascadeMs, opening or burst", (n) => {
+    const ends = (t: ReturnType<typeof advanceTrack>) => Math.max(...[...t.plans.values()].map((p) => p.delayMs + CASCADE_DRAW_MS))
+    const opening = advanceTrack(null, evs(n), opts({ inView: { start: 0, end: n } }))
+    expect(opening.plans.size).toBe(n)
+    expect(ends(opening)).toBeLessThanOrEqual(400)
+    const t0 = advanceTrack(null, [], opts())
+    const burst = advanceTrack(t0, evs(Math.max(n, ARRIVAL_BURST + 1)), opts({ inView: { start: 0, end: n } }))
+    expect(burst.plans.size).toBe(n)
+    expect([...burst.plans.values()].every((p) => p.kind === "cascade")).toBe(true)
+    expect(ends(burst)).toBeLessThanOrEqual(400)
+    if (n === 1) expect(opening.plans.get("e0")!.delayMs).toBe(0)
   })
   it("a burst of arrivals is drawn like the opening cascade, on the rows in view", () => {
     const t0 = advanceTrack(null, evs(2), opts())

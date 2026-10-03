@@ -5,8 +5,8 @@ import { cubicBezier, easeOut, motion, type MotionProps } from "framer-motion"
 import type { DiagramStyle } from "@/lib/diagram-styles"
 import type { ThemeId } from "@/lib/theme-core"
 import { formatDuration } from "@/lib/api"
-import { EVENT_COLORS } from "@/lib/types"
-import { AFTERGLOW_REST, CASCADE_DRAW_MS, FADE_MS, isFresh, SPRING_REACH, type ArrivalPlan } from "./arrivals"
+import { eventPaint } from "@/lib/types"
+import { AFTERGLOW_REST, CASCADE_DRAW_MS, FADE_MS, isFresh, QUICK_MS, SPRING_REACH, type ArrivalPlan } from "./arrivals"
 import type { ArrowGeom } from "./geometry"
 import { sampleCubic, travelKeyframes, type Pt } from "./travel"
 
@@ -14,7 +14,6 @@ const PEN_EASE = cubicBezier(0.4, 0, 0.6, 1)
 const SPRING = { stiffness: 380, damping: 26 }
 const RIPPLE_MS = 700
 const RIPPLE_R = 12
-const QUICK_MS = 150 // a head lighting up, a marker going out
 const DIMENSION_LAG_MS = 150 // Cyanotype: the dimension line is inked after the arrow
 /** Longest arrival (Phosphore: 500 ms draw + 1.6 s afterglow) plus margin: the
  * arrow settles by then even if an animation never reports completion. */
@@ -33,7 +32,6 @@ const LOOP_REACH = 44 // control-point reach of a self-message to the right of i
 const LOOP_HALF = 9 // half the height of a self-message
 const CROSS = 2.5 // half-size of the error cross (5 × 5 px)
 const CROSS_GAP = 6 // half the gap the cross sits in
-const UNKNOWN = { color: "var(--ink-3)", text: "var(--ink-2)" } // an event type this build does not know
 /** A knockout around text in the colour behind it (--halo: the canvas, tinted
  * while the arrow is hovered or selected — globals.css), so lifelines and the
  * grid never run through a label. */
@@ -236,9 +234,7 @@ export interface ArrowProps {
 
 /** One event: its line (dashed for a tool result), head, error cross, label and duration. */
 export const Arrow = memo(function Arrow({ a, source, target, style, selected, onSelect, arrival }: ArrowProps) {
-  const meta = EVENT_COLORS[a.type] ?? { ...UNKNOWN, label: a.type }
-  const color = a.isError ? EVENT_COLORS.error.color : meta.color
-  const textColor = a.isError ? EVENT_COLORS.error.text : meta.text
+  const { color, text: textColor, label: typeLabel } = eventPaint(a.type, a.isError)
   const detail = DETAIL[style.theme]
   const s = shapeOf(a, style)
   const { len, half } = headSize(style.arrow.width)
@@ -249,6 +245,10 @@ export const Arrow = memo(function Arrow({ a, source, target, style, selected, o
   // view) or after the plan has gone stays still.
   const [plan] = useState(() => (arrival && isFresh(arrival, performance.now()) ? arrival : null))
   const [settled, setSettled] = useState(plan === null)
+  // A theme switch mid-arrival finishes it at once: the old theme's
+  // choreography would play in the new style.
+  const [planTheme] = useState(style.theme)
+  if (!settled && style.theme !== planTheme) setSettled(true)
   const finished = useRef(new Set<Part>())
   const maskId = `at-draw-${useId().replace(/[^\w-]/g, "")}`
   useEffect(() => {
@@ -269,7 +269,7 @@ export const Arrow = memo(function Arrow({ a, source, target, style, selected, o
     <g
       role="button"
       tabIndex={-1}
-      aria-label={`${meta.label} ${source} to ${target}: ${a.title}`}
+      aria-label={`${typeLabel} ${source} to ${target}: ${a.title}`}
       aria-pressed={selected}
       data-event-id={a.id}
       data-arrival={m && plan!.kind !== "cascade" ? plan!.kind : undefined}

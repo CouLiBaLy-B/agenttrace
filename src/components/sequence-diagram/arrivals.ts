@@ -1,5 +1,5 @@
 import type { DiagramStyle } from "@/lib/diagram-styles"
-import { EVENT_COLORS, type TraceEvent } from "@/lib/types"
+import { eventPaint, type TraceEvent } from "@/lib/types"
 
 export function classifyArrivals(seen: ReadonlySet<string> | null, ids: string[], cascadeCap = 40) {
   if (seen === null) return { cascade: ids.slice(0, cascadeCap), arrivals: [] as string[] }
@@ -10,8 +10,10 @@ export function classifyArrivals(seen: ReadonlySet<string> | null, ids: string[]
 export const ARRIVAL_BURST = 8
 /** Gap between the arrivals of one small batch, so they read in order. */
 export const ARRIVAL_STAGGER_MS = 120
-/** Length of one row's fade-and-draw in a cascade. */
+/** Length of one row's fade-and-draw in a cascade (the whole cascade still ends within cascadeMs). */
 export const CASCADE_DRAW_MS = 160
+/** A head lighting up, a marker going out, a bar appearing. */
+export const QUICK_MS = 150
 /** The only arrival with reduced motion. */
 export const FADE_MS = 120
 /** Share of drawMs after which a springing line reaches its target (head pops, LED lights). */
@@ -76,11 +78,6 @@ export interface TrackOptions {
   openingCascade?: boolean
 }
 
-function strokeOf(ev: TraceEvent): string {
-  if (ev.type === "error" || ev.status === "error") return EVENT_COLORS.error.color
-  return EVENT_COLORS[ev.type]?.color ?? "var(--ink-3)"
-}
-
 /** Works out which events animate after the event list changed, and how. Pure
  * (the caller passes the clock): the diagram keeps the result in state. */
 export function advanceTrack(prev: ArrivalTrack | null, events: TraceEvent[], o: TrackOptions): ArrivalTrack {
@@ -94,7 +91,8 @@ export function advanceTrack(prev: ArrivalTrack | null, events: TraceEvent[], o:
     rows.forEach((id, i) =>
       plans.set(id, reduced
         ? { kind: "fade", delayMs: 0, speed: 1, at }
-        : { kind: "cascade", delayMs: i * (style.timing.cascadeMs / rows.length), speed: 1, at }),
+        // Spread so the last row's fade-and-draw ends at cascadeMs.
+        : { kind: "cascade", delayMs: (i * (style.timing.cascadeMs - CASCADE_DRAW_MS)) / Math.max(1, rows.length - 1), speed: 1, at }),
     )
   }
 
@@ -115,7 +113,7 @@ export function advanceTrack(prev: ArrivalTrack | null, events: TraceEvent[], o:
             const ev = byId.get(id)!
             flashes[ev.target] = {
               key: id,
-              color: strokeOf(ev),
+              color: eventPaint(ev.type, ev.type === "error" || ev.status === "error").color,
               delayMs: reduced ? 0 : delayMs + (SPRING_REACH * style.timing.drawMs) / speed,
               durationMs: style.timing.settleMs / speed,
               at,

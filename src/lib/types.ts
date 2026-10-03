@@ -46,6 +46,15 @@ export const EVENT_COLORS: Record<EventType, { color: string; text: string; labe
   final_answer: { color: "var(--ev-answer)", text: "var(--ev-answer-text)", label: "Final answer" },
 }
 
+const UNKNOWN_EVENT = { color: "var(--ink-3)", text: "var(--ink-2)" }
+
+/** An event's colours and label: an error status turns any type to the error
+ * colours; a type this build doesn't know is drawn in tertiary ink. */
+export function eventPaint(type: string, isError: boolean): { color: string; text: string; label: string } {
+  const meta = EVENT_COLORS[type as EventType] ?? { ...UNKNOWN_EVENT, label: type }
+  return isError ? { ...meta, color: EVENT_COLORS.error.color, text: EVENT_COLORS.error.text } : meta
+}
+
 // Detect participant kind from a name/id
 export function detectParticipantKind(name: string): Participant["kind"] {
   const n = name.toLowerCase()
