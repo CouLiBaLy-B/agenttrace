@@ -197,3 +197,22 @@ def test_keys_management(client):
 
     keys = client.get(f"/api/keys?projectId={project_id}").json()["keys"]
     assert len(keys) == 1
+
+
+def test_websocket_cross_origin_refused_in_password_mode(client, monkeypatch):
+    """The session cookie rides along on cross-site WebSocket handshakes (CSWSH)."""
+    from starlette.websockets import WebSocketDisconnect
+
+    monkeypatch.delenv("AGENTTRACE_ALLOWED_HOSTS", raising=False)
+    _signup(client)
+    with pytest.raises(WebSocketDisconnect) as refused:
+        with client.websocket_connect("/ws", headers={"Origin": "http://evil.example"}):
+            pass
+    assert refused.value.code == 1008
+    with client.websocket_connect("/ws", headers={"Origin": "http://testserver"}):
+        pass
+    with client.websocket_connect("/ws"):  # non-browser clients send no Origin
+        pass
+    monkeypatch.setenv("AGENTTRACE_ALLOWED_HOSTS", "evil.example")
+    with client.websocket_connect("/ws", headers={"Origin": "http://evil.example"}):
+        pass

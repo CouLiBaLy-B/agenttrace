@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import os
 from contextlib import asynccontextmanager
+from urllib.parse import urlsplit
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -46,6 +48,24 @@ async def _lifespan(app: FastAPI):
             await poller
 
 
+def _same_origin_or_allowed(websocket: WebSocket) -> bool:
+    """CSWSH guard: browsers attach the session cookie to cross-site WebSocket
+    handshakes, so a browser `Origin` must match `Host` (or be explicitly
+    allowed). Clients that send no Origin (scripts) are not browsers."""
+    origin = websocket.headers.get("origin")
+    if origin is None:
+        return True
+    try:
+        parts = urlsplit(origin)
+        origin_netloc, origin_host = parts.netloc.lower(), (parts.hostname or "").lower()
+    except ValueError:
+        return False
+    if origin_netloc and origin_netloc == websocket.headers.get("host", "").lower():
+        return True
+    extra = os.getenv("AGENTTRACE_ALLOWED_HOSTS", "")
+    return origin_host in {h.strip().lower() for h in extra.split(",") if h.strip()}
+
+
 def create_app() -> FastAPI:
     app = FastAPI(title="AgentTrace", lifespan=_lifespan)
 
@@ -72,6 +92,9 @@ def create_app() -> FastAPI:
     async def websocket_endpoint(websocket: WebSocket):
         user_id = None
         if auth_mode() != "none":
+            if not _same_origin_or_allowed(websocket):
+                await websocket.close(code=1008)
+                return
             token = websocket.cookies.get(SESSION_COOKIE_NAME)
             user_id = read_session_token(token) if token else None
             if not user_id:

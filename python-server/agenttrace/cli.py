@@ -59,7 +59,8 @@ def ui(host: str, port: int, database_url: str | None, auth: str | None) -> None
         auth = "none" if host in LOOPBACK_HOSTS else "password"
     elif auth == "none" and host not in LOOPBACK_HOSTS:
         click.echo(
-            f"[AgentTrace] WARNING: --auth none on {host} — anyone who can reach this port can read and write traces."
+            f"[AgentTrace] WARNING: --auth none on {host} — anyone who can reach this port can read and write traces. "
+            "Only loopback Host names are accepted unless AGENTTRACE_ALLOWED_HOSTS lists the public hostname(s)."
         )
     os.environ["AGENTTRACE_AUTH"] = auth
 
@@ -78,12 +79,11 @@ def db() -> None:
 @click.option("--database-url", envvar="DATABASE_URL", default=None)
 def db_init(database_url: str | None) -> None:
     """Create all tables if they don't already exist."""
-    if database_url:
-        os.environ["DATABASE_URL"] = database_url
+    # store.db only needs SQLAlchemy, so this works without the [server] extra.
+    from .store.db import database_url as default_database_url
+    from .store.db import init_db
 
-    from .server.db import init_db
-
-    init_db()
+    init_db(database_url or default_database_url())
     click.echo("[AgentTrace] Database schema is up to date.")
 
 
