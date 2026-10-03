@@ -42,8 +42,10 @@ def main() -> None:
 @click.option(
     "--auth",
     type=click.Choice(["none", "password"]),
+    envvar="AGENTTRACE_AUTH",
     default=None,
-    help="none: no login/API key (default on localhost). password: accounts + project keys (default otherwise).",
+    help="none: no login/API key (default on localhost). password: accounts + project keys (default otherwise). "
+    "Env: AGENTTRACE_AUTH.",
 )
 def ui(host: str, port: int, database_url: str | None, auth: str | None) -> None:
     """Start the AgentTrace web UI + API (and the /ws live-stream).
@@ -59,7 +61,7 @@ def ui(host: str, port: int, database_url: str | None, auth: str | None) -> None
         auth = "none" if host in LOOPBACK_HOSTS else "password"
     elif auth == "none" and host not in LOOPBACK_HOSTS:
         click.echo(
-            f"[AgentTrace] WARNING: --auth none on {host} — anyone who can reach this port can read and write traces. "
+            f"[AgentTrace] WARNING: auth none on {host} — anyone who can reach this port can read and write traces. "
             "Only loopback Host names are accepted unless AGENTTRACE_ALLOWED_HOSTS lists the public hostname(s)."
         )
     os.environ["AGENTTRACE_AUTH"] = auth
@@ -77,7 +79,11 @@ def ui(host: str, port: int, database_url: str | None, auth: str | None) -> None
 @main.command()
 @click.option("--database-url", envvar="DATABASE_URL", default=None, help="Target database (default: ./agenttrace.db).")
 def demo(database_url: str | None) -> None:
-    """Load three demo projects into the local database (no-op if it already has projects)."""
+    """Load three demo projects for the local (no-auth) user.
+
+    No-op if that user already has projects. In --auth password mode, signed-in
+    users load demo data from Settings -> "Reload demo projects" instead.
+    """
     _require_server_extra()
     from .server.demo import seed_demo
     from .store import db as store_db

@@ -67,3 +67,26 @@ def test_db_init_works_without_server_extra(monkeypatch, tmp_path):
     from agenttrace.store.db import get_engine
 
     assert "runs" in inspect(get_engine(url)).get_table_names()
+
+
+def test_ui_honours_agenttrace_auth_env_on_localhost(fake_uvicorn, monkeypatch):
+    monkeypatch.setenv("AGENTTRACE_AUTH", "password")
+    result = CliRunner().invoke(cli.main, ["ui"])
+    assert result.exit_code == 0, result.output
+    assert os.environ["AGENTTRACE_AUTH"] == "password"
+    assert "(auth: password)" in result.output
+
+
+def test_ui_auth_flag_overrides_env(fake_uvicorn, monkeypatch):
+    monkeypatch.setenv("AGENTTRACE_AUTH", "password")
+    result = CliRunner().invoke(cli.main, ["ui", "--auth", "none"])
+    assert result.exit_code == 0, result.output
+    assert os.environ["AGENTTRACE_AUTH"] == "none"
+
+
+def test_ui_warns_on_public_host_with_env_auth_none(fake_uvicorn, monkeypatch):
+    monkeypatch.setenv("AGENTTRACE_AUTH", "none")
+    result = CliRunner().invoke(cli.main, ["ui", "--host", "0.0.0.0"])
+    assert result.exit_code == 0, result.output
+    assert os.environ["AGENTTRACE_AUTH"] == "none"
+    assert "WARNING" in result.output
