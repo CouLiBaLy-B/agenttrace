@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api, formatRelative } from "@/lib/api"
+import { useSession } from "@/lib/session"
 import { useNav } from "@/lib/store"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -44,6 +45,8 @@ interface Project {
 
 export function IntegrationView() {
   const { projectId, go } = useNav()
+  const { authMode } = useSession()
+  const local = authMode === "none"
   const qc = useQueryClient()
   const [selectedProject, setSelectedProject] = useState<string | null>(projectId)
   const [revealedKey, setRevealedKey] = useState<string | null>(null)
@@ -61,7 +64,7 @@ export function IntegrationView() {
   const { data: keysData, isLoading: keysLoading } = useQuery<{ keys: KeyRow[] }>({
     queryKey: ["keys", effectiveProject],
     queryFn: () => api(`/api/keys?projectId=${effectiveProject}`),
-    enabled: !!effectiveProject,
+    enabled: !!effectiveProject && !local,
   })
 
   const createKeyMut = useMutation({
@@ -104,12 +107,13 @@ export function IntegrationView() {
         </p>
         <h1 className="text-2xl font-semibold mt-0.5">Integration</h1>
         <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-          Stream events from your agent with a single HTTP endpoint. Use an API key to
-          authenticate — it's scoped per project, not per user session.
+          {local
+            ? "Stream events from your agent to this server. Ingestion needs no key in local mode; runs are grouped by project name."
+            : "Stream events from your agent with a single HTTP endpoint. Use an API key to authenticate — it's scoped per project, not per user session."}
         </p>
       </div>
 
-      {projects.length === 0 ? (
+      {projects.length === 0 && !local ? (
         <Card className="p-10 text-center">
           <Cable className="h-8 w-8 text-muted-foreground mx-auto" />
           <p className="mt-3 text-sm text-muted-foreground">
@@ -140,14 +144,16 @@ export function IntegrationView() {
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={() => createKeyMut.mutate()} disabled={createKeyMut.isPending} className="gap-1.5">
-              <RefreshCw className={`h-4 w-4 ${createKeyMut.isPending ? "animate-spin" : ""}`} />
-              Regenerate key
-            </Button>
+            {!local && (
+              <Button onClick={() => createKeyMut.mutate()} disabled={createKeyMut.isPending} className="gap-1.5">
+                <RefreshCw className={`h-4 w-4 ${createKeyMut.isPending ? "animate-spin" : ""}`} />
+                Regenerate key
+              </Button>
+            )}
           </div>
 
           {/* revealed key */}
-          {revealedKey && (
+          {!local && revealedKey && (
             <Card className="p-4 border-amber-500/40 bg-amber-500/5">
               <div className="flex items-center gap-2">
                 <KeyRound className="h-4 w-4 text-amber-400" />
@@ -175,6 +181,7 @@ export function IntegrationView() {
           )}
 
           {/* keys list */}
+          {!local && (
           <div>
             <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2">
               API keys
@@ -210,10 +217,11 @@ export function IntegrationView() {
               </div>
             )}
           </div>
+          )}
 
           {/* snippets */}
           <SnippetBlock
-            projectId={effectiveProject || ""}
+            local={local}
             projectName={currentProject?.name || "your-project"}
             apiKey={revealedKey || `atr_YOUR_API_KEY`}
           />
@@ -224,9 +232,7 @@ export function IntegrationView() {
               endpoint reference
             </p>
             <div className="space-y-2 font-mono text-xs">
-              <RefRow method="POST" path="/api/events" desc="Ingest an event (or create a run with runId: null)" />
-              <RefRow method="GET" path="/api/runs/:id" desc="Fetch a run with all its events" />
-              <RefRow method="PATCH" path="/api/runs/:id" desc="Update run status (completed / failed)" />
+              <RefRow method="POST" path="/api/events" desc="Create a run, append an event, or end a run" />
             </div>
             <div className="mt-4 rounded-md border border-border bg-background/60 p-3 font-mono text-[11px] text-muted-foreground">
               <p className="text-foreground/80">Event body:</p>
@@ -262,23 +268,25 @@ function RefRow({ method, path, desc }: { method: string; path: string; desc: st
 }
 
 function SnippetBlock({
-  projectId,
+  local,
   projectName,
   apiKey,
 }: {
-  projectId: string
+  local: boolean
   projectName: string
   apiKey: string
 }) {
-  const [lang, setLang] = useState<"python" | "typescript" | "deepagents">("python")
+  const [lang, setLang] = useState<"python" | "http" | "deepagents">("python")
   const [copied, setCopied] = useState(false)
 
+  const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"
+  const opts = { origin, projectName, apiKey, local }
   const snippet =
     lang === "python"
-      ? pythonSnippet(projectName, apiKey)
-      : lang === "typescript"
-      ? tsSnippet(projectName, apiKey)
-      : deepagentsSnippet(projectName, apiKey)
+      ? pythonSnippet(opts)
+      : lang === "http"
+      ? httpSnippet(opts)
+      : deepagentsSnippet(opts)
 
   const copy = () => {
     navigator.clipboard.writeText(snippet)
@@ -296,8 +304,8 @@ function SnippetBlock({
         </span>
         <Tabs value={lang} onValueChange={(v) => setLang(v as any)} className="ml-auto">
           <TabsList className="h-7">
-            <TabsTrigger value="python" className="text-xs px-2.5 py-0.5">Python</TabsTrigger>
-            <TabsTrigger value="typescript" className="text-xs px-2.5 py-0.5">TypeScript</TabsTrigger>
+            <TabsTrigger value="python" className="text-xs px-2.5 py-0.5">Python SDK</TabsTrigger>
+            <TabsTrigger value="http" className="text-xs px-2.5 py-0.5">HTTP</TabsTrigger>
             <TabsTrigger value="deepagents" className="text-xs px-2.5 py-0.5">DeepAgents</TabsTrigger>
           </TabsList>
         </Tabs>
@@ -308,10 +316,9 @@ function SnippetBlock({
       </div>
       {lang === "deepagents" && (
         <div className="px-4 py-2 border-b border-border bg-primary/5 text-[11px] text-muted-foreground">
-          Drop-in <code className="font-mono text-primary/80">BaseCallbackHandler</code> for{" "}
-          <code className="font-mono">langchain-deepagents</code> — tracks the orchestrator,
-          LLM calls, every tool call/result, sub-agent handoffs, and the final answer as a live
-          AgentTrace sequence diagram.
+          <code className="font-mono text-primary/80">agenttrace.langchain.autolog()</code> turns
+          every <code className="font-mono">agent.invoke()</code> into a run — LLM calls, tool
+          calls/results, handoffs and the final answer as a live sequence diagram.
         </div>
       )}
       <div className="relative">
@@ -323,70 +330,52 @@ function SnippetBlock({
   )
 }
 
-function pythonSnippet(project: string, apiKey: string) {
-  return `import requests, time, uuid
-
-# AgentTrace ingestion — ${project}
-AGENTTRACE_URL = "http://localhost:3000/api/events"  # use your deployment URL
-API_KEY = "${apiKey}"                                   # project-scoped key
-
-headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
-
-def emit(event: dict) -> dict:
-    r = requests.post(AGENTTRACE_URL, json=event, headers=headers)
-    r.raise_for_status()
-    return r.json()
-
-# 1. Start a run (runId=None → server creates one and returns it)
-run = emit({"runId": None, "name": "demo refund flow"})
-run_id = run["runId"]
-print("run started:", run_id)
-
-# 2. User message arrives → orchestrator
-emit({"runId": run_id, "source": "User", "target": "Orchestrator",
-      "type": "handoff", "label": "incoming message",
-      "payload": {"message": "please refund order #4821"}, "durationMs": 90})
-
-# 3. Orchestrator → LLM (classify intent)
-emit({"runId": run_id, "source": "Orchestrator", "target": "LLM",
-      "type": "llm_call", "label": "classify intent",
-      "payload": {"prompt": "...", "result": "refund_request", "tokens": 184},
-      "durationMs": 480})
-
-# 4. Orchestrator → tool call (lookup_order)
-emit({"runId": run_id, "source": "Orchestrator", "target": "lookup_order",
-      "type": "tool_call", "label": "lookup_order(#4821)",
-      "payload": {"args": {"orderId": "4821"}}, "durationMs": 310})
-
-# 5. tool result back to orchestrator
-emit({"runId": run_id, "source": "lookup_order", "target": "Orchestrator",
-      "type": "tool_result", "label": "order found",
-      "payload": {"orderId": "4821", "total": 89.99, "status": "shipped"},
-      "durationMs": 5})
-
-# 6. Final answer to the user
-emit({"runId": run_id, "source": "Orchestrator", "target": "User",
-      "type": "final_answer", "label": "refund issued",
-      "payload": {"answer": "A refund of $89.99 has been processed."},
-      "durationMs": 80})
-
-# 7. Close the run
-emit({"runId": run_id, "endRun": "completed"})
-print("run completed — open the live trace view to watch it replay")`
+interface SnippetOpts {
+  origin: string
+  projectName: string
+  apiKey: string
+  local: boolean
 }
 
-function tsSnippet(project: string, apiKey: string) {
-  return `// AgentTrace ingestion — ${project}
-const AGENTTRACE_URL = "http://localhost:3000/api/events"; // your deployment URL
-const API_KEY = "${apiKey}";                                // project-scoped key
+function pythonSnippet({ origin, projectName, apiKey, local }: SnippetOpts) {
+  if (local) {
+    return `# pip install deepagents-trace
+import agenttrace
 
-async function emit(event: Record<string, unknown>) {
-  const res = await fetch(AGENTTRACE_URL, {
-    method: "POST",
-    headers: {
-      Authorization: \`Bearer \${API_KEY}\`,
+agenttrace.set_tracking_uri("${origin}")
+agenttrace.set_project("${projectName}")
+
+with agenttrace.start_run("my run"):
+    agenttrace.log_event(source="Orchestrator", target="LLM", type="llm_call", label="classify intent")`
+  }
+  return `# pip install deepagents-trace
+# export AGENTTRACE_TRACKING_URI="${origin}"
+# export AGENTTRACE_KEY="${apiKey}"        # project-scoped key
+import os
+os.environ.setdefault("AGENTTRACE_TRACKING_URI", "${origin}")
+os.environ.setdefault("AGENTTRACE_KEY", "${apiKey}")
+
+import agenttrace
+
+with agenttrace.start_run("my run"):
+    agenttrace.log_event(source="Orchestrator", target="LLM", type="llm_call", label="classify intent")`
+}
+
+function httpSnippet({ origin, projectName, apiKey, local }: SnippetOpts) {
+  const auth = local
+    ? `    headers: { "Content-Type": "application/json" },`
+    : `    headers: {
+      Authorization: \`Bearer ${apiKey}\`,
       "Content-Type": "application/json",
-    },
+    },`
+  const create = local
+    ? `{ runId: null, name: "demo refund flow", project: "${projectName}" }`
+    : `{ runId: null, name: "demo refund flow" }`
+  return `// AgentTrace ingestion — ${projectName}${local ? "" : "\n// Authorization: Bearer " + apiKey}
+async function emit(event: Record<string, unknown>) {
+  const res = await fetch("${origin}/api/events", {
+    method: "POST",
+${auth}
     body: JSON.stringify(event),
   });
   if (!res.ok) throw new Error(\`ingest failed: \${res.status}\`);
@@ -394,120 +383,46 @@ async function emit(event: Record<string, unknown>) {
 }
 
 async function main() {
-  // 1. Start a run (runId omitted → server creates one)
-  const run = await emit({ runId: null, name: "demo refund flow" });
+  // 1. Start a run (runId null → server creates one)
+  const run = await emit(${create});
   const runId = run.runId;
-  console.log("run started:", runId);
 
-  // 2. User message → orchestrator
-  await emit({
-    runId, source: "User", target: "Orchestrator",
-    type: "handoff", label: "incoming message",
-    payload: { message: "please refund order #4821" }, durationMs: 90,
-  });
-
-  // 3. Orchestrator → LLM (classify intent)
+  // 2. Append events
   await emit({
     runId, source: "Orchestrator", target: "LLM",
     type: "llm_call", label: "classify intent",
-    payload: { prompt: "...", result: "refund_request", tokens: 184 },
-    durationMs: 480,
+    payload: { prompt: "...", result: "refund_request" }, durationMs: 480,
   });
-
-  // 4. Orchestrator → tool call
   await emit({
     runId, source: "Orchestrator", target: "lookup_order",
     type: "tool_call", label: "lookup_order(#4821)",
     payload: { args: { orderId: "4821" } }, durationMs: 310,
   });
 
-  // 5. tool result back
-  await emit({
-    runId, source: "lookup_order", target: "Orchestrator",
-    type: "tool_result", label: "order found",
-    payload: { orderId: "4821", total: 89.99, status: "shipped" },
-    durationMs: 5,
-  });
-
-  // 6. Final answer
-  await emit({
-    runId, source: "Orchestrator", target: "User",
-    type: "final_answer", label: "refund issued",
-    payload: { answer: "A refund of $89.99 has been processed." },
-    durationMs: 80,
-  });
-
-  // 7. Close the run
+  // 3. Close the run
   await emit({ runId, endRun: "completed" });
-  console.log("run completed — open the live trace view to watch it replay");
 }
 
 main().catch(console.error);`
 }
 
-function deepagentsSnippet(project: string, apiKey: string) {
-  return `# AgentTrace × LangChain DeepAgents — ${project}
-#
-# pip install -e integrations/agenttrace-langchain  (or: pip install agenttrace-langchain)
-# pip install langchain langchain-openai
-#
-# AgentTraceMiddleware is an AgentMiddleware (LangChain's 2026 middleware
-# system: before_agent / wrap_model_call / wrap_tool_call / after_agent) that
-# streams orchestrator ↔ LLM, tool_call/tool_result, handoffs and the final
-# answer to AgentTrace as a live sequence diagram. It works for
-# create_deep_agent / create_agent / any agent built on
-# langchain.agents.middleware.
+function deepagentsSnippet({ origin, projectName, apiKey, local }: SnippetOpts) {
+  if (local) {
+    return `# pip install 'deepagents-trace[langchain]'
+import agenttrace, agenttrace.langchain
 
+agenttrace.set_tracking_uri("${origin}")
+agenttrace.set_project("${projectName}")
+agenttrace.langchain.autolog()   # every agent.invoke() becomes a run`
+  }
+  return `# pip install 'deepagents-trace[langchain]'
+# export AGENTTRACE_TRACKING_URI="${origin}"
+# export AGENTTRACE_KEY="${apiKey}"        # project-scoped key
 import os
-os.environ.setdefault("AGENTTRACE_URL", "http://localhost:3000/api/events")
-os.environ.setdefault("AGENTTRACE_KEY", "${apiKey}")   # project-scoped key
+os.environ.setdefault("AGENTTRACE_TRACKING_URI", "${origin}")
+os.environ.setdefault("AGENTTRACE_KEY", "${apiKey}")
 
-from agenttrace_langchain import AgentTraceMiddleware
+import agenttrace.langchain
 
-
-def main():
-    from langchain_openai import ChatOpenAI
-    from langchain_core.tools import tool
-    # deepagents provides create_deep_agent (planner + executor + sub-agents)
-    try:
-        from deepagents import create_deep_agent
-    except ImportError:
-        print("pip install deepagents  (or your internal deepagents package)")
-        return
-
-    @tool
-    def web_search(query: str) -> str:
-        """Search the web and return the top results as text."""
-        return f"[stub] top results for: {query}"
-
-    @tool
-    def fetch_page(url: str) -> str:
-        """Fetch and return the text content of a web page."""
-        return f"[stub] content of {url}"
-
-    model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-
-    # create_deep_agent wires up a planner, an executor with tools, and
-    # optional sub-agents. One middleware instance = one AgentTrace run.
-    agent = create_deep_agent(
-        model=model,
-        tools=[web_search, fetch_page],
-        system_prompt=(
-            "You are a research assistant. Use web_search + fetch_page to "
-            "answer the user's question, then synthesize a cited summary."
-        ),
-        middleware=[AgentTraceMiddleware(run_name="research — state of Rust web frameworks")],
-    )
-
-    result = agent.invoke(
-        {"messages": [{"role": "user", "content": "What's the state of Rust web frameworks in 2025?"}]},
-    )
-
-    print("answer:", result["messages"][-1].content)
-    print("trace:  open the run in AgentTrace to replay it frame by frame")
-
-
-if __name__ == "__main__":
-    main()`
+agenttrace.langchain.autolog()   # every agent.invoke() becomes a run`
 }
-

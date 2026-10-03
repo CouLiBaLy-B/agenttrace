@@ -12,16 +12,20 @@ import { User, Database, Sparkles, LogOut, Bell, Palette } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 
 export function SettingsView() {
-  const { user, authMode } = useSession()
+  const { user, authMode, version } = useSession()
   const { signOut } = useAuthActions()
   const qc = useQueryClient()
 
   const seedMut = useMutation({
-    mutationFn: () => api("/api/seed", { method: "POST" }),
-    onSuccess: () => {
+    mutationFn: () => api<{ seeded: number }>("/api/seed", { method: "POST" }),
+    onSuccess: ({ seeded }) => {
       qc.invalidateQueries({ queryKey: ["stats"] })
       qc.invalidateQueries({ queryKey: ["projects"] })
-      toast.success("Demo projects reloaded")
+      toast.success(
+        seeded
+          ? `Loaded ${seeded} demo projects`
+          : "Demo projects already present (only added when you have no projects)",
+      )
     },
     onError: (e) => toast.error("Failed: " + (e as Error).message),
   })
@@ -137,7 +141,7 @@ export function SettingsView() {
           <div>
             <p className="font-mono text-xs text-muted-foreground">AgentTrace</p>
             <p className="text-[11px] text-muted-foreground/70 mt-0.5">
-              v1.0.0 · socket.io :3003 · next-auth · prisma
+              {`v${version} · FastAPI · live /ws`}
             </p>
           </div>
           <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/60">
