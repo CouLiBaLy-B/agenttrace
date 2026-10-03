@@ -4,7 +4,7 @@ The server used to build one module-level engine from DATABASE_URL. The SDK
 needs to target whatever tracking URI the user picked (MLflow-style), so
 engines are cached per URL instead. SQLite gets a 30 s busy timeout because
 the SDK and `agenttrace ui` routinely hold the same file open from two
-processes.
+processes, and runs in WAL mode so readers don't block on the writer.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from __future__ import annotations
 import os
 import threading
 
-from sqlalchemy import Engine, create_engine
+from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
 
@@ -29,12 +29,22 @@ def database_url() -> str:
     return os.getenv("DATABASE_URL", DEFAULT_SQLITE_URL)
 
 
+def _enable_wal(dbapi_connection, _record) -> None:
+    # WAL lets `agenttrace ui` read while the SDK writes (and vice versa)
+    # instead of readers and the writer blocking each other.
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.close()
+
+
 def get_engine(url: str) -> Engine:
     with _lock:
         engine = _engines.get(url)
         if engine is None:
             connect_args = {"check_same_thread": False, "timeout": 30} if url.startswith("sqlite") else {}
             engine = create_engine(url, connect_args=connect_args)
+            if url.startswith("sqlite") and ":memory:" not in url:
+                event.listen(engine, "connect", _enable_wal)
             _engines[url] = engine
         return engine
 

@@ -74,3 +74,10 @@ def test_init_db_is_once_per_url_and_retries_a_cross_process_race(tmp_path, monk
     store_db.init_db(url)
     store_db.init_db(url)
     assert len(calls) == 2  # one failed attempt, one retry, then cached
+
+
+def test_sqlite_files_use_wal_but_memory_does_not(tmp_path):
+    with store_db.get_engine(f"sqlite:///{tmp_path}/wal.db").connect() as conn:
+        assert conn.execute(text("PRAGMA journal_mode")).scalar() == "wal"
+    with store_db.get_engine("sqlite:///:memory:").connect() as conn:
+        assert conn.execute(text("PRAGMA journal_mode")).scalar() == "memory"

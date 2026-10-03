@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
+from starlette.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 
 from ...store.local import get_or_create_local_user, get_or_create_project
@@ -35,7 +36,12 @@ async def ingest(
     body = await request.json()
     if not isinstance(body, dict):
         raise HTTPException(status_code=400, detail={"error": "Invalid JSON body"})
+    # Sync SQLAlchemy work off the event loop: a SQLite file locked by another
+    # writer (busy timeout 30 s) must not stall the poller and websockets.
+    return await run_in_threadpool(_ingest, db, project, body)
 
+
+def _ingest(db: Session, project: models.Project | None, body: dict):
     run_id = body.get("runId")
 
     if not run_id:
