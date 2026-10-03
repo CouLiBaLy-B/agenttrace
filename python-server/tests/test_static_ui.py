@@ -41,3 +41,16 @@ def test_placeholder_without_bundle(tmp_path, monkeypatch):
         page = c.get("/")
         assert page.status_code == 200
         assert "bun run build:ui" in page.text
+
+
+def test_html_is_revalidated_and_hashed_assets_are_immutable(bundle, monkeypatch):
+    (bundle / "settings").mkdir()
+    (bundle / "settings" / "index.html").write_text("<!doctype html><title>Settings</title>")
+    monkeypatch.setenv("AGENTTRACE_STATIC_DIR", str(bundle))
+    with TestClient(create_app()) as c:
+        for path in ("/", "/index.html", "/settings/"):
+            resp = c.get(path)
+            assert resp.status_code == 200, path
+            assert resp.headers["cache-control"] == "no-cache", path
+        asset = c.get("/_next/static/app.js")
+        assert asset.headers["cache-control"] == "public, max-age=31536000, immutable"

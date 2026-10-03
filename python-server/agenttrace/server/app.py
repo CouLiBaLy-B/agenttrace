@@ -17,6 +17,7 @@ from urllib.parse import urlsplit
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.types import Scope
 
 from .db import init_db
 from .deps import auth_mode
@@ -66,6 +67,21 @@ def _same_origin_or_allowed(websocket: WebSocket) -> bool:
         return True
     extra = os.getenv("AGENTTRACE_ALLOWED_HOSTS", "")
     return origin_host in {h.strip().lower() for h in extra.split(",") if h.strip()}
+
+
+class UIStaticFiles(StaticFiles):
+    """Static bundle with cache headers safe across upgrades: content-hashed
+    `_next/static/*` chunks are immutable, everything else (the HTML pages,
+    which reference those chunks by name) is revalidated on every load so a
+    `pip install -U` never leaves a cached page pointing at removed chunks."""
+
+    async def get_response(self, path: str, scope: Scope):
+        response = await super().get_response(path, scope)
+        if path.replace(os.sep, "/").startswith("_next/static/"):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        else:
+            response.headers["Cache-Control"] = "no-cache"
+        return response
 
 
 def create_app() -> FastAPI:
@@ -124,7 +140,7 @@ def create_app() -> FastAPI:
 
     static_dir = Path(os.getenv("AGENTTRACE_STATIC_DIR") or DEFAULT_STATIC_DIR)
     if (static_dir / "index.html").is_file():
-        app.mount("/", StaticFiles(directory=static_dir, html=True), name="ui")
+        app.mount("/", UIStaticFiles(directory=static_dir, html=True), name="ui")
     else:
 
         @app.get("/", response_class=HTMLResponse, include_in_schema=False)
