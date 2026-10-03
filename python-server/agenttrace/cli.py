@@ -21,6 +21,9 @@ def _require_server_extra() -> None:
         sys.exit(1)
 
 
+LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1"}
+
+
 @click.group()
 @click.version_option(package_name="agenttrace")
 def main() -> None:
@@ -36,15 +39,28 @@ def main() -> None:
     default=None,
     help="SQLAlchemy database URL. Defaults to a local SQLite file (agenttrace.db) if unset.",
 )
-def ui(host: str, port: int, database_url: str | None) -> None:
+@click.option(
+    "--auth",
+    type=click.Choice(["none", "password"]),
+    default=None,
+    help="none: no login/API key (default on localhost). password: accounts + project keys (default otherwise).",
+)
+def ui(host: str, port: int, database_url: str | None, auth: str | None) -> None:
     """Start the AgentTrace web UI + API (and the /ws live-stream)."""
     _require_server_extra()
     if database_url:
         os.environ["DATABASE_URL"] = database_url
+    if auth is None:
+        auth = "none" if host in LOOPBACK_HOSTS else "password"
+    elif auth == "none" and host not in LOOPBACK_HOSTS:
+        click.echo(
+            f"[AgentTrace] WARNING: --auth none on {host} — anyone who can reach this port can read and write traces."
+        )
+    os.environ["AGENTTRACE_AUTH"] = auth
 
     import uvicorn
 
-    click.echo(f"[AgentTrace] Starting at http://{host}:{port}")
+    click.echo(f"[AgentTrace] Starting at http://{host}:{port} (auth: {auth})")
     uvicorn.run("agenttrace.server.app:app", host=host, port=port, log_level="info")
 
 
