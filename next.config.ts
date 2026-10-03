@@ -1,23 +1,21 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from "next"
+
+// Production builds are a static export served by the Python package
+// (`agenttrace ui`). In development, `next dev` proxies the API to a
+// running `agenttrace ui` (default http://127.0.0.1:3000); the WebSocket
+// connects directly via NEXT_PUBLIC_AGENTTRACE_WS_URL.
+const isDev = process.env.NODE_ENV === "development"
+const backend = process.env.AGENTTRACE_DEV_BACKEND ?? "http://127.0.0.1:3000"
 
 const nextConfig: NextConfig = {
-  output: "standalone",
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   reactStrictMode: false,
-  // Allow the gateway / preview hostnames to load /_next/* dev assets.
-  // The app is served via a Caddy gateway on :81 (and a preview domain),
-  // which reverse-proxies to this dev server on :3000.
-  allowedDevOrigins: [
-    "http://127.0.0.1:81",
-    "http://localhost:81",
-    "http://0.0.0.0:81",
-    "http://*.space-z.ai",
-    "http://*.chatglm.cn",
-    "https://*.space-z.ai",
-    "https://*.chatglm.cn",
-  ],
-};
+  ...(isDev
+    ? {
+        async rewrites() {
+          return [{ source: "/api/:path*", destination: `${backend}/api/:path*` }]
+        },
+      }
+    : { output: "export", images: { unoptimized: true } }),
+}
 
-export default nextConfig;
+export default nextConfig

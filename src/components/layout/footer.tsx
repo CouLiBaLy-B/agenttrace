@@ -14,7 +14,7 @@ export function Footer() {
           </span>
           <span className="uppercase tracking-widest">ingestion: ready</span>
           <span className="text-border">·</span>
-          <span>socket.io :3003</span>
+          <span>live · /ws</span>
         </div>
         <div className="flex items-center gap-3 font-mono">
           <span className="uppercase tracking-widest">view: {view}</span>
