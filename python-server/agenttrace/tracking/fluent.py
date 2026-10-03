@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import functools
 import inspect
+import logging
 import os
+import reprlib
 import threading
 import time
 from contextvars import ContextVar
@@ -22,6 +24,12 @@ from .run import LABEL_LIMIT, RESULT_LIMIT, ActiveRun, compact, truncate
 from .stores import store_for_uri
 
 DEFAULT_PROJECT = "Default"
+
+_log = logging.getLogger(__name__)
+# Bounded repr: huge or self-referencing arguments must not cost the caller.
+_bounded = reprlib.Repr()
+_bounded.maxstring = _bounded.maxother = LABEL_LIMIT
+_bounded.maxlevel, _bounded.maxlist, _bounded.maxdict = 3, 6, 6
 
 _project: Optional[str] = None
 _active_runs: ContextVar[tuple[ActiveRun, ...]] = ContextVar("agenttrace_active_runs", default=())
@@ -111,62 +119,83 @@ def trace(fn: Optional[Callable] = None, *, target: Optional[str] = None, source
     def decorate(func: Callable) -> Callable:
         name = target or func.__name__
 
-        def before(args: tuple, kwargs: dict) -> tuple[ActiveRun, float]:
-            run = _current_or_implicit_run()
-            arg_text = ", ".join([repr(a) for a in args] + [f"{k}={v!r}" for k, v in kwargs.items()])
-            run.log_event(
-                source=source,
-                target=name,
-                type="tool_call",
-                label=f"{name}({truncate(arg_text, LABEL_LIMIT)})",
-                payload={"args": compact(list(args)), "kwargs": compact(kwargs)},
-            )
-            return run, time.monotonic()
+        def safely(step: Callable[[], Any]) -> Any:
+            # Tracing must never break the traced function.
+            try:
+                return step()
+            except Exception:
+                _log.debug("agenttrace: tracing step failed", exc_info=True)
+                return None
 
-        def after(run: ActiveRun, result: Any, started: float) -> None:
-            run.log_event(
-                source=name,
-                target=source,
-                type="tool_result",
-                label=f"{name} → result",
-                payload={"result": compact(result, RESULT_LIMIT)},
-                duration_ms=int((time.monotonic() - started) * 1000),
+        def before(args: tuple, kwargs: dict) -> Optional[tuple[ActiveRun, float]]:
+            def step() -> tuple[ActiveRun, float]:
+                run = _current_or_implicit_run()
+                arg_text = ", ".join([_bounded.repr(a) for a in args] + [f"{k}={_bounded.repr(v)}" for k, v in kwargs.items()])
+                run.log_event(
+                    source=source,
+                    target=name,
+                    type="tool_call",
+                    label=f"{name}({truncate(arg_text, LABEL_LIMIT)})",
+                    payload={"args": compact(list(args)), "kwargs": compact(kwargs)},
+                )
+                return run, time.monotonic()
+
+            return safely(step)
+
+        def after(ctx: Optional[tuple[ActiveRun, float]], result: Any) -> None:
+            if ctx is None:
+                return
+            run, started = ctx
+            safely(
+                lambda: run.log_event(
+                    source=name,
+                    target=source,
+                    type="tool_result",
+                    label=f"{name} → result",
+                    payload={"result": compact(result, RESULT_LIMIT)},
+                    duration_ms=int((time.monotonic() - started) * 1000),
+                )
             )
 
-        def failed(run: ActiveRun, exc: BaseException) -> None:
-            run.log_event(
-                source=name,
-                target=source,
-                type="error",
-                label=f"{name} failed",
-                payload={"error": type(exc).__name__, "message": str(exc)},
-                status="error",
+        def failed(ctx: Optional[tuple[ActiveRun, float]], exc: BaseException) -> None:
+            if ctx is None:
+                return
+            run, _ = ctx
+            safely(
+                lambda: run.log_event(
+                    source=name,
+                    target=source,
+                    type="error",
+                    label=f"{name} failed",
+                    payload={"error": type(exc).__name__, "message": str(exc)},
+                    status="error",
+                )
             )
 
         if inspect.iscoroutinefunction(func):
 
             @functools.wraps(func)
             async def async_wrapper(*args, **kwargs):
-                run, started = before(args, kwargs)
+                ctx = before(args, kwargs)
                 try:
                     result = await func(*args, **kwargs)
                 except Exception as exc:
-                    failed(run, exc)
+                    failed(ctx, exc)
                     raise
-                after(run, result, started)
+                after(ctx, result)
                 return result
 
             return async_wrapper
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            run, started = before(args, kwargs)
+            ctx = before(args, kwargs)
             try:
                 result = func(*args, **kwargs)
             except Exception as exc:
-                failed(run, exc)
+                failed(ctx, exc)
                 raise
-            after(run, result, started)
+            after(ctx, result)
             return result
 
         return wrapper

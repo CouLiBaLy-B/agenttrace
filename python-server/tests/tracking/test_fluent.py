@@ -108,3 +108,35 @@ async def test_trace_decorator_async(tracking_db):
     with agenttrace.start_run("async"):
         assert await fetch("x") == "ok"
     assert [e["type"] for e in read_runs(tracking_db)[0]["events"]] == ["tool_call", "tool_result"]
+
+
+async def test_trace_decorator_async_error(tracking_db):
+    @agenttrace.trace
+    async def boom():
+        await asyncio.sleep(0)
+        raise KeyError("k")
+
+    with agenttrace.start_run("async-err"):
+        with pytest.raises(KeyError):
+            await boom()
+    events = read_runs(tracking_db)[0]["events"]
+    assert [e["type"] for e in events] == ["tool_call", "error"]
+    assert events[1]["status"] == "error"
+
+
+def test_trace_survives_hostile_arguments(tracking_db):
+    class BadRepr:
+        def __repr__(self):
+            raise RuntimeError("repr")
+
+    class BadStr:
+        def __str__(self):
+            raise RuntimeError("str")
+
+    @agenttrace.trace
+    def f(*args, **kwargs):
+        return "ok"
+
+    with agenttrace.start_run("hostile"):
+        assert f(BadRepr(), x=BadStr()) == "ok"
+        assert f(BadStr()) == "ok"
