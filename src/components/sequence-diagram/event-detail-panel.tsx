@@ -115,8 +115,10 @@ function EmptyDetail() {
 }
 
 function EventBody({ event }: { event: TraceEvent }) {
-  const meta = EVENT_COLORS[event.type as keyof typeof EVENT_COLORS] || { color: "#888", label: event.type }
-  const color = event.status === "error" ? "#f87171" : meta.color
+  const meta = EVENT_COLORS[event.type as keyof typeof EVENT_COLORS] || { color: "var(--ink-3)", text: "var(--ink-3)", label: event.type }
+  const isError = event.status === "error"
+  const color = isError ? EVENT_COLORS.error.color : meta.color
+  const textColor = isError ? EVENT_COLORS.error.text : meta.text
   const SrcIcon = PARTICIPANT_ICON[kindOfLocal(event.source)]
   const TgtIcon = PARTICIPANT_ICON[kindOfLocal(event.target)]
 
@@ -126,7 +128,7 @@ function EventBody({ event }: { event: TraceEvent }) {
       <div>
         <span
           className="inline-block rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest"
-          style={{ background: `${color}22`, color }}
+          style={{ background: `color-mix(in oklab, ${color} 13%, transparent)`, color: textColor }}
         >
           {event.type.replace("_", " ")}
         </span>
@@ -153,7 +155,7 @@ function EventBody({ event }: { event: TraceEvent }) {
       {/* meta */}
       <div className="grid grid-cols-2 gap-2 text-xs">
         <Meta label="sequence" value={`#${event.seq}`} />
-        <Meta label="status" value={event.status} accent={event.status === "error" ? "#f87171" : "#34d399"} />
+        <Meta label="status" value={event.status} accent={event.status === "error" ? EVENT_COLORS.error.text : EVENT_COLORS.tool_result.text} />
         <Meta label="timestamp" value={new Date(event.timestamp).toLocaleTimeString()} />
         <Meta
           label="duration"

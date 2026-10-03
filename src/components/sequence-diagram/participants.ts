@@ -23,11 +23,12 @@ export function extractParticipants(events: TraceEvent[]): Participant[] {
   return Array.from(seen.values())
 }
 
-// Color per participant kind (for lifeline tints / icons)
+// Color per participant kind (for lifeline tints / icons). CSS variables from
+// the active theme — build translucent variants with color-mix, not a hex alpha.
 export const KIND_COLOR: Record<Participant["kind"], string> = {
-  user: "#f472b6",
-  orchestrator: "#34d399",
-  llm: "#22d3ee",
-  tool: "#a78bfa",
-  subagent: "#fbbf24",
+  user: "var(--kind-user)",
+  orchestrator: "var(--kind-orchestrator)",
+  llm: "var(--kind-llm)",
+  tool: "var(--kind-tool)",
+  subagent: "var(--kind-subagent)",
 }

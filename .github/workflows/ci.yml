@@ -1,6 +1,6 @@
 # AgentTrace — CI
 # Runs on every push and pull request:
-#   1. ui      — lint, typecheck, static export (uploaded as the `ui-bundle` artifact)
+#   1. ui      — lint, typecheck, unit tests (Vitest), static export (uploaded as the `ui-bundle` artifact)
 #   2. python  — pytest (server + SDK + shim), then a wheel check that the UI ships
 #   3. e2e     — Playwright drives the bundled dashboard served by `agenttrace ui`
 #   4. docker  — build the single image and smoke test it against Postgres
@@ -36,6 +36,7 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run lint
       - run: bun run typecheck
+      - run: bun run test
       - run: bun run build:ui
         env:
           NEXT_TELEMETRY_DISABLED: "1"

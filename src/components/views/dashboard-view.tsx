@@ -231,7 +231,7 @@ function SignalMix({ typeDist }: { typeDist: Record<string, number> }) {
             <div className="h-1.5 rounded-full bg-border/60 overflow-hidden">
               <motion.div
                 className="h-full rounded-full"
-                style={{ background: meta.color, boxShadow: `0 0 6px ${meta.color}88` }}
+                style={{ background: meta.color, boxShadow: `0 0 6px color-mix(in oklab, ${meta.color} 53%, transparent)` }}
                 initial={{ width: 0 }}
                 animate={{ width: `${pct}%` }}
                 transition={{ duration: 0.6, ease: "easeOut" }}

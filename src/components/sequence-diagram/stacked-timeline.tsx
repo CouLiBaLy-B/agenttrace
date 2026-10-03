@@ -18,8 +18,10 @@ export function StackedTimeline({ events, participants: _participants, selectedI
   return (
     <div className="at-graticule p-3 space-y-2 at-scroll overflow-y-auto h-full">
       {events.map((ev, i) => {
-        const meta = EVENT_COLORS[ev.type as keyof typeof EVENT_COLORS] || { color: "#888", label: ev.type }
-        const color = ev.status === "error" ? "#f87171" : meta.color
+        const meta = EVENT_COLORS[ev.type as keyof typeof EVENT_COLORS] || { color: "var(--ink-3)", text: "var(--ink-3)", label: ev.type }
+        const isError = ev.status === "error"
+        const color = isError ? EVENT_COLORS.error.color : meta.color
+        const textColor = isError ? EVENT_COLORS.error.text : meta.text
         const selected = ev.id === selectedId
         const SrcIcon = PARTICIPANT_ICON[kindOf(ev.source)]
         const TgtIcon = PARTICIPANT_ICON[kindOf(ev.target)]
@@ -42,7 +44,7 @@ export function StackedTimeline({ events, participants: _participants, selectedI
                 </span>
                 <span
                   className="rounded px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider shrink-0"
-                  style={{ background: `${color}22`, color }}
+                  style={{ background: `color-mix(in oklab, ${color} 13%, transparent)`, color: textColor }}
                 >
                   {ev.type.replace("_", " ")}
                 </span>

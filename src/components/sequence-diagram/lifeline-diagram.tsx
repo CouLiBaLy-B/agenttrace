@@ -49,7 +49,7 @@ export function LifelineDiagram({ events, participants, selectedId, onSelect, li
                 width={120}
                 height={52}
                 rx={6}
-                fill="oklch(0.22 0.014 195)"
+                fill="var(--surface-2)"
                 stroke={color}
                 strokeOpacity={0.4}
                 strokeWidth={1}
@@ -64,9 +64,9 @@ export function LifelineDiagram({ events, participants, selectedId, onSelect, li
               <text
                 x={x - 30}
                 y={36}
-                fill="oklch(0.9 0.015 170)"
+                fill="var(--ink)"
                 fontSize={11}
-                fontFamily="var(--font-geist-mono)"
+                fontFamily="var(--font-data)"
                 className="uppercase tracking-wider"
               >
                 {p.name.length > 13 ? p.name.slice(0, 12) + "…" : p.name}
@@ -76,7 +76,7 @@ export function LifelineDiagram({ events, participants, selectedId, onSelect, li
                 y={52}
                 fill={color}
                 fontSize={9}
-                fontFamily="var(--font-geist-mono)"
+                fontFamily="var(--font-data)"
                 opacity={0.8}
                 className="uppercase tracking-widest"
               >
@@ -105,9 +105,9 @@ export function LifelineDiagram({ events, participants, selectedId, onSelect, li
                 x={LEFT_GUTTER - 10}
                 y={eventY(i) + 3}
                 textAnchor="end"
-                fill="oklch(0.5 0.02 180)"
+                fill="var(--ink-3)"
                 fontSize={9}
-                fontFamily="var(--font-geist-mono)"
+                fontFamily="var(--font-data)"
               >
                 {formatClock(ev.timestamp)}
               </text>
@@ -120,8 +120,8 @@ export function LifelineDiagram({ events, participants, selectedId, onSelect, li
           const srcX = laneX(indexOf(ev.source))
           const tgtX = laneX(indexOf(ev.target))
           const y = eventY(i)
-          const meta = EVENT_COLORS[ev.type as keyof typeof EVENT_COLORS] || { color: "#888", label: ev.type }
-          const color = ev.status === "error" ? "#f87171" : meta.color
+          const meta = EVENT_COLORS[ev.type as keyof typeof EVENT_COLORS] || { color: "var(--ink-3)", label: ev.type }
+          const color = ev.status === "error" ? EVENT_COLORS.error.color : meta.color
           const selected = ev.id === selectedId
           const isSelf = ev.source === ev.target
           const forward = tgtX >= srcX
@@ -175,7 +175,7 @@ export function LifelineDiagram({ events, participants, selectedId, onSelect, li
                   initial={{ pathLength: 0, opacity: 0 }}
                   animate={{ pathLength: 1, opacity: 1 }}
                   transition={{ duration: 0.4, ease: "easeOut" }}
-                  style={{ filter: `drop-shadow(0 0 4px ${color}66)` }}
+                  style={{ filter: `drop-shadow(0 0 4px color-mix(in oklab, ${color} 40%, transparent))` }}
                 />
               ) : (
                 <motion.path
@@ -187,7 +187,7 @@ export function LifelineDiagram({ events, participants, selectedId, onSelect, li
                   initial={{ pathLength: 0, opacity: 0 }}
                   animate={{ pathLength: 1, opacity: 1 }}
                   transition={{ duration: 0.4, ease: "easeOut" }}
-                  style={{ filter: `drop-shadow(0 0 4px ${color}66)` }}
+                  style={{ filter: `drop-shadow(0 0 4px color-mix(in oklab, ${color} 40%, transparent))` }}
                 />
               )}
 
@@ -222,9 +222,9 @@ export function LifelineDiagram({ events, participants, selectedId, onSelect, li
                   x={(startX + endX) / 2}
                   y={y - 8}
                   textAnchor="middle"
-                  fill="oklch(0.85 0.02 170)"
+                  fill="var(--ink)"
                   fontSize={10}
-                  fontFamily="var(--font-geist-mono)"
+                  fontFamily="var(--font-data)"
                   className="pointer-events-none select-none"
                 >
                   {truncate(ev.label || ev.type, 24)}
@@ -236,7 +236,7 @@ export function LifelineDiagram({ events, participants, selectedId, onSelect, li
                   fill={color}
                   fillOpacity={0.85}
                   fontSize={9}
-                  fontFamily="var(--font-geist-mono)"
+                  fontFamily="var(--font-data)"
                   className="pointer-events-none select-none uppercase tracking-wider"
                 >
                   {ev.type.replace("_", " ")}
@@ -255,7 +255,7 @@ export function LifelineDiagram({ events, participants, selectedId, onSelect, li
               y1={height - BOTTOM_PAD}
               x2={width - RIGHT_PAD}
               y2={height - BOTTOM_PAD}
-              stroke="oklch(0.78 0.17 155)"
+              stroke="var(--st-running)"
               strokeWidth={1}
               strokeOpacity={0.6}
             />
@@ -263,10 +263,10 @@ export function LifelineDiagram({ events, participants, selectedId, onSelect, li
               cx={LEFT_GUTTER}
               cy={height - BOTTOM_PAD}
               r={4}
-              fill="oklch(0.78 0.17 155)"
+              fill="var(--st-running)"
               animate={{ cx: [LEFT_GUTTER, width - RIGHT_PAD, LEFT_GUTTER] }}
               transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-              style={{ filter: "drop-shadow(0 0 6px oklch(0.78 0.17 155))" }}
+              style={{ filter: "drop-shadow(0 0 6px var(--st-running))" }}
             />
           </g>
         )}

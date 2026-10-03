@@ -33,14 +33,17 @@ export interface Participant {
   icon: string
 }
 
-// Color mapping by event type (used by both client and is referenced in styling)
-export const EVENT_COLORS: Record<EventType, { color: string; label: string }> = {
-  llm_call: { color: "#22d3ee", label: "LLM Call" }, // cyan
-  tool_call: { color: "#a78bfa", label: "Tool Call" }, // violet
-  tool_result: { color: "#34d399", label: "Tool Result" }, // emerald
-  handoff: { color: "#fbbf24", label: "Handoff" }, // amber
-  error: { color: "#f87171", label: "Error" }, // red
-  final_answer: { color: "#f472b6", label: "Final Answer" }, // pink
+// Colour per event type. Values are CSS variables from the active theme
+// (src/app/themes.css): `color` for strokes and fills, `text` for text (it
+// meets 4.5:1 on the panel surface in every theme). Because they are
+// variables, never append a hex alpha — use color-mix(in oklab, <color> N%, transparent).
+export const EVENT_COLORS: Record<EventType, { color: string; text: string; label: string }> = {
+  llm_call: { color: "var(--ev-llm)", text: "var(--ev-llm-text)", label: "LLM call" },
+  tool_call: { color: "var(--ev-tool)", text: "var(--ev-tool-text)", label: "Tool call" },
+  tool_result: { color: "var(--ev-result)", text: "var(--ev-result-text)", label: "Tool result" },
+  handoff: { color: "var(--ev-handoff)", text: "var(--ev-handoff-text)", label: "Handoff" },
+  error: { color: "var(--ev-error)", text: "var(--ev-error-text)", label: "Error" },
+  final_answer: { color: "var(--ev-answer)", text: "var(--ev-answer-text)", label: "Final answer" },
 }
 
 // Detect participant kind from a name/id

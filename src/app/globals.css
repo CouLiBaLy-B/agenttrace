@@ -1,13 +1,15 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./themes.css";
 
-@custom-variant dark (&:is(.dark *));
+/* `dark:` utilities (the shadcn primitives) apply under the two dark themes. */
+@custom-variant dark (&:is([data-theme="phosphore"] *, [data-theme="cyanotype"] *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-data);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -43,90 +45,25 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* AgentTrace — oscilloscope / trace-debugger aesthetic.
-   Default to dark (the product is a signal-watching tool). */
-:root {
-  --radius: 0.5rem;
-
-  /* Deep charcoal-teal base — like a powered-down CRT screen */
-  --background: oklch(0.16 0.012 195);
-  --foreground: oklch(0.93 0.015 170);
-
-  --card: oklch(0.205 0.014 195);
-  --card-foreground: oklch(0.93 0.015 170);
-
-  --popover: oklch(0.22 0.014 195);
-  --popover-foreground: oklch(0.93 0.015 170);
-
-  /* Phosphor green primary */
-  --primary: oklch(0.78 0.17 155);
-  --primary-foreground: oklch(0.16 0.03 165);
-
-  --secondary: oklch(0.27 0.018 195);
-  --secondary-foreground: oklch(0.93 0.015 170);
-
-  --muted: oklch(0.255 0.014 195);
-  --muted-foreground: oklch(0.66 0.022 180);
-
-  --accent: oklch(0.3 0.03 180);
-  --accent-foreground: oklch(0.95 0.02 165);
-
-  --destructive: oklch(0.65 0.2 25);
-  --destructive-foreground: oklch(0.97 0.01 40);
-
-  --border: oklch(0.32 0.018 190);
-  --input: oklch(0.27 0.016 190);
-  --ring: oklch(0.78 0.17 155);
-
-  --chart-1: oklch(0.78 0.17 155); /* phosphor green */
-  --chart-2: oklch(0.8 0.15 85);   /* amber */
-  --chart-3: oklch(0.75 0.13 200); /* cyan */
-  --chart-4: oklch(0.65 0.18 300); /* violet */
-  --chart-5: oklch(0.72 0.18 350); /* pink */
-
-  --sidebar: oklch(0.185 0.013 195);
-  --sidebar-foreground: oklch(0.9 0.015 170);
-  --sidebar-primary: oklch(0.78 0.17 155);
-  --sidebar-primary-foreground: oklch(0.16 0.03 165);
-  --sidebar-accent: oklch(0.27 0.018 195);
-  --sidebar-accent-foreground: oklch(0.93 0.015 170);
-  --sidebar-border: oklch(0.28 0.016 190);
-  --sidebar-ring: oklch(0.78 0.17 155);
-}
-
-/* Light theme kept minimal for completeness; product is dark-first */
-.light {
-  --background: oklch(0.98 0.004 195);
-  --foreground: oklch(0.2 0.02 195);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.02 195);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.02 195);
-  --primary: oklch(0.6 0.16 158);
-  --primary-foreground: oklch(0.98 0.01 165);
-  --secondary: oklch(0.96 0.008 195);
-  --secondary-foreground: oklch(0.2 0.02 195);
-  --muted: oklch(0.96 0.008 195);
-  --muted-foreground: oklch(0.5 0.02 190);
-  --accent: oklch(0.94 0.02 180);
-  --accent-foreground: oklch(0.2 0.02 195);
-  --destructive: oklch(0.58 0.22 25);
-  --border: oklch(0.9 0.008 190);
-  --input: oklch(0.9 0.008 190);
-  --ring: oklch(0.6 0.16 158);
-  --chart-1: oklch(0.6 0.16 158);
-  --chart-2: oklch(0.7 0.15 85);
-  --chart-3: oklch(0.62 0.13 200);
-  --chart-4: oklch(0.55 0.2 300);
-  --chart-5: oklch(0.62 0.22 350);
-  --sidebar: oklch(0.97 0.006 195);
-  --sidebar-foreground: oklch(0.2 0.02 195);
-  --sidebar-primary: oklch(0.6 0.16 158);
-  --sidebar-primary-foreground: oklch(0.98 0.01 165);
-  --sidebar-accent: oklch(0.94 0.02 180);
-  --sidebar-accent-foreground: oklch(0.2 0.02 195);
-  --sidebar-border: oklch(0.9 0.008 190);
-  --sidebar-ring: oklch(0.6 0.16 158);
+/* The shadcn variables are aliases of the theme tokens (themes.css), so the UI
+   primitives follow the active theme. An attribute selector, not :root, so a
+   subtree that carries its own data-theme resolves them against its own tokens. */
+[data-theme] {
+  --background: var(--surface-0); --foreground: var(--ink);
+  --card: var(--surface-1); --card-foreground: var(--ink);
+  --popover: var(--surface-2); --popover-foreground: var(--ink);
+  --primary: var(--ev-result); --primary-foreground: var(--surface-0);
+  --secondary: var(--surface-2); --secondary-foreground: var(--ink);
+  --muted: var(--surface-2); --muted-foreground: var(--ink-2);
+  --accent: var(--surface-2); --accent-foreground: var(--ink);
+  --destructive: var(--ev-error); --destructive-foreground: var(--surface-0);
+  --border: var(--line); --input: var(--line); --ring: var(--focus-ring);
+  --chart-1: var(--ev-result); --chart-2: var(--ev-handoff); --chart-3: var(--ev-llm);
+  --chart-4: var(--ev-tool); --chart-5: var(--ev-answer);
+  --sidebar: var(--surface-1); --sidebar-foreground: var(--ink); --sidebar-primary: var(--ev-result);
+  --sidebar-primary-foreground: var(--surface-0); --sidebar-accent: var(--surface-2);
+  --sidebar-accent-foreground: var(--ink); --sidebar-border: var(--line); --sidebar-ring: var(--focus-ring);
+  --radius: var(--radius-panel);
 }
 
 @layer base {
@@ -135,33 +72,34 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "ss01", "cv01";
   }
 }
 
-/* ---------- Oscilloscope / trace-debugger utilities ---------- */
+/* ---------- Utilities ---------- */
 
-/* CRT graticule grid background — used on the sequence-diagram canvas */
+/* Decorative surfaces from the original single-theme design. Screens that still
+   use them are rewritten in later tasks (the diagram canvas is .at-canvas in
+   themes.css); until then they are built from tokens so every theme stays
+   readable. */
 .at-graticule {
-  background-color: oklch(0.13 0.014 195);
+  background-color: var(--surface-0);
   background-image:
-    linear-gradient(to right, oklch(0.78 0.17 155 / 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, oklch(0.78 0.17 155 / 0.06) 1px, transparent 1px);
+    linear-gradient(to right, color-mix(in oklab, var(--line) 55%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--line) 55%, transparent) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
-/* Finer grid for the radar/scan panels */
 .at-graticule-fine {
   background-image:
-    linear-gradient(to right, oklch(0.78 0.17 155 / 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, oklch(0.78 0.17 155 / 0.05) 1px, transparent 1px),
-    linear-gradient(to right, oklch(0.78 0.17 155 / 0.09) 1px, transparent 1px),
-    linear-gradient(to bottom, oklch(0.78 0.17 155 / 0.09) 1px, transparent 1px);
+    linear-gradient(to right, color-mix(in oklab, var(--line) 40%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--line) 40%, transparent) 1px, transparent 1px),
+    linear-gradient(to right, color-mix(in oklab, var(--line) 70%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--line) 70%, transparent) 1px, transparent 1px);
   background-size: 12px 12px, 12px 12px, 60px 60px, 60px 60px;
 }
 
-/* Subtle scanline overlay for the diagram surface */
-.at-scanlines::after {
+/* CRT scanlines belong to Phosphore only. */
+[data-theme="phosphore"] .at-scanlines::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -170,18 +108,19 @@
     to bottom,
     transparent 0px,
     transparent 2px,
-    oklch(0.78 0.17 155 / 0.025) 2px,
-    oklch(0.78 0.17 155 / 0.025) 3px
+    color-mix(in oklab, var(--primary) 3%, transparent) 2px,
+    color-mix(in oklab, var(--primary) 3%, transparent) 3px
   );
-  mix-blend-mode: screen;
 }
 
-/* Phosphor glow text */
+/* Glowing text; a glow on a light surface only smudges, so Studio has none. */
 .at-glow {
-  text-shadow: 0 0 6px oklch(0.78 0.17 155 / 0.45), 0 0 14px oklch(0.78 0.17 155 / 0.2);
+  text-shadow:
+    0 0 6px color-mix(in oklab, var(--primary) 45%, transparent),
+    0 0 14px color-mix(in oklab, var(--primary) 20%, transparent);
 }
-.at-glow-amber {
-  text-shadow: 0 0 6px oklch(0.8 0.15 85 / 0.5), 0 0 14px oklch(0.8 0.15 85 / 0.22);
+[data-theme="studio"] .at-glow {
+  text-shadow: none;
 }
 
 /* Pulsing "listening" dot */
@@ -203,16 +142,10 @@
   transform-origin: center;
 }
 
-/* Trace line draw-in */
-@keyframes at-trace-draw {
-  from { stroke-dashoffset: var(--len, 200); }
-  to { stroke-dashoffset: 0; }
-}
-
-/* Custom scrollbar — thin, phosphor-tinted */
+/* Custom scrollbar — thin, tinted with the theme's ink */
 .at-scroll {
   scrollbar-width: thin;
-  scrollbar-color: oklch(0.4 0.04 165 / 0.6) transparent;
+  scrollbar-color: color-mix(in oklab, var(--ink-3) 60%, transparent) transparent;
 }
 .at-scroll::-webkit-scrollbar {
   width: 8px;
@@ -222,11 +155,11 @@
   background: transparent;
 }
 .at-scroll::-webkit-scrollbar-thumb {
-  background-color: oklch(0.45 0.05 165 / 0.5);
+  background-color: color-mix(in oklab, var(--ink-3) 50%, transparent);
   border-radius: 9999px;
 }
 .at-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: oklch(0.6 0.1 165 / 0.7);
+  background-color: color-mix(in oklab, var(--ink-2) 70%, transparent);
 }
 
 /* Blinking cursor for "listening" states */
@@ -240,5 +173,5 @@
 
 /* Status dot ring */
 .at-dot {
-  box-shadow: 0 0 0 3px oklch(0.16 0.014 195), 0 0 8px currentColor;
+  box-shadow: 0 0 0 3px var(--sidebar), 0 0 8px currentColor;
 }
