@@ -7,18 +7,28 @@ node_modules
 out
 dist
 build
+**/node_modules
+**/dist
+**/build
+**/*.egg-info
+
+# python
+**/__pycache__
+**/*.pyc
+.venv
+python-server/.venv
+.pytest_cache
+.ruff_cache
+.mypy_cache
+
+# bundled UI is rebuilt in the `ui` stage
+python-server/agenttrace/server/static
 
 # logs & local state
 *.log
-dev.log
-server.log
-socket-service.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# local database (mounted as a volume in compose)
-db
 *.db
 *.db-journal
 
@@ -32,9 +42,9 @@ db
 *.swp
 
 # docs & examples (not needed in the image)
-README.md
 docs
 examples
+.superpowers
 
 # docker
 Dockerfile
@@ -47,3 +57,4 @@ docker-compose.*.yml
 .env
 worklog.md
 agent-ctx
+/*.png
