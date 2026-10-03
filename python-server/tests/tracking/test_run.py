@@ -126,3 +126,10 @@ def test_short_script_flushes_on_interpreter_exit(tmp_path):
         run = db.query(models.Run).one()
         assert run.status == "completed"
         assert len(run.events) == 20
+
+
+def test_compact_returns_json_safe_data():
+    import datetime as dt
+    from pathlib import Path
+
+    assert compact({"p": Path("/a"), "t": dt.date(2026, 1, 2)}) == {"p": "/a", "t": "2026-01-02"}

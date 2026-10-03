@@ -35,7 +35,7 @@ def append_event(db: Session, run_id: str, body: dict) -> models.Event:
         target=str(body["target"]),
         type=type_,
         label=str(body["label"]) if body.get("label") else None,
-        payload=json.dumps(payload),
+        payload=json.dumps(payload, default=str),  # non-JSON values must not lose the event
         duration_ms=int(body["durationMs"]) if body.get("durationMs") is not None else None,
         status=body.get("status") or ("error" if type_ == "error" else "ok"),
     )

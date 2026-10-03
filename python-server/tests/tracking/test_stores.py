@@ -90,3 +90,11 @@ def test_store_for_uri(monkeypatch, tmp_path):
     assert isinstance(rest, RestStore)
     assert rest.events_url == "http://h:3000/api/events" and rest.api_key == "atr_env"
     assert isinstance(store_for_uri(f"sqlite:///{tmp_path}/x.db"), SqlStore)
+
+
+def test_rest_store_sanitizes_non_json_values():
+    from pathlib import Path
+
+    session = FakeSession()
+    RestStore("http://h/api/events", session=session).log_event("run_1", {"source": "A", "target": "B", "type": "tool_call", "payload": {"p": Path("/a")}})
+    assert session.calls[0]["json"]["payload"] == {"p": "/a"}

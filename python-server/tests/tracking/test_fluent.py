@@ -149,3 +149,24 @@ def test_explicit_active_run_ignores_the_implicit_run(tracking_db):
     assert fluent.active_run() is not None and fluent.explicit_active_run() is None
     with agenttrace.start_run("explicit") as run:
         assert fluent.explicit_active_run() is run
+
+
+def test_trace_on_method_with_non_json_values_keeps_the_run(tracking_db):
+    """`self`, datetimes and Paths are not JSON — they must not disable the run."""
+    import datetime as dt
+    from pathlib import Path
+
+    class Agent:
+        @agenttrace.trace
+        def when(self, where):
+            return dt.datetime(2026, 1, 2, 3, 4, 5)
+
+    with agenttrace.start_run("methods"):
+        Agent().when(Path("/tmp/x"))
+        agenttrace.log_event(source="a", target="b", type="tool_call", payload={"path": Path("/tmp/y")})
+        agenttrace.log_event(source="a", target="b", type="final_answer")
+    [stored] = read_runs(tracking_db)
+    assert [e["type"] for e in stored["events"]] == ["tool_call", "tool_result", "tool_call", "final_answer"]
+    assert stored["events"][0]["payload"]["args"][1] == "/tmp/x"
+    assert stored["events"][1]["payload"]["result"] == "2026-01-02 03:04:05"
+    assert stored["events"][2]["payload"] == {"path": "/tmp/y"}

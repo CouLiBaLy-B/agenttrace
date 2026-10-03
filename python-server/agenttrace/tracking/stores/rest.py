@@ -4,6 +4,7 @@ project explicitly; with a key the key determines the project."""
 
 from __future__ import annotations
 
+import json
 from typing import Any, Optional
 
 import requests
@@ -23,6 +24,8 @@ class RestStore(TrackingStore):
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
         post = self._session.post if self._session is not None else requests.post
+        # requests' json= has no `default`: stringify non-JSON values (Path, datetime, ...) first.
+        body = json.loads(json.dumps(body, default=str))
         response = post(self.events_url, json=body, headers=headers, timeout=self.timeout)
         if response.status_code == 401 and not self.api_key:
             raise PermissionError(

@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from agenttrace.store import db as store_db
@@ -66,3 +68,12 @@ def test_close_run_maps_status(session):
     assert run.status == "failed" and run.ended_at is not None
     run2 = events.close_run(session, events.create_run(session, project.id, "r2"), "whatever")
     assert run2.status == "completed"
+
+
+def test_append_event_encodes_non_json_payload_values(session):
+    from pathlib import Path
+
+    user = local.get_or_create_local_user(session)
+    run = events.create_run(session, local.get_or_create_project(session, user, "p").id, "r")
+    event = events.append_event(session, run.id, {"source": "a", "target": "b", "type": "tool_call", "payload": {"p": Path("/a")}})
+    assert json.loads(event.payload) == {"p": "/a"}

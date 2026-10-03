@@ -42,13 +42,16 @@ def truncate(text: str, limit: int) -> str:
 
 
 def compact(value: Any, limit: int = PAYLOAD_LIMIT) -> Any:
-    """Return `value` as-is if its JSON form is compact, else a truncated preview."""
+    """Return a JSON-safe copy of `value` (non-JSON leaves become `str()`) if
+    its JSON form is compact, else a truncated preview string. Never the
+    original object: a `self`, datetime or Path reaching the store would fail
+    serialization there and disable the whole run."""
     try:
         text = json.dumps(value, ensure_ascii=False, default=str)
     except (TypeError, ValueError):
         return truncate(repr(value), limit)
     if len(text) <= limit:
-        return value
+        return json.loads(text)
     return truncate(text, limit)
 
 
