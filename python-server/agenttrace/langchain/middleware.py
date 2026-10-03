@@ -77,8 +77,12 @@ class AgentTraceMiddleware(AgentMiddleware):
 
     def _ensure_run(self) -> ActiveRun:
         if self._run is None:
-            project = None if (self._url or self._api_key) else (self.project or get_project())
-            self._run = ActiveRun(self._make_store(), self.run_name, project=project)
+            store = self._make_store()
+            # With an API key the key determines the project (pre-0.2 body);
+            # keyless servers (`--auth none`) need the project named.
+            keyed = isinstance(store, RestStore) and bool(store.api_key)
+            project = None if keyed else (self.project or get_project())
+            self._run = ActiveRun(store, self.run_name, project=project)
         return self._run
 
     # ----- run lifecycle -----
