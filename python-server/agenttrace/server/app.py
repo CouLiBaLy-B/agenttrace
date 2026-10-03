@@ -9,6 +9,7 @@ for now `/` serves a minimal placeholder page confirming the API is up.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
@@ -39,6 +40,8 @@ async def _lifespan(app: FastAPI):
         yield
     finally:
         poller.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await poller
 
 
 def create_app() -> FastAPI:

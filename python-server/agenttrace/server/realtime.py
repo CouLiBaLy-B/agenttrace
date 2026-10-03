@@ -36,6 +36,7 @@ from .serializers import event_out
 logger = logging.getLogger(__name__)
 
 POLL_INTERVAL = 0.5
+MAX_SUBSCRIPTIONS_PER_SOCKET = 50
 
 
 def _run_state(run: models.Run) -> tuple[str, Optional[str]]:
@@ -54,8 +55,20 @@ class ConnectionManager:
         await websocket.accept()
 
     async def subscribe(self, websocket: WebSocket, run_id: str) -> None:
+        already = websocket in self._rooms.get(run_id, ())
+        if not already and sum(1 for room in self._rooms.values() if websocket in room) >= MAX_SUBSCRIPTIONS_PER_SOCKET:
+            await websocket.send_json({"type": "error", "runId": run_id, "error": "Too many subscriptions"})
+            return
+        initial = None
         if run_id not in self._last_seq:
-            await asyncio.to_thread(self._init_cursor, run_id)
+            initial = await asyncio.to_thread(self._read_cursor, run_id)
+            if initial is None:
+                await websocket.send_json({"type": "error", "runId": run_id, "error": "Run not found"})
+                return
+        # From here to the room add there is no await: cursor + room change atomically on the loop.
+        if initial is not None and run_id not in self._last_seq:
+            self._last_seq[run_id] = initial[0]
+            self._run_state[run_id] = initial[1]
         self._rooms.setdefault(run_id, set()).add(websocket)
         await websocket.send_json({"type": "subscribed", "runId": run_id})
 
@@ -76,8 +89,13 @@ class ConnectionManager:
             self._last_seq.pop(run_id, None)
             self._run_state.pop(run_id, None)
 
-    def _init_cursor(self, run_id: str) -> None:
+    @staticmethod
+    def _read_cursor(run_id: str) -> Optional[tuple[int, tuple[str, Optional[str]]]]:
+        """Pure DB read (thread-safe): (last seq, run state), or None if the run does not exist."""
         with SessionLocal() as db:
+            run = db.get(models.Run, run_id)
+            if run is None:
+                return None
             last = (
                 db.query(models.Event.seq)
                 .filter(models.Event.run_id == run_id)
@@ -85,20 +103,25 @@ class ConnectionManager:
                 .limit(1)
                 .scalar()
             )
-            run = db.get(models.Run, run_id)
-        self._last_seq[run_id] = last if last is not None else -1
-        if run is not None:
-            self._run_state[run_id] = _run_state(run)
+            return (last if last is not None else -1), _run_state(run)
 
-    def poll_once(self) -> list[tuple[str, dict[str, Any]]]:
-        """New events / status changes for every watched run (sync, runs in a thread)."""
-        watched = [run_id for run_id, room in self._rooms.items() if room]
-        if not watched:
-            return []
+    def _snapshot(self) -> dict[str, tuple[int, Optional[tuple[str, Optional[str]]]]]:
+        """Watched runs with their cursor (loop only). Runs without a cursor are skipped."""
+        return {
+            run_id: (self._last_seq[run_id], self._run_state.get(run_id))
+            for run_id, room in self._rooms.items()
+            if room and run_id in self._last_seq
+        }
+
+    @staticmethod
+    def _poll_snapshot(snapshot: dict) -> tuple[list[tuple[str, dict[str, Any]]], dict]:
+        """DB work for one poll; touches no manager state (safe in a worker thread)."""
         messages: list[tuple[str, dict[str, Any]]] = []
+        updates: dict[str, tuple[int, Optional[tuple[str, Optional[str]]]]] = {}
+        if not snapshot:
+            return messages, updates
         with SessionLocal() as db:
-            for run_id in watched:
-                last = self._last_seq.get(run_id, -1)
+            for run_id, (last, prev_state) in snapshot.items():
                 new_events = (
                     db.query(models.Event)
                     .filter(models.Event.run_id == run_id, models.Event.seq > last)
@@ -108,22 +131,37 @@ class ConnectionManager:
                 for event in new_events:
                     messages.append((run_id, {"type": "event", "data": event_out(event)}))
                     last = event.seq
-                self._last_seq[run_id] = last
+                state = prev_state
                 run = db.get(models.Run, run_id)
-                if run is None:
-                    continue
-                state = _run_state(run)
-                if self._run_state.get(run_id) not in (None, state):
-                    messages.append(
-                        (run_id, {"type": "run:update", "runId": run_id, "patch": {"status": state[0], "endedAt": state[1]}})
-                    )
-                self._run_state[run_id] = state
+                if run is not None:
+                    state = _run_state(run)
+                    if prev_state not in (None, state):
+                        messages.append(
+                            (run_id, {"type": "run:update", "runId": run_id, "patch": {"status": state[0], "endedAt": state[1]}})
+                        )
+                updates[run_id] = (last, state)
+        return messages, updates
+
+    def _apply(self, updates: dict) -> None:
+        """Store new cursors, only for runs still watched (loop only)."""
+        for run_id, (last, state) in updates.items():
+            if self._rooms.get(run_id) and run_id in self._last_seq:
+                self._last_seq[run_id] = last
+                if state is not None:
+                    self._run_state[run_id] = state
+
+    def poll_once(self) -> list[tuple[str, dict[str, Any]]]:
+        """New events / status changes for every watched run (synchronous)."""
+        messages, updates = self._poll_snapshot(self._snapshot())
+        self._apply(updates)
         return messages
 
     async def poll_forever(self, interval: float = POLL_INTERVAL) -> None:
         while True:
             try:
-                for run_id, message in await asyncio.to_thread(self.poll_once):
+                messages, updates = await asyncio.to_thread(self._poll_snapshot, self._snapshot())
+                self._apply(updates)
+                for run_id, message in messages:
                     await self._broadcast(run_id, message)
             except Exception:  # noqa: BLE001 - a DB hiccup must not kill live updates
                 logger.exception("AgentTrace live poller failed; retrying")
@@ -135,6 +173,7 @@ class ConnectionManager:
                 await ws.send_json(message)
             except Exception:  # noqa: BLE001 - a dead socket must not break the others
                 self._rooms.get(run_id, set()).discard(ws)
+                self._forget_if_empty(run_id)
 
     # ----- replay (paced playback to a single client) -----
     async def replay(self, websocket: WebSocket, run_id: str, events: list[dict], speed: float) -> None:
