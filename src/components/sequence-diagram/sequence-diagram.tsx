@@ -14,6 +14,13 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Radio, Play, History, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
+function mergeById(prev: TraceEvent[], incoming: TraceEvent[]): TraceEvent[] {
+  const seen = new Set(prev.map((e) => e.id))
+  const fresh = incoming.filter((e) => !seen.has(e.id))
+  if (!fresh.length) return prev
+  return [...prev, ...fresh].sort((a, b) => a.seq - b.seq)
+}
+
 interface Props {
   runId: string
   initialEvents: TraceEvent[]
@@ -63,13 +70,25 @@ export function SequenceDiagram({ runId, initialEvents, initialStatus, onRunUpda
   }, [])
 
   const mergeEvents = useCallback((incoming: TraceEvent[]) => {
-    setEvents((prev) => {
-      const seen = new Set(prev.map((e) => e.id))
-      const fresh = incoming.filter((e) => !seen.has(e.id))
-      if (!fresh.length) return prev
-      return [...prev, ...fresh].sort((a, b) => a.seq - b.seq)
-    })
+    setEvents((prev) => mergeById(prev, incoming))
   }, [])
+
+  // ---- polling fallback: the parent refetches the run every 5 s while it is
+  // running (and on invalidation). Where /ws is unavailable that refetch is
+  // the only source of new events and of the final status, so fold the new
+  // props in (React's "adjust state when a prop changes" pattern). Merging
+  // only appends (deduped by id), so replay's index/visible slice is kept.
+  // The parent reacts to the status change itself (it owns that query).
+  const [syncedEvents, setSyncedEvents] = useState(initialEvents)
+  if (syncedEvents !== initialEvents) {
+    setSyncedEvents(initialEvents)
+    setEvents((prev) => mergeById(prev, initialEvents))
+  }
+  const [syncedStatus, setSyncedStatus] = useState(initialStatus)
+  if (syncedStatus !== initialStatus) {
+    setSyncedStatus(initialStatus)
+    setStatus(initialStatus)
+  }
 
   type RunSnapshot = { run: { events: TraceEvent[]; status?: string; endedAt?: string | null } }
 

@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
 import { ArrowLeft, Trash2, StopCircle, CheckCircle2, XCircle, ChevronDown } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { TraceEvent, EVENT_COLORS } from "@/lib/types"
 import { StatusDot } from "./project-detail-view"
 import {
@@ -53,6 +53,26 @@ export function RunView() {
       return r && r.status === "running" ? 5000 : false
     },
   })
+
+  // Stable across renders unless the refetched run's events change, so the
+  // diagram only re-merges when there is something new.
+  const rawEvents = data?.run.events
+  const events = useMemo(
+    () => (rawEvents ?? []).map((e) => ({ ...e, payload: safeParse(e.payload) })),
+    [rawEvents]
+  )
+
+  // When the run ends — seen over /ws (which invalidates the run query) or
+  // by the polling refetch alone — refresh the aggregate views once.
+  const runStatus = data?.run.status
+  const prevRunStatus = useRef(runStatus)
+  useEffect(() => {
+    const prev = prevRunStatus.current
+    prevRunStatus.current = runStatus
+    if (prev === "running" && runStatus && runStatus !== "running") {
+      qc.invalidateQueries({ queryKey: ["stats"] })
+    }
+  }, [runStatus, qc])
 
   const updateStatusMut = useMutation({
     mutationFn: (vars: { status: "completed" | "failed" }) =>
@@ -100,7 +120,6 @@ export function RunView() {
   }
 
   const run = data.run
-  const events = run.events.map((e) => ({ ...e, payload: safeParse(e.payload) }))
   const dur = run.endedAt ? new Date(run.endedAt).getTime() - new Date(run.startedAt).getTime() : null
 
   return (
@@ -173,13 +192,11 @@ export function RunView() {
       {/* the diagram */}
       <div className="flex-1 min-h-0">
         <SequenceDiagram
+          key={run.id}
           runId={run.id}
           initialEvents={events}
           initialStatus={run.status as any}
-          onRunUpdate={() => {
-            qc.invalidateQueries({ queryKey: ["run", runId] })
-            qc.invalidateQueries({ queryKey: ["stats"] })
-          }}
+          onRunUpdate={() => qc.invalidateQueries({ queryKey: ["run", runId] })}
         />
       </div>
 

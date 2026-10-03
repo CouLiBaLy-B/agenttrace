@@ -1,6 +1,7 @@
+import re
 import time
 
-from playwright.sync_api import Page, Route, WebSocket, expect
+from playwright.sync_api import Page, Route, WebSocket, WebSocketRoute, expect
 
 from agenttrace import AgentTraceClient
 
@@ -44,6 +45,40 @@ def test_local_mode_dashboard_and_live_event(page: Page, local_server):
     page.route("**/api/runs/**", block_get)
     client.log_event(run_id, source="Orchestrator", target="web_search", type="tool_call", label="live arrow")
     expect(page.get_by_text("live arrow").first).to_be_visible(timeout=3_000)
+
+
+def test_polling_fallback_when_websocket_is_blocked(page: Page, local_server):
+    base, db_url = local_server
+    client = AgentTraceClient(db_url)
+    run_id = client.create_run("e2e polled run", project="Customer Support Agent")
+    client.log_event(run_id, source="Orchestrator", target="LLM", type="llm_call", label="polled first")
+
+    # Every /ws connection is swallowed (never connected to the server, its
+    # messages dropped), registered before navigation so no live frame can
+    # reach the page, as behind a proxy that doesn't forward WebSockets.
+    # (Calling ws.close() from a sync-API handler deadlocks Playwright.)
+    blocked: list[str] = []
+
+    def drop(ws: WebSocketRoute) -> None:
+        blocked.append(ws.url)
+        ws.on_message(lambda message: None)
+
+    page.route_web_socket(re.compile(r"/ws$"), drop)
+    page.goto(base)
+    page.get_by_text("Customer Support Agent", exact=True).first.click()
+    expect(page.get_by_role("heading", name="Customer Support Agent")).to_be_visible(timeout=15_000)
+    page.get_by_text("e2e polled run", exact=True).first.click()
+    expect(page.get_by_text("polled first").first).to_be_visible(timeout=10_000)
+    _wait_for(page, lambda: bool(blocked), "an intercepted /ws connection")
+
+    # a new event reaches the diagram via the 5 s refetch alone
+    client.log_event(run_id, source="Orchestrator", target="web_search", type="tool_call", label="polled second")
+    expect(page.get_by_text("polled second").first).to_be_visible(timeout=8_000)
+
+    # ending the run flips the diagram out of live mode
+    client.end_run(run_id, status="completed")
+    expect(page.get_by_text(re.compile(r"^\d+ events · completed$"))).to_be_visible(timeout=8_000)
+    expect(page.get_by_text(re.compile(r"^(listening|connecting…)$"))).to_have_count(0)
 
 
 def test_password_mode_signup_and_sign_out(page: Page, password_server):
