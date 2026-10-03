@@ -104,7 +104,7 @@ export function AuthScreen() {
           <p className="text-sm text-muted-foreground mt-1">
             {mode === "signin"
               ? "Sign in to open your traces."
-              : "Tip: run `agenttrace demo` to load sample projects."}
+              : "Tip: load sample projects later from Settings → Demo data."}
           </p>
 
           <Tabs value={mode} onValueChange={(v) => setMode(v as any)} className="mt-6">

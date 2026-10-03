@@ -50,7 +50,7 @@ export function SettingsView() {
             Local mode — no account (started with <span className="font-mono">agenttrace ui --auth none</span>).
           </p>
         ) : (
-            <>
+          <>
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
@@ -84,7 +84,7 @@ export function SettingsView() {
                 Sign out
               </Button>
             </div>
-            </>
+          </>
         )}
       </Card>
 

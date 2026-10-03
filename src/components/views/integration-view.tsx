@@ -337,23 +337,28 @@ interface SnippetOpts {
   local: boolean
 }
 
+// Values interpolated into generated code become double-quoted string
+// literals via JSON.stringify — valid (and safely escaped) in Python and TS.
+const q = (value: string) => JSON.stringify(value)
+const oneLine = (value: string) => value.replace(/[\r\n\u2028\u2029]+/g, " ")
+
 function pythonSnippet({ origin, projectName, apiKey, local }: SnippetOpts) {
   if (local) {
     return `# pip install deepagents-trace
 import agenttrace
 
-agenttrace.set_tracking_uri("${origin}")
-agenttrace.set_project("${projectName}")
+agenttrace.set_tracking_uri(${q(origin)})
+agenttrace.set_project(${q(projectName)})
 
 with agenttrace.start_run("my run"):
     agenttrace.log_event(source="Orchestrator", target="LLM", type="llm_call", label="classify intent")`
   }
   return `# pip install deepagents-trace
-# export AGENTTRACE_TRACKING_URI="${origin}"
-# export AGENTTRACE_KEY="${apiKey}"        # project-scoped key
+# export AGENTTRACE_TRACKING_URI=${q(origin)}
+# export AGENTTRACE_KEY=${q(apiKey)}        # project-scoped key
 import os
-os.environ.setdefault("AGENTTRACE_TRACKING_URI", "${origin}")
-os.environ.setdefault("AGENTTRACE_KEY", "${apiKey}")
+os.environ.setdefault("AGENTTRACE_TRACKING_URI", ${q(origin)})
+os.environ.setdefault("AGENTTRACE_KEY", ${q(apiKey)})
 
 import agenttrace
 
@@ -365,15 +370,15 @@ function httpSnippet({ origin, projectName, apiKey, local }: SnippetOpts) {
   const auth = local
     ? `    headers: { "Content-Type": "application/json" },`
     : `    headers: {
-      Authorization: \`Bearer ${apiKey}\`,
+      Authorization: ${q("Bearer " + apiKey)},
       "Content-Type": "application/json",
     },`
   const create = local
-    ? `{ runId: null, name: "demo refund flow", project: "${projectName}" }`
+    ? `{ runId: null, name: "demo refund flow", project: ${q(projectName)} }`
     : `{ runId: null, name: "demo refund flow" }`
-  return `// AgentTrace ingestion — ${projectName}${local ? "" : "\n// Authorization: Bearer " + apiKey}
+  return `// AgentTrace ingestion — ${oneLine(projectName)}${local ? "" : "\n// Authorization: Bearer " + apiKey}
 async function emit(event: Record<string, unknown>) {
-  const res = await fetch("${origin}/api/events", {
+  const res = await fetch(${q(origin + "/api/events")}, {
     method: "POST",
 ${auth}
     body: JSON.stringify(event),
@@ -411,16 +416,16 @@ function deepagentsSnippet({ origin, projectName, apiKey, local }: SnippetOpts) 
     return `# pip install 'deepagents-trace[langchain]'
 import agenttrace, agenttrace.langchain
 
-agenttrace.set_tracking_uri("${origin}")
-agenttrace.set_project("${projectName}")
+agenttrace.set_tracking_uri(${q(origin)})
+agenttrace.set_project(${q(projectName)})
 agenttrace.langchain.autolog()   # every agent.invoke() becomes a run`
   }
   return `# pip install 'deepagents-trace[langchain]'
-# export AGENTTRACE_TRACKING_URI="${origin}"
-# export AGENTTRACE_KEY="${apiKey}"        # project-scoped key
+# export AGENTTRACE_TRACKING_URI=${q(origin)}
+# export AGENTTRACE_KEY=${q(apiKey)}        # project-scoped key
 import os
-os.environ.setdefault("AGENTTRACE_TRACKING_URI", "${origin}")
-os.environ.setdefault("AGENTTRACE_KEY", "${apiKey}")
+os.environ.setdefault("AGENTTRACE_TRACKING_URI", ${q(origin)})
+os.environ.setdefault("AGENTTRACE_KEY", ${q(apiKey)})
 
 import agenttrace.langchain
 
