@@ -1,5 +1,8 @@
 /* Three complete themes. Attribute selectors (not :root) so a subtree can
-   carry its own theme, e.g. the Settings previews. */
+   carry its own theme, e.g. the Settings previews.
+   --action / --danger (with their --on-* label colours) are the filled-button
+   and accent-text colours: unlike the --ev-* strokes (3:1) they reach 4.5:1.
+   globals.css aliases --primary and --destructive to them. */
 [data-theme="phosphore"] {
   --surface-0: #0C151C; --surface-1: #101D25; --surface-2: #152631;
   --line: #22343E; --line-strong: #2E4A57;
@@ -9,6 +12,8 @@
   --ev-handoff-text: var(--ev-handoff); --ev-llm-text: var(--ev-llm); --ev-tool-text: var(--ev-tool);
   --ev-result-text: var(--ev-result); --ev-answer-text: var(--ev-answer); --ev-error-text: var(--ev-error);
   --st-running: #F5B83D; --st-ok: #4ADE9C; --st-failed: #FF6B6B;
+  --action: var(--ev-result); --on-action: var(--surface-0);
+  --danger: var(--ev-error); --on-danger: var(--surface-0);
   --kind-user: var(--ev-answer); --kind-orchestrator: var(--ev-result); --kind-llm: var(--ev-llm);
   --kind-tool: var(--ev-tool); --kind-subagent: var(--ev-handoff);
   --font-ui: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
@@ -28,6 +33,8 @@
   --ev-handoff-text: var(--ev-handoff); --ev-llm-text: var(--ev-llm); --ev-tool-text: var(--ev-tool);
   --ev-result-text: var(--ev-result); --ev-answer-text: var(--ev-answer); --ev-error-text: var(--ev-error);
   --st-running: #FFC56B; --st-ok: #9BF0C4; --st-failed: #FF8A8A;
+  --action: var(--ev-result); --on-action: var(--surface-0);
+  --danger: var(--ev-error); --on-danger: var(--surface-0);
   --kind-user: var(--ev-answer); --kind-orchestrator: var(--ev-result); --kind-llm: var(--ev-llm);
   --kind-tool: var(--ev-tool); --kind-subagent: var(--ev-handoff);
   --font-ui: "B612", ui-sans-serif, system-ui, sans-serif;
@@ -47,6 +54,8 @@
   --ev-handoff-text: #B84400; --ev-llm-text: #2457D6; --ev-tool-text: #6236E0;
   --ev-result-text: #0B7A47; --ev-answer-text: #C21E5F; --ev-error-text: #B3202A;
   --st-running: #E25200; --st-ok: #0C8F52; --st-failed: #E5383B;
+  --action: #096F40; --on-action: var(--surface-2);
+  --danger: var(--ev-error-text); --on-danger: var(--surface-2);
   --kind-user: var(--ev-answer); --kind-orchestrator: var(--ev-result); --kind-llm: var(--ev-llm);
   --kind-tool: var(--ev-tool); --kind-subagent: var(--ev-handoff);
   --font-ui: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;

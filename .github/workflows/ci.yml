@@ -5,7 +5,8 @@
 #   3. e2e     — Playwright drives the bundled dashboard served by `agenttrace ui`
 #   4. docker  — build the single image and smoke test it against Postgres
 #
-# Bun is used as the runtime/package manager to match local dev.
+# Bun is the package manager, as in local dev; the ui job also installs Node 22
+# (Vitest 5 needs ^22.12, so it does not rely on the runner image's default).
 
 name: CI
 
@@ -22,7 +23,7 @@ concurrency:
 
 jobs:
   # ────────────────────────────────────────────────────────────
-  # UI: lint + typecheck + static export (Bun)
+  # UI: lint + typecheck + unit tests + static export (Bun, Node 22)
   # ────────────────────────────────────────────────────────────
   ui:
     name: ui · lint · typecheck · build
@@ -30,6 +31,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3

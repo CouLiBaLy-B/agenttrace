@@ -27,6 +27,7 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -52,16 +53,16 @@
   --background: var(--surface-0); --foreground: var(--ink);
   --card: var(--surface-1); --card-foreground: var(--ink);
   --popover: var(--surface-2); --popover-foreground: var(--ink);
-  --primary: var(--ev-result); --primary-foreground: var(--surface-0);
+  --primary: var(--action); --primary-foreground: var(--on-action);
   --secondary: var(--surface-2); --secondary-foreground: var(--ink);
   --muted: var(--surface-2); --muted-foreground: var(--ink-2);
   --accent: var(--surface-2); --accent-foreground: var(--ink);
-  --destructive: var(--ev-error); --destructive-foreground: var(--surface-0);
+  --destructive: var(--danger); --destructive-foreground: var(--on-danger);
   --border: var(--line); --input: var(--line); --ring: var(--focus-ring);
   --chart-1: var(--ev-result); --chart-2: var(--ev-handoff); --chart-3: var(--ev-llm);
   --chart-4: var(--ev-tool); --chart-5: var(--ev-answer);
-  --sidebar: var(--surface-1); --sidebar-foreground: var(--ink); --sidebar-primary: var(--ev-result);
-  --sidebar-primary-foreground: var(--surface-0); --sidebar-accent: var(--surface-2);
+  --sidebar: var(--surface-1); --sidebar-foreground: var(--ink); --sidebar-primary: var(--action);
+  --sidebar-primary-foreground: var(--on-action); --sidebar-accent: var(--surface-2);
   --sidebar-accent-foreground: var(--ink); --sidebar-border: var(--line); --sidebar-ring: var(--focus-ring);
   --radius: var(--radius-panel);
 }

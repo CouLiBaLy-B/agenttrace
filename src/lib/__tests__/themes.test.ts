@@ -6,11 +6,13 @@ import { contrastRatio } from "@/lib/contrast"
 const css = readFileSync(fileURLToPath(new URL("../../app/themes.css", import.meta.url)), "utf8")
 const THEMES = ["phosphore", "cyanotype", "studio"] as const
 const EVENTS = ["handoff", "llm", "tool", "result", "answer", "error"] as const
+const KINDS = ["user", "orchestrator", "llm", "tool", "subagent"] as const
 const REQUIRED = [
   "--surface-0", "--surface-1", "--surface-2", "--line", "--line-strong",
   "--ink", "--ink-2", "--ink-3",
   ...EVENTS.map((e) => `--ev-${e}`), ...EVENTS.map((e) => `--ev-${e}-text`),
   "--st-running", "--st-ok", "--st-failed",
+  "--action", "--on-action", "--danger", "--on-danger",
   "--kind-user", "--kind-orchestrator", "--kind-llm", "--kind-tool", "--kind-subagent",
   "--font-ui", "--font-data", "--radius-panel", "--radius-control", "--shadow-raised", "--focus-ring",
 ]
@@ -27,8 +29,11 @@ describe.each(THEMES)("theme %s", (theme) => {
   const t = tokens(theme)
   const hex = (name: string) => {
     let v = t[name]
-    const alias = v?.match(/^var\((--[\w-]+)\)$/)
-    if (alias) v = t[alias[1]]
+    for (let hops = 0; hops < 4; hops++) {
+      const alias = v?.match(/^var\((--[\w-]+)\)$/)
+      if (!alias) break
+      v = t[alias[1]]
+    }
     if (!/^#[0-9a-fA-F]{6}$/.test(v ?? "")) throw new Error(`${theme} ${name} is not a hex colour: ${v}`)
     return v
   }
@@ -46,6 +51,22 @@ describe.each(THEMES)("theme %s", (theme) => {
   })
   it("event strokes reach 3:1 on surface-0", () => {
     for (const e of EVENTS) expect(contrastRatio(hex(`--ev-${e}`), hex("--surface-0")), e).toBeGreaterThanOrEqual(3)
+  })
+  it("action and danger buttons reach 4.5:1 for their label", () => {
+    expect(contrastRatio(hex("--on-action"), hex("--action")), "on-action on action").toBeGreaterThanOrEqual(4.5)
+    expect(contrastRatio(hex("--on-danger"), hex("--danger")), "on-danger on danger").toBeGreaterThanOrEqual(4.5)
+  })
+  it("action and danger used as text reach 4.5:1 on surface-0 and surface-1", () => {
+    for (const name of ["--action", "--danger"])
+      for (const surface of ["--surface-0", "--surface-1"])
+        expect(contrastRatio(hex(name), hex(surface)), `${name} on ${surface}`).toBeGreaterThanOrEqual(4.5)
+  })
+  it("kind tokens alias defined event tokens", () => {
+    for (const k of KINDS) {
+      const target = t[`--kind-${k}`]?.match(/^var\((--ev-(?:handoff|llm|tool|result|answer|error))\)$/)?.[1]
+      expect(target, `--kind-${k} must be var(--ev-<event>)`).toBeDefined()
+      expect(t[target!], `${target} (target of --kind-${k})`).toBeDefined()
+    }
   })
 })
 

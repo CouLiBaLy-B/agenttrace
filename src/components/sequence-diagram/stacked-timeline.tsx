@@ -18,7 +18,7 @@ export function StackedTimeline({ events, participants: _participants, selectedI
   return (
     <div className="at-graticule p-3 space-y-2 at-scroll overflow-y-auto h-full">
       {events.map((ev, i) => {
-        const meta = EVENT_COLORS[ev.type as keyof typeof EVENT_COLORS] || { color: "var(--ink-3)", text: "var(--ink-3)", label: ev.type }
+        const meta = EVENT_COLORS[ev.type as keyof typeof EVENT_COLORS] || { color: "var(--ink-3)", text: "var(--ink-2)", label: ev.type }
         const isError = ev.status === "error"
         const color = isError ? EVENT_COLORS.error.color : meta.color
         const textColor = isError ? EVENT_COLORS.error.text : meta.text

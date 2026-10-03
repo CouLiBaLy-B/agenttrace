@@ -115,7 +115,7 @@ function EmptyDetail() {
 }
 
 function EventBody({ event }: { event: TraceEvent }) {
-  const meta = EVENT_COLORS[event.type as keyof typeof EVENT_COLORS] || { color: "var(--ink-3)", text: "var(--ink-3)", label: event.type }
+  const meta = EVENT_COLORS[event.type as keyof typeof EVENT_COLORS] || { color: "var(--ink-3)", text: "var(--ink-2)", label: event.type }
   const isError = event.status === "error"
   const color = isError ? EVENT_COLORS.error.color : meta.color
   const textColor = isError ? EVENT_COLORS.error.text : meta.text
