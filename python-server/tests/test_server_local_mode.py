@@ -1,4 +1,5 @@
 import pytest
+from starlette.websockets import WebSocketDisconnect
 from fastapi.testclient import TestClient
 
 from agenttrace.server.app import app
@@ -8,6 +9,7 @@ from agenttrace.tracking.stores.rest import RestStore
 @pytest.fixture
 def local_client(monkeypatch):
     monkeypatch.setenv("AGENTTRACE_AUTH", "none")
+    monkeypatch.setenv("AGENTTRACE_ALLOWED_HOSTS", "testserver")
     with TestClient(app) as c:
         yield c
 
@@ -67,3 +69,58 @@ def test_rest_store_end_to_end_against_local_server(local_client):
     store.end_run(run_id, "completed")
     run = local_client.get(f"/api/runs/{run_id}").json()["run"]
     assert run["status"] == "completed" and [e["type"] for e in run["events"]] == ["tool_call"]
+
+
+def test_bad_host_rejected_in_none_mode(local_client):
+    resp = local_client.get("/api/stats", headers={"Host": "evil.example"})
+    assert resp.status_code == 403 and resp.json() == {"error": "Host not allowed"}
+
+
+def test_ipv6_loopback_host_allowed(local_client):
+    assert local_client.get("/api/stats", headers={"Host": "[::1]:3000"}).status_code == 200
+
+
+def test_bad_origin_rejected_in_none_mode(local_client):
+    resp = local_client.post(
+        "/api/events", json={"runId": None, "name": "x", "project": "p"}, headers={"Origin": "http://evil.example"}
+    )
+    assert resp.status_code == 403 and resp.json() == {"error": "Origin not allowed"}
+
+
+def test_loopback_origin_allowed(local_client):
+    resp = local_client.get("/api/stats", headers={"Origin": "http://localhost:3000"})
+    assert resp.status_code == 200
+
+
+def test_websocket_bad_origin_refused(local_client):
+    with pytest.raises(WebSocketDisconnect):
+        with local_client.websocket_connect("/ws", headers={"Origin": "http://evil.example"}):
+            pass
+
+
+def test_websocket_good_origin_connects(local_client):
+    with local_client.websocket_connect("/ws", headers={"Origin": "http://localhost:3000"}):
+        pass
+
+
+def test_password_mode_ignores_host_guard(monkeypatch):
+    monkeypatch.setenv("AGENTTRACE_AUTH", "password")
+    with TestClient(app) as c:
+        resp = c.get("/api/auth/session", headers={"Host": "evil.example", "Origin": "http://evil.example"})
+        assert resp.status_code == 200
+
+
+def test_valid_key_of_other_project_cannot_touch_keyless_run(local_client):
+    mine = local_client.post("/api/projects", json={"name": "mine"}).json()["project"]
+    key = local_client.post("/api/keys", json={"projectId": mine["id"]}).json()["rawKey"]
+    auth = {"Authorization": f"Bearer {key}"}
+    other_run = local_client.post("/api/events", json={"runId": None, "name": "r", "project": "other"}).json()["runId"]
+
+    ev = {"runId": other_run, "source": "a", "target": "b", "type": "llm_call"}
+    assert local_client.post("/api/events", json=ev, headers=auth).status_code == 404
+    assert local_client.post("/api/events", json={"runId": other_run, "endRun": "completed"}, headers=auth).status_code == 404
+
+
+def test_session_returns_local_user_in_none_mode(local_client):
+    user = local_client.get("/api/auth/session").json()["user"]
+    assert user is not None and user["email"]

@@ -15,6 +15,7 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from .db import init_db
+from .local_guard import LocalGuardMiddleware
 from .realtime import manager
 from .routes import auth, events, keys, projects, runs, stats
 
@@ -39,6 +40,8 @@ async def _lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     app = FastAPI(title="AgentTrace", lifespan=_lifespan)
+
+    app.add_middleware(LocalGuardMiddleware)
 
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request, exc: HTTPException):

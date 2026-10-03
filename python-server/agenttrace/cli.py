@@ -46,7 +46,12 @@ def main() -> None:
     help="none: no login/API key (default on localhost). password: accounts + project keys (default otherwise).",
 )
 def ui(host: str, port: int, database_url: str | None, auth: str | None) -> None:
-    """Start the AgentTrace web UI + API (and the /ws live-stream)."""
+    """Start the AgentTrace web UI + API (and the /ws live-stream).
+
+    With --auth none, only loopback Host/Origin names are accepted (DNS
+    rebinding / CSRF guard); set AGENTTRACE_ALLOWED_HOSTS=name1,name2 to allow
+    extra hostnames, e.g. behind a reverse proxy.
+    """
     _require_server_extra()
     if database_url:
         os.environ["DATABASE_URL"] = database_url
