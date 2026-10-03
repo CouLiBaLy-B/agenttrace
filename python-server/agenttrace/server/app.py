@@ -22,7 +22,7 @@ from .deps import auth_mode
 from .local_guard import LocalGuardMiddleware
 from .realtime import manager
 from .security import SESSION_COOKIE_NAME, read_session_token
-from .routes import auth, events, keys, projects, runs, stats
+from .routes import auth, events, keys, projects, runs, seed, stats
 
 PLACEHOLDER_HTML = """<!doctype html>
 <html><head><title>AgentTrace</title></head>
@@ -83,6 +83,7 @@ def create_app() -> FastAPI:
     app.include_router(events.router)
     app.include_router(keys.router)
     app.include_router(stats.router)
+    app.include_router(seed.router)
 
     @app.get("/", response_class=HTMLResponse)
     async def index():

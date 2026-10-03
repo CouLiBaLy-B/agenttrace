@@ -70,6 +70,25 @@ def ui(host: str, port: int, database_url: str | None, auth: str | None) -> None
     uvicorn.run("agenttrace.server.app:app", host=host, port=port, log_level="info")
 
 
+@main.command()
+@click.option("--database-url", envvar="DATABASE_URL", default=None, help="Target database (default: ./agenttrace.db).")
+def demo(database_url: str | None) -> None:
+    """Load three demo projects into the local database (no-op if it already has projects)."""
+    _require_server_extra()
+    from .server.demo import seed_demo
+    from .store import db as store_db
+    from .store.local import get_or_create_local_user
+
+    url = database_url or store_db.DEFAULT_SQLITE_URL
+    store_db.init_db(url)
+    with store_db.get_sessionmaker(url)() as db:
+        n = seed_demo(db, get_or_create_local_user(db))
+    if n:
+        click.echo(f"[AgentTrace] Loaded {n} demo projects into {url}. Run `agenttrace ui` to explore them.")
+    else:
+        click.echo(f"[AgentTrace] {url} already has projects for the local user — nothing to do.")
+
+
 @main.group()
 def db() -> None:
     """Database schema management (schema-push style, no migration history)."""
