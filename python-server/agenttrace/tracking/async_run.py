@@ -32,7 +32,7 @@ import logging
 import time
 from typing import Any, Callable, Optional
 
-from .async_client import AsyncAgentTraceClient
+from .async_http import AsyncHttpEventClient
 from .run import ANSWER_LIMIT, LABEL_LIMIT, PAYLOAD_LIMIT, RESULT_LIMIT, compact, truncate
 
 logger = logging.getLogger(__name__)
@@ -68,7 +68,7 @@ class AsyncAgentTraceRun:
         self,
         name: str,
         *,
-        client: AsyncAgentTraceClient,
+        client: AsyncHttpEventClient,
         orchestrator: str = "Orchestrator",
         tool_server: Optional[Callable[[str], str]] = None,
         phrases: Optional[dict[str, str]] = None,

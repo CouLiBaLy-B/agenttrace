@@ -1,7 +1,7 @@
 import pytest
 
-from agenttrace_langchain.async_client import AsyncAgentTraceClient
-from agenttrace_langchain.async_run import AsyncAgentTraceRun
+from agenttrace.tracking.async_http import AsyncHttpEventClient as AsyncAgentTraceClient
+from agenttrace.tracking.async_run import AsyncAgentTraceRun
 
 
 @pytest.fixture

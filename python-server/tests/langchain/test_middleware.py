@@ -1,6 +1,6 @@
 import pytest
 
-from agenttrace_langchain.middleware import AgentTraceMiddleware
+from agenttrace.langchain.middleware import AgentTraceMiddleware
 
 
 class FakeToolRequest:
@@ -174,3 +174,15 @@ async def test_async_wrap_tool_call_and_model_call(middleware, post):
     events = [b for b in _bodies(post) if b.get("runId") == "run_1" and "type" in b]
     types = [e["type"] for e in events]
     assert types == ["tool_call", "tool_result", "llm_call"]
+
+
+def test_middleware_without_url_or_key_uses_tracking_uri(tracking_db):
+    from tests.conftest import read_runs
+
+    mw = AgentTraceMiddleware(run_name="local run", project="mw-project")
+    mw.before_agent({"messages": []}, runtime=None)
+    mw.wrap_tool_call(FakeToolRequest("noop", {}), lambda req: FakeToolMessage("ok"))
+    mw.after_agent({"messages": [FakeToolMessage("done")]}, runtime=None)
+    [run] = read_runs(tracking_db)
+    assert run["name"] == "local run" and run["project"] == "mw-project" and run["status"] == "completed"
+    assert [e["type"] for e in run["events"]] == ["tool_call", "tool_result", "final_answer"]

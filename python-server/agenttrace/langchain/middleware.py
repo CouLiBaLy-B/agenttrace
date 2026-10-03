@@ -13,10 +13,11 @@ Sync and async variants (`wrap_tool_call`/`awrap_tool_call`, etc.) are both
 implemented so the middleware behaves identically whether the agent is driven
 via `.invoke()` or `.ainvoke()`.
 
-Built on `AgentTraceRun` (run.py): emission is non-blocking (a background
+Built on `ActiveRun` (agenttrace.tracking.run): emission is non-blocking (a background
 thread drains a queue) and never fatal — a misconfigured or unreachable
 AgentTrace instance disables tracing for the run (one warning logged) instead
-of breaking the agent. One middleware instance = one AgentTrace run:
+of breaking the agent. Writes to the tracking URI (./agenttrace.db by default)
+unless `url`/`api_key` are given. One middleware instance = one AgentTrace run:
 
     agent = create_deep_agent(
         model=model,
@@ -28,17 +29,22 @@ of breaking the agent. One middleware instance = one AgentTrace run:
 from __future__ import annotations
 
 import logging
+import os
 import time
 from typing import Any, Callable, Optional
 
 from langchain.agents.middleware import AgentMiddleware
 
-from .client import AgentTraceClient
-from .run import ANSWER_LIMIT, LABEL_LIMIT, RESULT_LIMIT, AgentTraceRun, compact, truncate
+from ..tracking._uri import get_tracking_uri
+from ..tracking.fluent import get_project
+from ..tracking.http import DEFAULT_URL
+from ..tracking.run import ANSWER_LIMIT, LABEL_LIMIT, RESULT_LIMIT, ActiveRun, compact, truncate
+from ..tracking.stores import TrackingStore, store_for_uri
+from ..tracking.stores.rest import RestStore
 
 logger = logging.getLogger(__name__)
 
-_HANDOFF_MARKERS = ("handoff", "delegate")
+HANDOFF_MARKERS = ("handoff", "delegate")
 
 
 class AgentTraceMiddleware(AgentMiddleware):
@@ -49,17 +55,30 @@ class AgentTraceMiddleware(AgentMiddleware):
         url: Optional[str] = None,
         api_key: Optional[str] = None,
         timeout: float = 10.0,
+        project: Optional[str] = None,
     ):
         super().__init__()
         self.run_name = run_name
         self.orchestrator = orchestrator
-        self._client_kwargs = {"url": url, "api_key": api_key, "timeout": timeout}
-        self._run: Optional[AgentTraceRun] = None
+        self._url, self._api_key, self._timeout, self.project = url, api_key, timeout, project
+        self._run: Optional[ActiveRun] = None
         self._had_error = False
 
-    def _ensure_run(self) -> AgentTraceRun:
+    def _make_store(self) -> TrackingStore:
+        # Explicit url/api_key keep the pre-0.2 behaviour (HTTP to a server);
+        # otherwise follow the tracking URI like the rest of the SDK.
+        if self._url or self._api_key:
+            return RestStore(
+                self._url or os.getenv("AGENTTRACE_URL", DEFAULT_URL),
+                api_key=self._api_key or os.getenv("AGENTTRACE_KEY"),
+                timeout=self._timeout,
+            )
+        return store_for_uri(get_tracking_uri())
+
+    def _ensure_run(self) -> ActiveRun:
         if self._run is None:
-            self._run = AgentTraceRun(self.run_name, client=AgentTraceClient(**self._client_kwargs))
+            project = None if (self._url or self._api_key) else (self.project or get_project())
+            self._run = ActiveRun(self._make_store(), self.run_name, project=project)
         return self._run
 
     # ----- run lifecycle -----
@@ -103,7 +122,7 @@ class AgentTraceMiddleware(AgentMiddleware):
         self._emit_llm_call(run, model_name, response, start)
         return response
 
-    def _emit_llm_call(self, run: AgentTraceRun, model_name: str, response: Any, start: float) -> None:
+    def _emit_llm_call(self, run: ActiveRun, model_name: str, response: Any, start: float) -> None:
         # wrap_model_call's handler returns a `ModelResponse` dataclass
         # (`.result: list[BaseMessage]`), not a bare message — unwrap to the
         # last message before reading content/usage. Some middleware/tests
@@ -144,7 +163,7 @@ class AgentTraceMiddleware(AgentMiddleware):
         self._emit_tool_result(run, tool_name, result, start)
         return result
 
-    def _before_tool_call(self, request) -> tuple[AgentTraceRun, str]:
+    def _before_tool_call(self, request) -> tuple[ActiveRun, str]:
         run = self._ensure_run()
         tool_call = getattr(request, "tool_call", {}) or {}
         tool_name = tool_call.get("name", "tool")
@@ -158,7 +177,7 @@ class AgentTraceMiddleware(AgentMiddleware):
             payload={"args": compact(tool_args)},
         )
 
-        if any(marker in tool_name.lower() for marker in _HANDOFF_MARKERS):
+        if any(marker in tool_name.lower() for marker in HANDOFF_MARKERS):
             sub_agent = _extract_handoff_target(tool_args) or "Sub-agent"
             run.emit(
                 source=self.orchestrator,
@@ -169,7 +188,7 @@ class AgentTraceMiddleware(AgentMiddleware):
             )
         return run, tool_name
 
-    def _emit_tool_result(self, run: AgentTraceRun, tool_name: str, result: Any, start: float) -> None:
+    def _emit_tool_result(self, run: ActiveRun, tool_name: str, result: Any, start: float) -> None:
         run.emit(
             source=tool_name,
             target=self.orchestrator,
@@ -179,7 +198,7 @@ class AgentTraceMiddleware(AgentMiddleware):
             duration_ms=int((time.time() - start) * 1000),
         )
 
-    def _emit_tool_error(self, run: AgentTraceRun, tool_name: str, exc: Exception) -> None:
+    def _emit_tool_error(self, run: ActiveRun, tool_name: str, exc: Exception) -> None:
         self._had_error = True
         run.emit(
             source=tool_name,

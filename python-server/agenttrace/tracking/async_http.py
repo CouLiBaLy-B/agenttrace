@@ -1,14 +1,10 @@
-"""HTTP client for the AgentTrace ingestion API.
+"""Async HTTP client for the AgentTrace ingestion API (httpx-based).
 
-Mirrors the contract implemented by `POST /api/events`
-(see src/app/api/events/route.ts in the main AgentTrace repo):
-
-    {"runId": null, "name": "..."}                     -> creates a run
-    {"runId": ..., "source", "target", "type", ...}     -> appends an event
-    {"runId": ..., "endRun": "completed" | "failed"}    -> closes a run
-
-Valid event `type` values: llm_call | tool_call | tool_result | handoff |
-error | final_answer.
+Same wire contract as `http.HttpEventClient` (see that module's docstring)
+— this variant exists for callers that already run inside an asyncio event
+loop (e.g. a FastAPI server) and must never block it with sync `requests`
+calls. Pass your own `httpx.AsyncClient` (for connection pooling/reuse
+across runs) or let one be created lazily per client instance.
 """
 
 from __future__ import annotations
@@ -16,62 +12,56 @@ from __future__ import annotations
 import os
 from typing import Any, Optional
 
-import requests
+import httpx
 
-DEFAULT_URL = "http://localhost:3000/api/events"
-
-VALID_EVENT_TYPES = {
-    "llm_call",
-    "tool_call",
-    "tool_result",
-    "handoff",
-    "error",
-    "final_answer",
-}
+from .http import DEFAULT_URL, VALID_EVENT_TYPES
 
 
-class AgentTraceClient:
-    """Thin wrapper around `POST /api/events`.
-
-    Reads `AGENTTRACE_URL` / `AGENTTRACE_KEY` from the environment when not
-    passed explicitly, matching the env vars used by the copy-paste snippets
-    in the AgentTrace Integration tab.
-    """
-
+class AsyncHttpEventClient:
     def __init__(
         self,
         url: Optional[str] = None,
         api_key: Optional[str] = None,
         timeout: float = 10.0,
+        client: Optional[httpx.AsyncClient] = None,
     ):
         self.url = url or os.getenv("AGENTTRACE_URL", DEFAULT_URL)
         self.api_key = api_key or os.getenv("AGENTTRACE_KEY")
         self.timeout = timeout
+        self._client = client
+        self._owns_client = client is None
 
-    def emit(self, event: dict) -> dict:
-        """POST a single event/command to AgentTrace. Returns the parsed JSON response."""
+    def _get_client(self) -> httpx.AsyncClient:
+        if self._client is None:
+            self._client = httpx.AsyncClient(timeout=self.timeout)
+        return self._client
+
+    async def aclose(self) -> None:
+        if self._owns_client and self._client is not None:
+            await self._client.aclose()
+
+    async def emit(self, event: dict) -> dict:
         if not self.api_key:
             raise RuntimeError(
                 "AgentTrace API key missing — pass api_key=... or set AGENTTRACE_KEY "
                 "(project key from the Integration tab, prefixed 'atr_')."
             )
-        response = requests.post(
+        response = await self._get_client().post(
             self.url,
             json=event,
             headers={
                 "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json",
             },
-            timeout=self.timeout,
         )
         response.raise_for_status()
         return response.json()
 
-    def start_run(self, name: str) -> str:
-        result = self.emit({"runId": None, "name": name})
+    async def start_run(self, name: str) -> str:
+        result = await self.emit({"runId": None, "name": name})
         return result["runId"]
 
-    def event(
+    async def event(
         self,
         run_id: str,
         source: str,
@@ -84,12 +74,7 @@ class AgentTraceClient:
     ) -> dict:
         if type not in VALID_EVENT_TYPES:
             raise ValueError(f"type must be one of: {', '.join(sorted(VALID_EVENT_TYPES))}")
-        body: dict[str, Any] = {
-            "runId": run_id,
-            "source": source,
-            "target": target,
-            "type": type,
-        }
+        body: dict[str, Any] = {"runId": run_id, "source": source, "target": target, "type": type}
         if label is not None:
             body["label"] = label
         if payload is not None:
@@ -98,7 +83,7 @@ class AgentTraceClient:
             body["durationMs"] = duration_ms
         if status is not None:
             body["status"] = status
-        return self.emit(body)
+        return await self.emit(body)
 
-    def end_run(self, run_id: str, status: str = "completed") -> dict:
-        return self.emit({"runId": run_id, "endRun": status})
+    async def end_run(self, run_id: str, status: str = "completed") -> dict:
+        return await self.emit({"runId": run_id, "endRun": status})
