@@ -54,35 +54,74 @@ export function SequenceDiagram({ runId, initialEvents, initialStatus, onRunUpda
     onRunUpdateRef.current = onRunUpdate
   }, [onRunUpdate])
 
+  const mountedRef = useRef(true)
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
+
+  const mergeEvents = useCallback((incoming: TraceEvent[]) => {
+    setEvents((prev) => {
+      const seen = new Set(prev.map((e) => e.id))
+      const fresh = incoming.filter((e) => !seen.has(e.id))
+      if (!fresh.length) return prev
+      return [...prev, ...fresh].sort((a, b) => a.seq - b.seq)
+    })
+  }, [])
+
+  type RunSnapshot = { run: { events: TraceEvent[]; status?: string; endedAt?: string | null } }
+
   // ---- live: subscribe for new events (and close the REST→WS gap) ----
   useEffect(() => {
     if (!live) return
-    const merge = (incoming: TraceEvent[]) =>
-      setEvents((prev) => {
-        const seen = new Set(prev.map((e) => e.id))
-        const fresh = incoming.filter((e) => !seen.has(e.id))
-        if (!fresh.length) return prev
-        return [...prev, ...fresh].sort((a, b) => a.seq - b.seq)
-      })
-    return subscribeRun(runId, {
-      onConnectionChange: setConnected,
-      // Events written between the page's REST load and the subscription
-      // are not streamed (the server cursor starts at subscribe time).
+    let active = true
+    const unsubscribe = subscribeRun(runId, {
+      onConnectionChange: (c) => {
+        if (active) setConnected(c)
+      },
+      // Events/status changes between the page's REST load (or a reconnect)
+      // and the subscription are not streamed, so re-read the run.
       onSubscribed: () => {
-        api<{ run: { events: TraceEvent[] } }>(`/api/runs/${runId}`)
-          .then((data) => merge(data.run.events))
+        api<RunSnapshot>(`/api/runs/${runId}`)
+          .then((data) => {
+            if (!active) return
+            mergeEvents(data.run.events)
+            const st = data.run.status
+            if (st && st !== "running") {
+              setStatus(st as typeof status)
+              onRunUpdateRef.current?.({ status: st, endedAt: data.run.endedAt ?? null })
+            }
+          })
           .catch(() => {})
       },
-      onEvent: (event) => merge([event]),
+      onEvent: (event) => {
+        if (active) mergeEvents([event])
+      },
       onRunUpdate: (patch) => {
-        if (patch.status) {
-          setStatus(patch.status as typeof status)
-          onRunUpdateRef.current?.(patch)
+        if (!active || !patch.status) return
+        setStatus(patch.status as typeof status)
+        onRunUpdateRef.current?.(patch)
+        if (patch.status !== "running") {
+          // Final fill: a last event may have committed after the run status.
+          // Runs independent of this effect's lifetime (live flips to false).
+          api<RunSnapshot>(`/api/runs/${runId}`)
+            .then((data) => {
+              if (mountedRef.current) mergeEvents(data.run.events)
+            })
+            .catch(() => {})
         }
       },
-      onError: () => setConnected(false),
+      onError: () => {
+        if (active) setConnected(false)
+      },
     })
-  }, [runId, live])
+    return () => {
+      active = false
+      unsubscribe()
+    }
+  }, [runId, live, mergeEvents])
 
   // ---- auto-scroll to newest on live events ----
   useEffect(() => {

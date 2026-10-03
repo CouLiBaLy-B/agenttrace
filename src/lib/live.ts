@@ -57,8 +57,8 @@ export function subscribeRun(runId: string, handlers: LiveHandlers): () => void 
       }
     }
     ws.onclose = () => {
-      handlers.onConnectionChange?.(false)
       if (stopped) return
+      handlers.onConnectionChange?.(false)
       const delay = Math.min(MAX_BACKOFF_MS, 1000 * 2 ** attempt)
       attempt += 1
       timer = setTimeout(connect, delay)
