@@ -63,6 +63,10 @@ def ui(host: str, port: int, database_url: str | None, auth: str | None) -> None
             "Only loopback Host names are accepted unless AGENTTRACE_ALLOWED_HOSTS lists the public hostname(s)."
         )
     os.environ["AGENTTRACE_AUTH"] = auth
+    if auth == "password" and not os.getenv("AGENTTRACE_SECRET"):
+        click.echo(
+            "[AgentTrace] WARNING: AGENTTRACE_SECRET not set — using a random secret; sign-ins won't survive a restart"
+        )
 
     import uvicorn
 

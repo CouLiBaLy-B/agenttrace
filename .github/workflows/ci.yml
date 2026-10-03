@@ -96,7 +96,7 @@ jobs:
           echo "smoke test passed"
 
   # ────────────────────────────────────────────────────────────
-  # Python package (deepagents-trace) + legacy shim
+  # Python tests + wheel check (needs the UI bundle)
   # ────────────────────────────────────────────────────────────
   python:
     name: python tests

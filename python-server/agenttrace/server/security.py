@@ -11,6 +11,7 @@ NextAuth (this is a from-scratch "auth maison", per the plan).
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 import secrets
 
@@ -37,8 +38,20 @@ def verify_password(password: str, password_hash: str) -> bool:
     return bcrypt.checkpw(_bcrypt_bytes(password), password_hash.encode("utf-8"))
 
 
+_log = logging.getLogger(__name__)
+_random_secret: str | None = None
+
+
 def _secret_key() -> str:
-    return os.getenv("AGENTTRACE_SECRET", "agenttrace-dev-secret-key-change-in-production")
+    """AGENTTRACE_SECRET, or a random per-process secret (never a public default)."""
+    global _random_secret
+    env = os.getenv("AGENTTRACE_SECRET")
+    if env:
+        return env
+    if _random_secret is None:
+        _random_secret = secrets.token_urlsafe(32)
+        _log.warning("AGENTTRACE_SECRET not set — using a random secret; sign-ins won't survive a restart")
+    return _random_secret
 
 
 def _serializer() -> URLSafeTimedSerializer:
