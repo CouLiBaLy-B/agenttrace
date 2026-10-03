@@ -71,6 +71,7 @@ def run_out(run: models.Run, *, event_count: int | None = None) -> dict[str, Any
 
 def run_detail_out(run: models.Run) -> dict[str, Any]:
     data = run_out(run)
+    data["project"] = {"id": run.project.id, "name": run.project.name, "userId": run.project.user_id}
     data["events"] = [event_out(e) for e in run.events]
     return data
 
