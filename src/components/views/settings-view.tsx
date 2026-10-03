@@ -46,41 +46,41 @@ export function SettingsView() {
             Local mode — no account (started with <span className="font-mono">agenttrace ui --auth none</span>).
           </p>
         ) : (
-          <>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                Name
-              </Label>
-              <Input value={user?.name || ""} readOnly className="bg-card" />
+            <>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                  Name
+                </Label>
+                <Input value={user?.name || ""} readOnly className="bg-card" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                  Email
+                </Label>
+                <Input value={user?.email || ""} readOnly className="bg-card" />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                Email
-              </Label>
-              <Input value={user?.email || ""} readOnly className="bg-card" />
+            <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">Sign out of AgentTrace on this device.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={async () => {
+                  try {
+                    await signOut()
+                    toast.success("Signed out")
+                  } catch (err) {
+                    toast.error(err instanceof Error ? err.message : "Sign out failed")
+                  }
+                }}
+              >
+                <LogOut className="h-4 w-4" />
+                Sign out
+              </Button>
             </div>
-          </div>
-          <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">Sign out of AgentTrace on this device.</p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={async () => {
-                try {
-                  await signOut()
-                  toast.success("Signed out")
-                } catch (err) {
-                  toast.error(err instanceof Error ? err.message : "Sign out failed")
-                }
-              }}
-            >
-              <LogOut className="h-4 w-4" />
-              Sign out
-            </Button>
-          </div>
-          </>
+            </>
         )}
       </Card>
 

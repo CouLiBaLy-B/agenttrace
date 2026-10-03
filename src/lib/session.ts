@@ -26,13 +26,16 @@ export function useSession() {
     staleTime: 60_000,
     retry: 1,
   })
-  const status: "loading" | "authenticated" | "unauthenticated" = query.isPending
-    ? "loading"
-    : query.data?.user
+  const status: "loading" | "authenticated" | "unauthenticated" | "error" = query.data
+    ? query.data.user
       ? "authenticated"
       : "unauthenticated"
+    : query.isError
+      ? "error"
+      : "loading"
   return {
     status,
+    retry: () => query.refetch(),
     user: query.data?.user ?? null,
     authMode: query.data?.authMode ?? "password",
     version: query.data?.version ?? "",
@@ -41,9 +44,12 @@ export function useSession() {
 
 export function useAuthActions() {
   const qc = useQueryClient()
-  // resetQueries refetches the session and drops every cached view of the
-  // previous account, so data never leaks between sign-ins.
-  const refresh = () => qc.resetQueries()
+  // Drop every cached view of the previous account (so data never leaks between
+  // sign-ins) but keep the session data while it refetches, avoiding a boot flash.
+  const refresh = async () => {
+    qc.removeQueries({ predicate: (q) => q.queryKey[0] !== SESSION_KEY[0] })
+    await qc.invalidateQueries({ queryKey: SESSION_KEY })
+  }
   return {
     async signIn(email: string, password: string) {
       await api("/api/auth/signin", { method: "POST", json: { email, password } })

@@ -159,15 +159,15 @@ export function Sidebar({
               {(user?.name || user?.email || "?").slice(0, 1).toUpperCase()}
             </div>
             {authMode !== "none" && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-foreground"
-              title="Sign out"
-              onClick={() => handleSignOut(signOut)}
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                title="Sign out"
+                onClick={() => handleSignOut(signOut)}
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
             )}
           </div>
         ) : (
@@ -180,15 +180,15 @@ export function Sidebar({
               <p className="truncate text-[11px] text-muted-foreground">{user?.email}</p>
             </div>
             {authMode !== "none" && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-foreground"
-              title="Sign out"
-              onClick={() => handleSignOut(signOut)}
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                title="Sign out"
+                onClick={() => handleSignOut(signOut)}
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
             )}
           </div>
         )}
