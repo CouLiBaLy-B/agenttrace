@@ -34,8 +34,11 @@ cookie) or <code>POST /api/events</code> (requires a project API key).</p>
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
     init_db()
-    manager.bind_loop(asyncio.get_running_loop())
-    yield
+    poller = asyncio.create_task(manager.poll_forever())
+    try:
+        yield
+    finally:
+        poller.cancel()
 
 
 def create_app() -> FastAPI:

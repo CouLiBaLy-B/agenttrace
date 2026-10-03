@@ -21,7 +21,6 @@ from ...store.events import VALID_EVENT_TYPES, append_event, close_run, create_r
 from .. import models
 from ..db import get_db
 from ..deps import ingest_project
-from ..realtime import manager
 from ..serializers import event_out
 
 router = APIRouter(prefix="/api/events", tags=["events"])
@@ -57,7 +56,6 @@ async def ingest(
 
     if body.get("endRun"):
         close_run(db, run, body["endRun"])
-        manager.broadcast_run_update(run_id, {"status": run.status, "endedAt": run.ended_at.isoformat()})
         return {"runId": run_id, "closed": True, "status": run.status}
 
     source, target, type_ = body.get("source"), body.get("target"), body.get("type")
@@ -69,7 +67,5 @@ async def ingest(
         )
 
     event = append_event(db, run_id, body)
-
-    manager.broadcast_event(run_id, event_out(event))
 
     return JSONResponse(status_code=201, content={"runId": run_id, "event": event_out(event)})

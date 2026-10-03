@@ -1,10 +1,6 @@
 """WebSocket fan-out for live events + replay — replaces the standalone
 Socket.IO mini-service (mini-services/socket-service/index.ts).
 
-Because there's a single Python process (no separate Next.js-server-as-a-
-Socket.IO-client hop), REST routes call `manager.broadcast_event(...)`
-directly instead of forwarding to a sibling service.
-
 Wire protocol (plain JSON over a single `/ws` WebSocket, one connection per
 browser tab) — intentionally NOT the Socket.IO protocol; Phase 2 (frontend
 decoupling) will adapt the client accordingly:
@@ -19,57 +15,119 @@ decoupling) will adapt the client accordingly:
     <- {"type": "replay:done", "runId": "..."}
     -> {"action": "replay:stop", "runId": "..."}
 
-`broadcast_event`/`broadcast_run_update` are called from sync FastAPI route
-handlers (which FastAPI runs in a threadpool since they're plain `def`s), so
-they schedule the actual async send onto the main event loop captured at
-startup via `asyncio.run_coroutine_threadsafe`.
+Live events come from a poller (every 0.5 s, only runs with subscribers, `seq > last seen`)
+instead of being pushed by the ingestion route: the SDK can write to the database directly
+(SqlStore), bypassing the server, and the poller is the one path that sees both.
 """
 
 from __future__ import annotations
 
 import asyncio
-from typing import Any
+import logging
+from datetime import datetime
+from typing import Any, Optional
 
 from fastapi import WebSocket
+
+from . import models
+from .db import SessionLocal
+from .serializers import event_out
+
+logger = logging.getLogger(__name__)
+
+POLL_INTERVAL = 0.5
+
+
+def _run_state(run: models.Run) -> tuple[str, Optional[str]]:
+    return run.status, run.ended_at.isoformat() if run.ended_at else None
 
 
 class ConnectionManager:
     def __init__(self) -> None:
         self._rooms: dict[str, set[WebSocket]] = {}
         self._replay_tasks: dict[tuple[int, str], asyncio.Task] = {}
-        self._loop: asyncio.AbstractEventLoop | None = None
-
-    def bind_loop(self, loop: asyncio.AbstractEventLoop) -> None:
-        self._loop = loop
+        self._last_seq: dict[str, int] = {}
+        self._run_state: dict[str, tuple[str, Optional[str]]] = {}
 
     # ----- connection lifecycle -----
     async def connect(self, websocket: WebSocket) -> None:
         await websocket.accept()
 
-    def disconnect(self, websocket: WebSocket) -> None:
-        for room in self._rooms.values():
-            room.discard(websocket)
-        for key in [k for k in self._replay_tasks if k[0] == id(websocket)]:
-            self._replay_tasks.pop(key).cancel()
-
     async def subscribe(self, websocket: WebSocket, run_id: str) -> None:
+        if run_id not in self._last_seq:
+            await asyncio.to_thread(self._init_cursor, run_id)
         self._rooms.setdefault(run_id, set()).add(websocket)
         await websocket.send_json({"type": "subscribed", "runId": run_id})
 
     def unsubscribe(self, websocket: WebSocket, run_id: str) -> None:
         self._rooms.get(run_id, set()).discard(websocket)
+        self._forget_if_empty(run_id)
 
-    # ----- server -> subscribed clients (called from sync route handlers) -----
-    def broadcast_event(self, run_id: str, event: dict[str, Any]) -> None:
-        self._schedule(self._broadcast(run_id, {"type": "event", "data": event}))
+    def disconnect(self, websocket: WebSocket) -> None:
+        for run_id, room in list(self._rooms.items()):
+            room.discard(websocket)
+            self._forget_if_empty(run_id)
+        for key in [k for k in self._replay_tasks if k[0] == id(websocket)]:
+            self._replay_tasks.pop(key).cancel()
 
-    def broadcast_run_update(self, run_id: str, patch: dict[str, Any]) -> None:
-        self._schedule(self._broadcast(run_id, {"type": "run:update", "runId": run_id, "patch": patch}))
+    def _forget_if_empty(self, run_id: str) -> None:
+        if not self._rooms.get(run_id):
+            self._rooms.pop(run_id, None)
+            self._last_seq.pop(run_id, None)
+            self._run_state.pop(run_id, None)
 
-    def _schedule(self, coro) -> None:
-        if self._loop is None:
-            return
-        asyncio.run_coroutine_threadsafe(coro, self._loop)
+    def _init_cursor(self, run_id: str) -> None:
+        with SessionLocal() as db:
+            last = (
+                db.query(models.Event.seq)
+                .filter(models.Event.run_id == run_id)
+                .order_by(models.Event.seq.desc())
+                .limit(1)
+                .scalar()
+            )
+            run = db.get(models.Run, run_id)
+        self._last_seq[run_id] = last if last is not None else -1
+        if run is not None:
+            self._run_state[run_id] = _run_state(run)
+
+    def poll_once(self) -> list[tuple[str, dict[str, Any]]]:
+        """New events / status changes for every watched run (sync, runs in a thread)."""
+        watched = [run_id for run_id, room in self._rooms.items() if room]
+        if not watched:
+            return []
+        messages: list[tuple[str, dict[str, Any]]] = []
+        with SessionLocal() as db:
+            for run_id in watched:
+                last = self._last_seq.get(run_id, -1)
+                new_events = (
+                    db.query(models.Event)
+                    .filter(models.Event.run_id == run_id, models.Event.seq > last)
+                    .order_by(models.Event.seq)
+                    .all()
+                )
+                for event in new_events:
+                    messages.append((run_id, {"type": "event", "data": event_out(event)}))
+                    last = event.seq
+                self._last_seq[run_id] = last
+                run = db.get(models.Run, run_id)
+                if run is None:
+                    continue
+                state = _run_state(run)
+                if self._run_state.get(run_id) not in (None, state):
+                    messages.append(
+                        (run_id, {"type": "run:update", "runId": run_id, "patch": {"status": state[0], "endedAt": state[1]}})
+                    )
+                self._run_state[run_id] = state
+        return messages
+
+    async def poll_forever(self, interval: float = POLL_INTERVAL) -> None:
+        while True:
+            try:
+                for run_id, message in await asyncio.to_thread(self.poll_once):
+                    await self._broadcast(run_id, message)
+            except Exception:  # noqa: BLE001 - a DB hiccup must not kill live updates
+                logger.exception("AgentTrace live poller failed; retrying")
+            await asyncio.sleep(interval)
 
     async def _broadcast(self, run_id: str, message: dict[str, Any]) -> None:
         for ws in list(self._rooms.get(run_id, ())):
@@ -101,8 +159,6 @@ class ConnectionManager:
             task.cancel()
 
     async def _run_replay(self, websocket: WebSocket, run_id: str, events: list[dict], speed: float) -> None:
-        from datetime import datetime
-
         def ts(event: dict) -> float:
             return datetime.fromisoformat(event["timestamp"].replace("Z", "+00:00")).timestamp()
 

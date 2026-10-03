@@ -26,7 +26,8 @@ def fake_uvicorn(monkeypatch):
 
     calls = []
     monkeypatch.setattr(uvicorn, "run", lambda *a, **k: calls.append((a, k)))
-    monkeypatch.delenv("AGENTTRACE_AUTH", raising=False)
+    monkeypatch.setenv("AGENTTRACE_AUTH", "password")  # registers restore; ui() sets os.environ directly
+    monkeypatch.delenv("AGENTTRACE_AUTH")
     return calls
 
 
