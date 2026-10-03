@@ -2,7 +2,8 @@
 # Runs on every push and pull request:
 #   1. ui      — lint, typecheck, static export (uploaded as the `ui-bundle` artifact)
 #   2. python  — pytest (server + SDK + shim), then a wheel check that the UI ships
-#   3. docker  — build the single image and smoke test it against Postgres
+#   3. e2e     — Playwright drives the bundled dashboard served by `agenttrace ui`
+#   4. docker  — build the single image and smoke test it against Postgres
 #
 # Bun is used as the runtime/package manager to match local dev.
 
@@ -130,3 +131,26 @@ jobs:
         run: |
           uv build python-server --wheel --out-dir dist
           .venv/bin/python python-server/scripts/check_wheel.py dist/*.whl
+
+  # ────────────────────────────────────────────────────────────
+  # End-to-end: Playwright against `agenttrace ui` with the bundle
+  # ────────────────────────────────────────────────────────────
+  e2e:
+    name: e2e (playwright)
+    runs-on: ubuntu-latest
+    needs: ui
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/download-artifact@v4
+        with:
+          name: ui-bundle
+          path: python-server/agenttrace/server/static
+      - name: Install
+        run: |
+          uv venv .venv --python 3.12
+          uv pip install --python .venv "python-server[dev,e2e]"
+          .venv/bin/playwright install --with-deps chromium
+      - name: E2E
+        run: .venv/bin/pytest python-server/tests_e2e -q
