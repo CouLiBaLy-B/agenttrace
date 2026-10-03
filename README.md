@@ -25,7 +25,9 @@ agenttrace ui            # open http://127.0.0.1:3000
 ```
 
 `agenttrace demo [--database-url URL]` seeds three sample projects (Customer
-Support Agent, Research Assistant, Code Review Bot). `agenttrace ui [--host H]
+Support Agent, Research Assistant, Code Review Bot) for the local (no-auth)
+user that `agenttrace ui` uses on loopback. In password mode, signed-in users
+load them from Settings → Demo data → "Reload demo projects". `agenttrace ui [--host H]
 [--port P] [--auth none|password] [--database-url URL]` serves the dashboard on
 `http://127.0.0.1:3000` by default; auth is `none` on loopback (no login) and
 `password` on any other host. For the MLflow-style local flow
@@ -38,7 +40,7 @@ Support Agent, Research Assistant, Code Review Bot). `agenttrace ui [--host H]
 | --- | --- | --- |
 | `DATABASE_URL` | server | Database to serve (default: local `./agenttrace.db`) |
 | `AGENTTRACE_SECRET` | server | Session-signing secret for password mode. If unset, a random per-process secret is used and sessions reset on restart |
-| `AGENTTRACE_AUTH` | server | `none` or `password` (same as `--auth`) |
+| `AGENTTRACE_AUTH` | server | `none` or `password` — default for `agenttrace ui --auth` (an explicit `--auth` wins; neither: `none` on loopback, `password` otherwise) |
 | `AGENTTRACE_ALLOWED_HOSTS` | server | Comma-separated extra hostnames accepted in `--auth none` mode (e.g. behind a reverse proxy) |
 | `AGENTTRACE_TRACKING_URI` | SDK | Where traces go (local DB, SQLAlchemy URL, or `http(s)://` server) |
 | `AGENTTRACE_PROJECT` | SDK | Default project name |
@@ -52,16 +54,27 @@ A single image: a Bun stage builds the UI, then `python:3.12-slim` runs
 `agenttrace ui --host 0.0.0.0` as a non-root user (uid 10001, `WORKDIR /data`).
 
 ```bash
-# Postgres + agenttrace, password auth
+# Postgres + agenttrace, password auth (AGENTTRACE_SECRET is required)
 AGENTTRACE_SECRET=$(openssl rand -base64 32) docker compose up --build
 
-# Or build the image directly
+# Or build and run the image directly (SQLite in /data; keep it in a volume)
 docker build -t agenttrace .
+docker run -p 3000:3000 -e AGENTTRACE_SECRET=$(openssl rand -base64 32) \
+  -v agenttrace-data:/data agenttrace
 ```
 
 `docker-compose.yml` runs Postgres alongside the `agenttrace` service, which
-connects with `DATABASE_URL=postgresql+psycopg://...`. Set `AGENTTRACE_SECRET`
-so sessions survive restarts.
+connects with `DATABASE_URL=postgresql+psycopg://...`. Compose refuses to start
+unless `AGENTTRACE_SECRET` is set (put it in `.env`, see `.env.example`). With
+bare `docker run` and no `DATABASE_URL`, the server uses SQLite at
+`/data/agenttrace.db`: mount a volume on `/data` (as above) or the data is lost
+with the container; without `AGENTTRACE_SECRET` a random secret is used and
+sign-ins reset on every restart.
+
+The image runs in password mode, so sign up in the browser and load sample
+projects from Settings → Demo data → "Reload demo projects".
+`agenttrace demo` only seeds the local (no-auth) user and has no visible
+effect on a password-mode server.
 
 ## Development
 
@@ -104,7 +117,7 @@ pytest python-server/tests_e2e
 4. **docker** — builds the image and smoke-tests it
 
 `publish-pypi.yml` builds the UI before the wheel and runs
-`scripts/check_wheel.py` to make sure the bundle ships.
+`python-server/scripts/check_wheel.py` to make sure the bundle ships.
 
 ## Instrumenting an agent
 

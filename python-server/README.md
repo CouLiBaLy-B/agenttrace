@@ -103,6 +103,20 @@ rather than migrations.
   (a warning is logged once); set `AGENTTRACE_TRACKING_URI` to choose explicitly.
 - The Next.js backend (Prisma, NextAuth, Socket.IO) is gone. Data from an old
   Prisma database is not migrated: start a fresh FastAPI database.
+- Docker / `docker compose` users:
+  - the old `web` and `socket` services are gone (one `agenttrace` service
+    replaces them): run `docker compose up --build --remove-orphans` to remove
+    their stale containers;
+  - `NEXTAUTH_SECRET` is replaced by `AGENTTRACE_SECRET`, which compose now
+    requires (it refuses to start without it);
+  - reusing the old `pgdata` volume keeps the orphan Prisma tables (`"User"`,
+    `"Project"`, `"Run"`, `"Event"`, `"ApiKey"`, `"Account"`, `"Session"`,
+    `"VerificationToken"`) next to the new `users`/`projects`/`runs`/`events`/
+    `api_keys` tables: old data is not visible in the new UI. Start from a
+    fresh volume (`docker compose down -v` deletes it) or drop those tables;
+  - Postgres port 5432 is no longer published on the host (only the
+    `agenttrace` service on 3000 is); add a `ports:` entry to `db` if you
+    need host access.
 - `AgentTraceRun.emit` now raises `ValueError` on an invalid event type
   instead of silently dropping the event.
 
