@@ -46,7 +46,7 @@ SEED_PROJECTS: list[dict] = [
                     {"source": "Orchestrator", "target": "process_refund", "type": "tool_call", "label": "process_refund (attempt 1)", "offset_sec": 1.6, "duration_ms": 3000, "payload": {"args": {"orderId": "5102", "amount": 142.5}}},
                     {"source": "process_refund", "target": "Orchestrator", "type": "error", "label": "gateway timeout", "offset_sec": 4.6, "duration_ms": 2, "status": "error", "payload": {"error": "ETIMEDOUT", "message": "Payment gateway did not respond within 3000ms"}},
                     {"source": "Orchestrator", "target": "LLM", "type": "llm_call", "label": "decide retry", "offset_sec": 4.8, "duration_ms": 380, "payload": {"result": "retry_once", "tokens": 92}},
-                    {"source": "Orchestrator", "target": "process_refund", "type": "tool_call", "label": "process_refund (attempt 2)", "offset_sec": 5.4, "duration_ms": 2100, "payload": {"args": {"orderId": "5102", "amount": 142.5, "retry": {}}}},
+                    {"source": "Orchestrator", "target": "process_refund", "type": "tool_call", "label": "process_refund (attempt 2)", "offset_sec": 5.4, "duration_ms": 2100, "payload": {"args": {"orderId": "5102", "amount": 142.5, "retry": True}}},
                     {"source": "process_refund", "target": "Orchestrator", "type": "tool_result", "label": "refund ok", "offset_sec": 7.5, "duration_ms": 5, "payload": {"refundId": "rf_5102", "status": "succeeded"}},
                     {"source": "Orchestrator", "target": "User", "type": "final_answer", "label": "refund issued", "offset_sec": 7.6, "duration_ms": 90, "payload": {"answer": "Sorry about the broken item — a refund of $142.50 is on its way."}},
                 ],
@@ -258,7 +258,7 @@ def seed_demo(db: Session, user: models.User) -> int:
                         target=ev["target"],
                         type=ev["type"],
                         label=ev.get("label"),
-                        payload=json.dumps(ev.get("payload", {})),
+                        payload=json.dumps(ev.get("payload", {}), ensure_ascii=False),
                         duration_ms=ev.get("duration_ms"),
                         status=ev.get("status") or "ok",
                     )

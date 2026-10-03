@@ -4,7 +4,7 @@ import pytest
 
 from agenttrace import cli
 from agenttrace.server.app import app
-from agenttrace.server.demo import seed_demo
+from agenttrace.server.demo import SEED_PROJECTS, seed_demo
 from agenttrace.store import db as store_db
 from agenttrace.store import local, models
 
@@ -59,3 +59,18 @@ def test_demo_cli_seeds_target_database(tmp_path):
     assert "3 demo projects" in result.output
     again = CliRunner().invoke(cli.main, ["demo", "--database-url", url])
     assert "already has projects" in again.output
+
+
+def _event(project, run_prefix, label):
+    sp = next(p for p in SEED_PROJECTS if p["name"] == project)
+    run = next(r for r in sp["runs"] if r["name"].startswith(run_prefix))
+    return next(e for e in run["events"] if e["label"] == label)
+
+
+def test_seed_payload_literals_are_faithful():
+    retry = _event("Customer Support Agent", "Refund — Order #5102", "process_refund (attempt 2)")
+    assert retry["payload"]["args"] == {"orderId": "5102", "amount": 142.5, "retry": True}
+    assert _event("Customer Support Agent", "Refund — Order #6310", "order found")["payload"]["total"] == 54.0
+    assert _event("Code Review Bot", "PR #145", "changes requested")["payload"]["status"] == "changes_requested"
+    assert not any("{}" == repr(v) for sp in SEED_PROJECTS for r in sp["runs"] for e in r["events"]
+                   for v in e["payload"].get("args", {}).values())
