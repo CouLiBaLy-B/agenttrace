@@ -83,3 +83,17 @@
   background-size: 10px 10px, 10px 10px, 50px 50px, 50px 50px;
 }
 [data-theme="studio"] .at-canvas { background: var(--surface-1); }
+
+/* Theme switch: a circle revealed from the clicked swatch (View Transitions).
+   --vt-x / --vt-y are set by applyTheme. Reduced motion never gets here. */
+::view-transition-old(root),
+::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-new(root) { animation: at-theme-reveal 450ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+@keyframes at-theme-reveal {
+  from { clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 50%)); }
+  to { clip-path: circle(150vmax at var(--vt-x, 50%) var(--vt-y, 50%)); }
+}
+/* Fallback without View Transitions: a short colour cross-fade. */
+[data-theme-switching] *, [data-theme-switching] *::before, [data-theme-switching] *::after {
+  transition: background-color 200ms, color 200ms, border-color 200ms, fill 200ms, stroke 200ms !important;
+}

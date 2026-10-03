@@ -14,6 +14,7 @@ import {
   PanelLeftOpen,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ThemeSwitcher } from "@/components/theme/theme-switcher"
 import { toast } from "sonner"
 
 const NAV: { id: ViewId; label: string; icon: any; hint: string }[] = [
@@ -146,6 +147,11 @@ export function Sidebar({
             </p>
           </div>
         )}
+      </div>
+
+      {/* Theme */}
+      <div className={cn("border-t border-sidebar-border", collapsed ? "flex justify-center px-2 py-3" : "px-4 py-3")}>
+        <ThemeSwitcher compact={collapsed} />
       </div>
 
       {/* User */}

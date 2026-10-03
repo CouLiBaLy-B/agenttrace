@@ -22,8 +22,9 @@ export function AppShell() {
   const [dragging, setDragging] = useState(false)
 
   // Persisted layout is rehydrated after mount to avoid SSR hydration mismatch.
+  // `persist` is absent when localStorage is blocked: keep the defaults then.
   useEffect(() => {
-    useLayout.persist.rehydrate()
+    useLayout.persist?.rehydrate()
   }, [])
 
   return (

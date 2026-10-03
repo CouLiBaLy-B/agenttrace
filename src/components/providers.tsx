@@ -2,10 +2,13 @@
 
 import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useState, ReactNode } from "react"
+import { ThemeSync } from "@/components/theme/theme-sync"
 import { Toaster } from "@/components/ui/sonner"
 import { SESSION_KEY } from "@/lib/session"
+import { useTheme } from "@/lib/theme"
 
 export function Providers({ children }: { children: ReactNode }) {
+  const resolved = useTheme((s) => s.resolved)
   const [client] = useState(() => {
     const qc: QueryClient = new QueryClient({
       queryCache: new QueryCache({
@@ -27,8 +30,9 @@ export function Providers({ children }: { children: ReactNode }) {
   })
   return (
     <QueryClientProvider client={client}>
+      <ThemeSync />
       {children}
-      <Toaster theme="dark" position="bottom-right" richColors closeButton />
+      <Toaster theme={resolved === "studio" ? "light" : "dark"} position="bottom-right" richColors closeButton />
     </QueryClientProvider>
   )
 }

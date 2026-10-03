@@ -12,6 +12,7 @@ import "@fontsource/dm-mono/400.css"
 import "@fontsource/dm-mono/500.css"
 import "./globals.css"
 import { Providers } from "@/components/providers"
+import { THEME_BOOT_SCRIPT } from "@/lib/theme-core"
 
 export const metadata: Metadata = {
   title: "AgentTrace — agent observability",
@@ -23,7 +24,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" data-theme="cyanotype" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Sets data-theme from the stored preference / OS before first paint. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+      </head>
       <body className="antialiased bg-background text-foreground min-h-screen font-sans">
         <Providers>{children}</Providers>
       </body>
