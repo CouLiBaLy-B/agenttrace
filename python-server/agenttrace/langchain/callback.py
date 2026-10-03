@@ -3,7 +3,8 @@
 Unlike the middleware (baked into one agent graph), a callback handler can
 be attached globally, which is what `autolog()` does. Each root invocation
 (a callback with `parent_run_id is None`) becomes one AgentTrace run, unless
-a fluent run is already active — then events join it and it stays open.
+a run was started with `start_run()` in the invoking context — then events
+join it and it stays open (the process-global implicit run is never joined).
 Children are mapped to their root through `parent_run_id`, so concurrent
 invocations never mix. Handler methods never raise.
 """
@@ -69,7 +70,7 @@ class AgentTraceCallbackHandler(BaseCallbackHandler):
             self._root_of[run_id] = root
             state = self._roots.get(root)
             if state is None:
-                active = fluent.active_run()
+                active = fluent.explicit_active_run()
                 if active is not None:
                     state = _RootState(run=active, owned=False)
                 else:

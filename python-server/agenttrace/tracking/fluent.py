@@ -80,6 +80,13 @@ def active_run() -> Optional[ActiveRun]:
     return _implicit_run
 
 
+def explicit_active_run() -> Optional[ActiveRun]:
+    """The innermost run started with `start_run()` in this context — never
+    the process-global implicit run, which integrations must not join."""
+    stack = _active_runs.get()
+    return stack[-1] if stack else None
+
+
 def _current_or_implicit_run() -> ActiveRun:
     global _implicit_run
     run = active_run()

@@ -140,3 +140,12 @@ def test_trace_survives_hostile_arguments(tracking_db):
     with agenttrace.start_run("hostile"):
         assert f(BadRepr(), x=BadStr()) == "ok"
         assert f(BadStr()) == "ok"
+
+
+def test_explicit_active_run_ignores_the_implicit_run(tracking_db):
+    from agenttrace.tracking import fluent
+
+    agenttrace.log_event(source="a", target="b", type="tool_call")
+    assert fluent.active_run() is not None and fluent.explicit_active_run() is None
+    with agenttrace.start_run("explicit") as run:
+        assert fluent.explicit_active_run() is run

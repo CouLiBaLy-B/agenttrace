@@ -1,3 +1,5 @@
+import threading
+
 import pytest
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
 from langchain_core.messages import AIMessage
@@ -6,6 +8,7 @@ from langchain_core.tools import tool
 
 import agenttrace
 from agenttrace.langchain import AgentTraceCallbackHandler
+from agenttrace.store.db import init_db
 from tests.conftest import read_runs
 
 
@@ -81,3 +84,45 @@ def test_handler_errors_never_propagate(tracking_db, monkeypatch):
     handler = AgentTraceCallbackHandler()
     monkeypatch.setattr(handler, "_root_state", lambda *a, **k: 1 / 0)
     assert _pipeline(_model()).invoke("sum?", config={"callbacks": [handler]})["messages"]
+
+
+def test_never_joins_the_implicit_fluent_run(tracking_db):
+    init_db(tracking_db)  # avoid racing two first-time schema creations
+    agenttrace.log_event(source="me", target="you", type="tool_call")  # creates the implicit run
+    handler = AgentTraceCallbackHandler()
+    RunnableLambda(lambda x: add.invoke({"a": 1, "b": 2}), name="first").invoke(None, config={"callbacks": [handler]})
+    RunnableLambda(lambda x: add.invoke({"a": 3, "b": 4}), name="second").invoke(None, config={"callbacks": [handler]})
+    agenttrace.end_run()
+    runs = {r["name"]: [e["type"] for e in r["events"]] for r in read_runs(tracking_db)}
+    assert runs.pop("first") == runs.pop("second") == ["tool_call", "tool_result", "final_answer"]
+    [implicit] = runs.values()
+    assert implicit == ["tool_call"]
+
+
+def test_concurrent_roots_on_one_handler_stay_separate(tracking_db):
+    init_db(tracking_db)  # avoid racing two first-time schema creations
+    handler = AgentTraceCallbackHandler()
+    barrier = threading.Barrier(2, timeout=10)
+
+    def chain(name, a):
+        def run(_):
+            barrier.wait()
+            result = add.invoke({"a": a, "b": 0})
+            barrier.wait()
+            return result
+
+        return RunnableLambda(run, name=name)
+
+    threads = [
+        threading.Thread(target=lambda n=n, a=a: chain(n, a).invoke(None, config={"callbacks": [handler]}))
+        for n, a in (("left", 1), ("right", 2))
+    ]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    runs = {r["name"]: r["events"] for r in read_runs(tracking_db)}
+    assert sorted(runs) == ["left", "right"]
+    for name, a in (("left", 1), ("right", 2)):
+        assert [e["type"] for e in runs[name]] == ["tool_call", "tool_result", "final_answer"]
+        assert runs[name][2]["payload"]["answer"] == str(a)
