@@ -163,6 +163,15 @@
   background-color: color-mix(in oklab, var(--ink-2) 70%, transparent);
 }
 
+/* Sequence diagram: an arrow is clickable; hovering tints its hit area with the
+   arrow's own colour (the <g> sets `color` to the event colour). --halo is the
+   colour behind its text (label knockouts): the canvas, or the canvas under the
+   hover / selection tint. sRGB mixes, so they match the alpha-blended tints. */
+.at-arrow { cursor: pointer; outline: none; --halo: var(--canvas); }
+.at-arrow:not([aria-pressed="true"]):hover { --halo: color-mix(in srgb, currentColor 7%, var(--canvas)); }
+.at-arrow:not([aria-pressed="true"]):hover > .at-arrow-hit { fill: color-mix(in srgb, currentColor 7%, transparent); }
+.at-arrow[aria-pressed="true"] { --halo: color-mix(in srgb, currentColor 10%, var(--canvas)); }
+
 /* Blinking cursor for "listening" states */
 @keyframes at-blink {
   0%, 49% { opacity: 1; }

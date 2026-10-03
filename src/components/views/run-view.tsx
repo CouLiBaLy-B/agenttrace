@@ -194,6 +194,10 @@ export function RunView() {
         <SequenceDiagram
           key={run.id}
           runId={run.id}
+          runName={run.name}
+          projectName={run.project.name}
+          startedAt={run.startedAt}
+          endedAt={run.endedAt}
           initialEvents={events}
           initialStatus={run.status as any}
           onRunUpdate={() => qc.invalidateQueries({ queryKey: ["run", runId] })}

@@ -5,7 +5,7 @@ import { subscribeRun } from "@/lib/live"
 import { api } from "@/lib/api"
 import { TraceEvent } from "@/lib/types"
 import { extractParticipants } from "./participants"
-import { LifelineDiagram } from "./lifeline-diagram"
+import { ThemedDiagram } from "./themed-diagram"
 import { StackedTimeline } from "./stacked-timeline"
 import { EventDetailPanel } from "./event-detail-panel"
 import { ReplayControls, ReplaySpeed } from "./replay-controls"
@@ -23,12 +23,25 @@ function mergeById(prev: TraceEvent[], incoming: TraceEvent[]): TraceEvent[] {
 
 interface Props {
   runId: string
+  runName: string
+  projectName: string
+  startedAt: string
+  endedAt: string | null
   initialEvents: TraceEvent[]
   initialStatus: "running" | "completed" | "failed"
   onRunUpdate?: (patch: any) => void
 }
 
-export function SequenceDiagram({ runId, initialEvents, initialStatus, onRunUpdate }: Props) {
+export function SequenceDiagram({
+  runId,
+  runName,
+  projectName,
+  startedAt,
+  endedAt,
+  initialEvents,
+  initialStatus,
+  onRunUpdate,
+}: Props) {
   const [events, setEvents] = useState<TraceEvent[]>(initialEvents)
   const [status, setStatus] = useState(initialStatus)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -268,12 +281,13 @@ export function SequenceDiagram({ runId, initialEvents, initialStatus, onRunUpda
           {events.length === 0 ? (
             <ListeningState runId={runId} live={live} />
           ) : isDesktop ? (
-            <LifelineDiagram
+            <ThemedDiagram
               events={visibleEvents}
               participants={participants}
               selectedId={selectedId}
               onSelect={setSelectedId}
               live={live && !isReplay}
+              run={{ name: runName, project: projectName, status, startedAt, endedAt }}
             />
           ) : (
             <StackedTimeline
@@ -307,7 +321,7 @@ export function SequenceDiagram({ runId, initialEvents, initialStatus, onRunUpda
 
 function ListeningState({ runId, live }: { runId: string; live: boolean }) {
   return (
-    <div className="h-full at-graticule at-scanlines relative flex flex-col items-center justify-center p-6 text-center overflow-hidden">
+    <div className="h-full at-canvas relative flex flex-col items-center justify-center p-6 text-center overflow-hidden">
       <AnimatePresence>
         <motion.div
           key="scope"
@@ -323,7 +337,7 @@ function ListeningState({ runId, live }: { runId: string; live: boolean }) {
               <div
                 className="at-radar-sweep absolute top-1/2 left-1/2 h-1/2 w-1/2 origin-top-left"
                 style={{
-                  background: "linear-gradient(to right, oklch(0.78 0.17 155 / 0.35), transparent)",
+                  background: "linear-gradient(to right, color-mix(in oklab, var(--action) 35%, transparent), transparent)",
                   clipPath: "polygon(0 0, 100% 0, 0 100%)",
                 }}
               />
