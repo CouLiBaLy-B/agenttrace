@@ -1,5 +1,7 @@
 # AgentTrace — Documentation fonctionnelle
 
+> **Note** : ce document décrit le déploiement antérieur à la version 0.2 (Next.js). Là où il mentionne NextAuth, Prisma, Socket.IO ou `bun run dev`, ces éléments ont été remplacés par le serveur Python FastAPI qui embarque l'interface (`pip install 'deepagents-trace[server]'`, `agenttrace ui`). Voir le [README](../README.md) pour l'installation et l'utilisation actuelles.
+
 > Plateforme d'observabilité pour ingénieurs IA construisant et déboguant des systèmes autonomes ou multi-agents. Le diagramme de séquence live est l'élément central du produit.
 
 ---

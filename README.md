@@ -4,150 +4,143 @@
 
 Watch signals move through your agents in real time: one vertical lifeline per participant (User, Orchestrator, LLM, each Tool, each Sub-agent), each event rendering as an animated arrow in a UML-inspired sequence diagram.
 
+![Run view](run-view.png)
+
+<img src="mobile.png" alt="Mobile layout" width="240">
+
 ## Stack
 
-- **Next.js 16** (App Router, TypeScript) — `output: standalone` for Docker
+- **FastAPI** backend, shipped in the `deepagents-trace` Python package (SQLAlchemy; SQLite by default, Postgres optional), with a plain-JSON `/ws` live stream
+- **Next.js 16** (TypeScript, static export) — a build tool only: the exported UI is bundled into the Python package and served by FastAPI, so no Node/Bun runtime is needed to run AgentTrace
 - **Tailwind CSS 4** + **shadcn/ui** (oscilloscope / phosphor aesthetic)
-- **Prisma** + SQLite (swap for Postgres in production)
-- **NextAuth.js v4** (email/password credentials)
-- **Socket.IO** mini-service (port 3003) for live event streaming + replay
 - **TanStack Query** + **Zustand** for server/client state
 - **Framer Motion** for the animated SVG diagram
 
-## Python backend + CLI (in progress)
-
-`python-server/` is a from-scratch FastAPI port of this API, published to
-PyPI as **`deepagents-trace`** (`agenttrace` was already taken by an
-unrelated project): `pip install 'deepagents-trace[server]' && agenttrace ui` starts
-it, zero Node/Bun required — see [python-server/README.md](python-server/README.md)
-(including the remaining PyPI publishing steps).
-It's Phase 1+3 of a larger migration (no bundled frontend yet — that's Phase
-2); the Next.js app in this README stays the full-featured path until then.
-
-For an MLflow-style local flow (no key, no server: `agenttrace.langchain.autolog()`
-writes to `./agenttrace.db`, `agenttrace ui` reads it) see the
-[quick start](python-server/README.md#quick-start-mlflow-style).
-
-## Quick start — without Docker
-
-No container required to run AgentTrace locally: it's a Bun/Next.js app plus one
-standalone Socket.IO process. Pick a database profile (see below), then:
+## Quick start
 
 ```bash
-bun install
-bun run db:push          # (or db:push:sqlite — see profiles below)
-bun run dev              # Next.js on :3000
-
-# in another terminal — the Socket.IO live-stream service
-cd mini-services/socket-service && bun run dev   # :3003
+pip install 'deepagents-trace[server]'
+agenttrace demo          # seed sample projects and runs into ./agenttrace.db
+agenttrace ui            # open http://127.0.0.1:3000
 ```
 
-Set `SOCKET_SERVICE_URL=http://localhost:3003` in `.env` so the Next.js server
-reaches the socket process directly (the Caddy gateway referenced elsewhere is
-only used in the hosted dev sandbox, it's not needed to run locally).
+`agenttrace demo [--database-url URL]` seeds three sample projects (Customer
+Support Agent, Research Assistant, Code Review Bot). `agenttrace ui [--host H]
+[--port P] [--auth none|password] [--database-url URL]` serves the dashboard on
+`http://127.0.0.1:3000` by default; auth is `none` on loopback (no login) and
+`password` on any other host. For the MLflow-style local flow
+(`agenttrace.langchain.autolog()` writing to `./agenttrace.db`) see the
+[python-server README](python-server/README.md#quick-start-mlflow-style).
 
-Open the app, click **"Explore the live demo"** to create a throwaway account preloaded with three sample projects (Customer Support Agent, Research Assistant, Code Review Bot), or sign up with email/password to get the same demo data.
+### Configuration
 
-### Database profiles (no Docker)
-
-The schema (`prisma/schema.prisma`) targets Postgres. Two ways to run it without
-Docker, plus a fully local SQLite alternative — pick one at setup:
-
-| Profile | Setup | `DATABASE_URL` |
+| Variable | Used by | Meaning |
 | --- | --- | --- |
-| **Postgres, hosted (Neon)** — recommended, zero local install | Create a free [Neon](https://neon.tech) project, copy the connection string | `postgresql://...neon.tech/agenttrace?sslmode=require` |
-| **Postgres, native local** | Install Postgres (Windows service or WSL), create a role/db `agenttrace` | `postgresql://agenttrace:agenttrace@localhost:5432/agenttrace` |
-| **SQLite, fully local** | `bun add better-sqlite3 @prisma/adapter-better-sqlite3` (needs Python 3 + build tools — see below), then `bun run db:generate:sqlite && bun run db:push:sqlite` and swap the Prisma client (see [`src/lib/db.sqlite.ts.example`](src/lib/db.sqlite.ts.example)) | `file:./dev.db` |
+| `DATABASE_URL` | server | Database to serve (default: local `./agenttrace.db`) |
+| `AGENTTRACE_SECRET` | server | Session-signing secret for password mode. If unset, a random per-process secret is used and sessions reset on restart |
+| `AGENTTRACE_AUTH` | server | `none` or `password` (same as `--auth`) |
+| `AGENTTRACE_ALLOWED_HOSTS` | server | Comma-separated extra hostnames accepted in `--auth none` mode (e.g. behind a reverse proxy) |
+| `AGENTTRACE_TRACKING_URI` | SDK | Where traces go (local DB, SQLAlchemy URL, or `http(s)://` server) |
+| `AGENTTRACE_PROJECT` | SDK | Default project name |
+| `AGENTTRACE_KEY` | SDK | `atr_` project key for a password-mode server |
 
-The first two profiles need **no code change** — only `DATABASE_URL` in `.env`
-differs. The SQLite profile uses a separate schema
-([`prisma/schema.sqlite.prisma`](prisma/schema.sqlite.prisma)) and driver
-adapter, so it requires swapping `src/lib/db.ts` for the provided
-`.ts.example` variant (instructions in that file) — this keeps the default
-Postgres build completely unaffected for everyone who doesn't opt into SQLite.
-
-`better-sqlite3` is **not** a `package.json` dependency (on purpose): it needs
-a native build (node-gyp + Python 3 + a C++ toolchain), and per Bun's own
-compatibility notes it "is not yet supported in Bun" — as a regular
-dependency it broke `bun install`/Docker builds for everyone, including
-people who only ever use the default Postgres profile. Install it yourself
-only if you want the SQLite profile.
+Package extras: `server`, `langchain`, `postgres`, `e2e`, `dev`.
 
 ## Docker
 
-Two images are built from the multi-stage `Dockerfile`:
-
-| Image              | Target      | Port | What it runs                              |
-| ------------------ | ----------- | ---- | ----------------------------------------- |
-| `agenttrace-web`   | `web`       | 3000 | Next.js standalone server + Prisma        |
-| `agenttrace-socket`| `socket`    | 3003 | Socket.IO live-stream + replay service    |
+A single image: a Bun stage builds the UI, then `python:3.12-slim` runs
+`agenttrace ui --host 0.0.0.0` as a non-root user (uid 10001, `WORKDIR /data`).
 
 ```bash
-# Build + run both services with docker-compose
-docker compose up --build
+# Postgres + agenttrace, password auth
+AGENTTRACE_SECRET=$(openssl rand -base64 32) docker compose up --build
 
-# Or build the images directly
-docker build --target web -t agenttrace-web .
-docker build --target socket -t agenttrace-socket .
+# Or build the image directly
+docker build -t agenttrace .
 ```
 
-`docker-compose.yml` wires the two together: the Next.js container reaches the
-socket container at `http://socket:3003` (set via `SOCKET_SERVICE_URL`). A
-named volume persists the SQLite database. Configure secrets via environment
-variables (see `.env.example`):
+`docker-compose.yml` runs Postgres alongside the `agenttrace` service, which
+connects with `DATABASE_URL=postgresql+psycopg://...`. Set `AGENTTRACE_SECRET`
+so sessions survive restarts.
 
-```env
-NEXTAUTH_SECRET=<openssl rand -base64 32>
-NEXTAUTH_URL=https://your-deployment.example
-DATABASE_URL=file:/app/data/agenttrace.db   # or postgresql://...
-SOCKET_SERVICE_URL=http://socket:3003
+## Development
+
+Backend:
+
+```bash
+pip install -e "python-server[dev]"      # or: uv pip install -e "python-server[dev]"
+agenttrace ui --auth none                # API + /ws on :3000
+pytest python-server/tests
 ```
 
-For production, swap SQLite for Postgres by setting `DATABASE_URL` to a
-`postgresql://...` connection string and updating `prisma/schema.prisma`'
-`datasource db` provider to `postgresql`.
+UI (hot reload):
+
+```bash
+bun install
+NEXT_PUBLIC_AGENTTRACE_WS_URL=ws://localhost:3000/ws bun run dev   # http://localhost:3001
+```
+
+REST calls from the dev server are proxied to `:3000` by Next rewrites
+(override with `AGENTTRACE_DEV_BACKEND`). `bun run build:ui` rebuilds the static
+export and refreshes `python-server/agenttrace/server/static/` (git-ignored);
+run it before testing the bundled UI from a source install. Also:
+`bun run lint`, `bun run typecheck`.
+
+End-to-end tests (Playwright, against the bundled UI):
+
+```bash
+pip install -e "python-server[dev,e2e]" && playwright install chromium
+bun run build:ui
+pytest python-server/tests_e2e
+```
 
 ## CI
 
 `.github/workflows/ci.yml` runs on every push and pull request:
 
-1. **lint** — `bun run lint` (ESLint)
-2. **typecheck** — `bunx tsc --noEmit`
-3. **build** — `bun run build` (validates the Next.js standalone output)
-4. **docker build** — builds both `web` and `socket` images, then smoke-tests
-   each (`curl` the web `/api/auth/providers` endpoint and the socket health
-   endpoint from inside containers).
+1. **ui** — lint, typecheck and build the static export, uploaded as an artifact
+2. **python** (needs ui) — unit tests, builds the wheel with the UI bundled and checks it
+3. **e2e** (needs ui) — Playwright tests against the bundled dashboard
+4. **docker** — builds the image and smoke-tests it
 
-Docker layer caching is enabled via `type=gha` (GitHub Actions cache).
+`publish-pypi.yml` builds the UI before the wheel and runs
+`scripts/check_wheel.py` to make sure the bundle ships.
 
 ## Instrumenting an agent
 
-The **Integration** page (in-app) generates copy-pasteable snippets with your
-project's API key pre-filled. Three formats are provided:
+The **Integration** page (in-app) generates copy-pasteable snippets. Three
+ways to emit events:
 
-### Python (raw HTTP)
-```python
-import requests
-URL = "https://your-deployment/api/events"
-KEY = "atr_your_project_key"
-headers = {"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"}
+### Python SDK
 
-run = requests.post(URL, json={"runId": None, "name": "my run"}, headers=headers).json()
-run_id = run["runId"]
-requests.post(URL, json={
-    "runId": run_id, "source": "Orchestrator", "target": "LLM",
-    "type": "llm_call", "label": "classify intent",
-    "payload": {"result": "refund_request"}, "durationMs": 480,
-}, headers=headers)
-requests.post(URL, json={"runId": run_id, "endRun": "completed"}, headers=headers)
+```bash
+pip install deepagents-trace
 ```
 
-### TypeScript
-Same flow with `fetch` — see the Integration tab in the app.
+```python
+import agenttrace
+
+agenttrace.set_project("support-bot")
+with agenttrace.start_run("triage"):
+    agenttrace.log_event(source="Orchestrator", target="LLM",
+                         type="llm_call", label="classify intent", duration_ms=480)
+
+@agenttrace.trace                      # tool_call -> tool_result | error
+def web_search(query: str) -> str: ...
+```
+
+Where traces go is controlled by `AGENTTRACE_TRACKING_URI` (unset: local
+`./agenttrace.db`; `http(s)://host:port`: a running `agenttrace ui`, with
+`AGENTTRACE_KEY` if it uses password auth). `AGENTTRACE_PROJECT` selects the
+project. See [python-server/README.md](python-server/README.md).
+
+### Raw HTTP / other languages
+See the [event ingestion API](#event-ingestion-api) below; the Integration page
+in the app generates snippets with your project's key pre-filled.
 
 ### DeepAgents (LangChain)
 
-The DeepAgents tab provides a drop-in `AgentMiddleware` (deepagents' current
+The DeepAgents snippet provides a drop-in `AgentMiddleware` (deepagents' current
 middleware system — `before_agent` / `wrap_model_call` / `wrap_tool_call` /
 `after_agent`) that instruments a `create_deep_agent` run. It's also published
 as part of `deepagents-trace` (`agenttrace.langchain`); the old
@@ -221,21 +214,22 @@ live, or replay it afterward at 0.5× / 1× / 2× / instant.
 ## Project structure
 
 ```
-src/
-  app/                    # Next.js App Router
-    api/                  # auth, projects, runs, events, keys, stats, seed
-    page.tsx              # routes by session status
+src/                      # Next.js UI source (static export; build tool only)
+  app/                    # App Router pages
   components/
     sequence-diagram/     # the live SVG diagram (centerpiece) + replay
     views/                # dashboard, projects, run, integration, settings
     layout/               # sidebar, footer
     auth/                 # auth screen
-  lib/                    # auth, db, api, store, seed, types, socket-client
-mini-services/
-  socket-service/         # Socket.IO service (port 3003)
-prisma/
-  schema.prisma           # User, Project, Run, Event, ApiKey
-Dockerfile                # multi-stage: web + socket targets
-docker-compose.yml        # both services + volume
-.github/workflows/ci.yml  # lint · typecheck · build · docker
+  lib/                    # api client, store, types, websocket client
+scripts/copy-ui.mjs       # copies the export into the Python package
+python-server/            # the `deepagents-trace` package (import `agenttrace`)
+  agenttrace/server/      # FastAPI app, routes, realtime /ws, bundled static/
+  agenttrace/tracking/    # SDK (set_project, start_run, trace, ...)
+  agenttrace/langchain/   # DeepAgents middleware + autolog
+  tests/  tests_e2e/      # pytest and Playwright suites
+integrations/             # deprecated agenttrace-langchain shim
+Dockerfile                # bun UI build + python:3.12-slim runtime
+docker-compose.yml        # Postgres + agenttrace
+.github/workflows/        # ci.yml, publish-pypi.yml
 ```

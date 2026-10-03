@@ -10,12 +10,21 @@ module, the CLI command, and the product itself are still called
 API (and a `/ws` live-stream) with **zero Node/Bun process**, `mlflow ui`-style.
 For local development against this checkout: `pip install -e "python-server[dev]"`.
 
-This is **Phase 1 + 3** of the Python migration plan: a FastAPI backend that
-is a 1:1 contract port of the Next.js API (`src/app/api/*` in the main repo),
-plus the CLI. **Phase 2 is not done yet** — there is no bundled frontend, so
-`/` currently serves a placeholder page confirming the API is up; use the API
-directly (`/api/*`) or the existing Next.js dashboard against this backend's
-data once Phase 2 lands.
+The package contains a FastAPI backend (`/api/*`, plus a `/ws` live stream),
+the CLI, the tracking SDK, and the **bundled dashboard**: the static Next.js
+export is served by the same process at `/`, so nothing else needs to run.
+
+```bash
+agenttrace demo      # seed sample projects and runs (optional: --database-url URL)
+agenttrace ui        # dashboard at http://127.0.0.1:3000
+```
+
+Where the bundled UI comes from: wheels published to PyPI (and built in CI)
+already contain it, because CI builds the UI before building the wheel. For a
+source install (`pip install -e python-server`), build it yourself with
+`bun install && bun run build:ui` from the repo root, which writes
+`python-server/agenttrace/server/static/` (git-ignored). Without it, `/` serves
+a placeholder page and the API still works.
 
 ## Quick start (MLflow-style)
 
@@ -77,7 +86,7 @@ agenttrace ui --port 8080 --host 0.0.0.0
 
 `agenttrace db init` creates the schema explicitly (also runs automatically
 on `agenttrace ui` startup) — schema-push style (`Base.metadata.create_all`),
-matching how this repo already runs `prisma db push` rather than migrations.
+rather than migrations.
 
 ## Upgrading from 0.1
 
@@ -92,10 +101,12 @@ matching how this repo already runs `prisma db push` rather than migrations.
 - If only `AGENTTRACE_KEY` is set (no `AGENTTRACE_TRACKING_URI`/`AGENTTRACE_URL`),
   traces still go to the pre-0.2 default server `http://localhost:3000`
   (a warning is logged once); set `AGENTTRACE_TRACKING_URI` to choose explicitly.
+- The Next.js backend (Prisma, NextAuth, Socket.IO) is gone. Data from an old
+  Prisma database is not migrated: start a fresh FastAPI database.
 - `AgentTraceRun.emit` now raises `ValueError` on an invalid event type
   instead of silently dropping the event.
 
-## What's ported
+## What's ported (from the pre-0.2 Next.js backend)
 
 | Next.js (`src/`) | Python (`agenttrace/server/`) |
 | --- | --- |
@@ -114,6 +125,14 @@ types.
 ```bash
 pip install -e "python-server[dev]"
 pytest python-server/tests
+```
+
+End-to-end (Playwright, needs the built UI):
+
+```bash
+pip install -e "python-server[dev,e2e]" && playwright install chromium
+bun run build:ui
+pytest python-server/tests_e2e
 ```
 
 ## Publishing to PyPI
@@ -144,13 +163,7 @@ from here:
    (https://test.pypi.org) with the same trusted-publisher flow before the
    real release.
 
-## Known gaps vs. the Next.js backend (tracked for later phases)
+## Known gaps
 
-- No frontend bundle yet (Phase 2).
 - Live updates are polled from the database every 0.5 s (so direct SQLite writes appear live).
-- No demo-account seeding on signup (the Next.js version seeds 3 sample
-  projects — intentionally skipped here to keep this phase scoped to the API
-  contract).
-- Realtime wire protocol is plain JSON over `/ws`, not the Socket.IO
-  protocol — the current React frontend's `socket.io-client` won't talk to
-  it until Phase 2 adapts it.
+- Realtime wire protocol is plain JSON over `/ws`, not the Socket.IO protocol.
