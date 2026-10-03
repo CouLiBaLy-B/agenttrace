@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react"
-import { io, Socket } from "socket.io-client"
+import { subscribeRun } from "@/lib/live"
+import { api } from "@/lib/api"
 import { TraceEvent } from "@/lib/types"
 import { extractParticipants } from "./participants"
 import { LifelineDiagram } from "./lifeline-diagram"
@@ -32,7 +33,6 @@ export function SequenceDiagram({ runId, initialEvents, initialStatus, onRunUpda
   const isDesktop = useMediaQuery("(min-width: 768px)")
 
   const scrollRef = useRef<HTMLDivElement>(null)
-  const socketRef = useRef<Socket | null>(null)
   const replayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const live = status === "running"
 
@@ -49,40 +49,40 @@ export function SequenceDiagram({ runId, initialEvents, initialStatus, onRunUpda
     [events, selectedId]
   )
 
-  // ---- socket: subscribe for live events ----
+  const onRunUpdateRef = useRef(onRunUpdate)
+  useEffect(() => {
+    onRunUpdateRef.current = onRunUpdate
+  }, [onRunUpdate])
+
+  // ---- live: subscribe for new events (and close the REST→WS gap) ----
   useEffect(() => {
     if (!live) return
-    const sock = io("/?XTransformPort=3003", {
-      transports: ["websocket", "polling"],
-      reconnection: true,
-      reconnectionAttempts: 10,
-      reconnectionDelay: 1000,
-    })
-    socketRef.current = sock
-    sock.on("connect", () => {
-      setConnected(true)
-      sock.emit("subscribe", { runId })
-    })
-    sock.on("disconnect", () => setConnected(false))
-    sock.on("event", (ev: TraceEvent) => {
+    const merge = (incoming: TraceEvent[]) =>
       setEvents((prev) => {
-        if (prev.some((p) => p.id === ev.id)) return prev
-        return [...prev, ev]
+        const seen = new Set(prev.map((e) => e.id))
+        const fresh = incoming.filter((e) => !seen.has(e.id))
+        if (!fresh.length) return prev
+        return [...prev, ...fresh].sort((a, b) => a.seq - b.seq)
       })
+    return subscribeRun(runId, {
+      onConnectionChange: setConnected,
+      // Events written between the page's REST load and the subscription
+      // are not streamed (the server cursor starts at subscribe time).
+      onSubscribed: () => {
+        api<{ run: { events: TraceEvent[] } }>(`/api/runs/${runId}`)
+          .then((data) => merge(data.run.events))
+          .catch(() => {})
+      },
+      onEvent: (event) => merge([event]),
+      onRunUpdate: (patch) => {
+        if (patch.status) {
+          setStatus(patch.status as typeof status)
+          onRunUpdateRef.current?.(patch)
+        }
+      },
+      onError: () => setConnected(false),
     })
-    sock.on("run:update", (payload: { runId: string; patch: any }) => {
-      if (payload.runId !== runId) return
-      if (payload.patch?.status) {
-        setStatus(payload.patch.status)
-        onRunUpdate?.(payload.patch)
-      }
-    })
-    return () => {
-      sock.emit("unsubscribe", { runId })
-      sock.disconnect()
-      socketRef.current = null
-    }
-  }, [runId, live, onRunUpdate])
+  }, [runId, live])
 
   // ---- auto-scroll to newest on live events ----
   useEffect(() => {
