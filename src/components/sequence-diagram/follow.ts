@@ -10,8 +10,10 @@ export const FOLLOW_SLACK_PX = 200
  * Whether the reader is at the end is measured on scroll, before new rows land,
  * so a batch taller than the slack doesn't stop following. If `follow` is on
  * when it mounts, the container opens at its end (before the first paint);
- * declare it before any layout effect that reads the opening scroll position. */
-export function useFollowEnd(ref: RefObject<HTMLElement | null>, follow: boolean, size: number) {
+ * declare it before any layout effect that reads the opening scroll position.
+ * A change of `revealKey` scrolls to the end and resumes following (replay: a
+ * seek brings the playhead's row, the last one drawn, into view). */
+export function useFollowEnd(ref: RefObject<HTMLElement | null>, follow: boolean, size: number, revealKey = 0) {
   const atEnd = useRef(true)
   const [openAtEnd] = useState(follow)
 
@@ -31,4 +33,13 @@ export function useFollowEnd(ref: RefObject<HTMLElement | null>, follow: boolean
     const el = ref.current
     if (el && follow && atEnd.current) el.scrollTop = el.scrollHeight
   }, [ref, follow, size])
+
+  const revealed = useRef(revealKey)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el || revealKey === revealed.current) return
+    revealed.current = revealKey
+    el.scrollTop = el.scrollHeight
+    atEnd.current = true
+  }, [ref, revealKey])
 }

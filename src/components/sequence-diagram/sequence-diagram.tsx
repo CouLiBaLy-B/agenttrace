@@ -10,11 +10,10 @@ import { ThemedDiagram } from "./themed-diagram"
 import { StackedTimeline } from "./stacked-timeline"
 import { EventDetailPanel } from "./event-detail-panel"
 import { FilterBar, type LiveState } from "./filter-bar"
-import { ReplayControls, ReplaySpeed } from "./replay-controls"
+import { TransportBar, type ReplaySpeed } from "./transport-bar"
+import { scrubberPositions } from "./scrubber"
 import { useMediaQuery } from "@/lib/hooks"
 import { motion, AnimatePresence } from "framer-motion"
-import { History } from "lucide-react"
-import { Button } from "@/components/ui/button"
 
 // Hidden event types last for the browser session (across runs), not longer.
 const HIDDEN_TYPES_KEY = "agenttrace-hidden-types"
@@ -79,6 +78,8 @@ export function SequenceDiagram({
   const [isPlaying, setIsPlaying] = useState(false)
   const [replayIdx, setReplayIdx] = useState(initialEvents.length - 1)
   const [replaySpeed, setReplaySpeed] = useState<ReplaySpeed>(1)
+  // Bumped by each seek: the canvas scrolls the playhead's row into view.
+  const [seekCount, setSeekCount] = useState(0)
   const [connected, setConnected] = useState(false)
   const [everConnected, setEverConnected] = useState(false)
   const [hidden, setHidden] = useState<Set<EventType>>(readHiddenTypes)
@@ -123,10 +124,9 @@ export function SequenceDiagram({
 
   const participants = useMemo(() => extractParticipants(events), [events])
 
-  const selectedEvent = useMemo(
-    () => events.find((e) => e.id === selectedId) || null,
-    [events, selectedId]
-  )
+  const selectedIndex = useMemo(() => events.findIndex((e) => e.id === selectedId), [events, selectedId])
+  const selectedEvent = selectedIndex >= 0 ? events[selectedIndex] : null
+  const positions = useMemo(() => scrubberPositions(events), [events])
 
   const onRunUpdateRef = useRef(onRunUpdate)
   const onStatsRef = useRef(onStats)
@@ -244,27 +244,25 @@ export function SequenceDiagram({
     }
   }, [isReplay, isPlaying, replayIdx, replaySpeed, events])
 
-  const enterReplay = useCallback(() => {
-    setIsReplay(true)
-    setIsPlaying(false)
-    setReplayIdx(events.length - 1)
-  }, [events.length])
-
   const exitReplay = useCallback(() => {
     setIsReplay(false)
     setIsPlaying(false)
   }, [])
 
+  // Play enters replay (from the start when the playhead is at the end).
   const togglePlay = useCallback(() => {
-    if (!isReplay) return
+    setIsReplay(true)
     // instant speed → jump straight to the end
     if (replaySpeed === 0) {
       setReplayIdx(events.length - 1)
       setIsPlaying(false)
       return
     }
-    if (replayIdx >= events.length - 1) setReplayIdx(0)
-    setIsPlaying((p) => !p)
+    const atEnd = !isReplay || replayIdx >= events.length - 1
+    if (atEnd) {
+      setReplayIdx(0)
+      setIsPlaying(true)
+    } else setIsPlaying((p) => !p)
   }, [isReplay, replayIdx, replaySpeed, events.length])
 
   const handleSpeed = useCallback(
@@ -278,15 +276,18 @@ export function SequenceDiagram({
     [events.length]
   )
 
+  // Seeking (dragging the playhead, its keys) enters replay and pauses.
   const seek = useCallback(
     (idx: number) => {
+      setIsReplay(true)
+      setSeekCount((n) => n + 1)
       setReplayIdx(Math.max(0, Math.min(idx, events.length - 1)))
       setIsPlaying(false)
     },
     [events.length]
   )
 
-  const progress = events.length > 1 ? replayIdx / (events.length - 1) : 1
+  const clearSelection = useCallback(() => setSelectedId(null), [])
   const liveState: LiveState | null = !live ? null : connected ? "listening" : everConnected ? "reconnecting" : "connecting"
 
   return (
@@ -298,34 +299,10 @@ export function SequenceDiagram({
         onQuery={setQuery}
         matchCount={searching ? matches.size : null}
         live={liveState}
-      >
-        {/* Until the transport bar replaces it. */}
-        {!isReplay && (
-          <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={enterReplay} disabled={events.length < 2}>
-            <History className="h-3.5 w-3.5" />
-            Replay
-          </Button>
-        )}
-      </FilterBar>
-      {isReplay && (
-        <div className="flex items-center px-3 py-2 border-b border-[var(--line)]">
-          <ReplayControls
-            isReplay={isReplay}
-            isPlaying={isPlaying}
-            progress={progress}
-            currentIdx={replayIdx}
-            total={events.length}
-            speed={replaySpeed}
-            onTogglePlay={togglePlay}
-            onSeek={seek}
-            onSpeed={handleSpeed}
-            onExit={exitReplay}
-          />
-        </div>
-      )}
+      />
 
-      {/* canvas + detail panel */}
-      <div className="flex flex-1 min-h-0">
+      {/* canvas + inspector (the md–xl overlay inspector sits over the canvas's right edge) */}
+      <div className="relative flex flex-1 min-h-0">
         <div className="flex-1 min-w-0 relative">
           {events.length === 0 ? (
             <ListeningState runId={runId} live={live} />
@@ -338,7 +315,8 @@ export function SequenceDiagram({
               onKeySelect={setSelectedId}
               matches={searching ? matches : null}
               live={live && !isReplay}
-              follow={live && !isReplay}
+              follow={live || isReplay}
+              revealKey={seekCount}
               run={{
                 name: runName,
                 project: projectName,
@@ -359,28 +337,36 @@ export function SequenceDiagram({
               participants={participants}
               selectedId={selectedId}
               onSelect={setSelectedId}
-              follow={live && !isReplay}
+              follow={live || isReplay}
+              revealKey={seekCount}
             />
           )}
         </div>
 
-        {/* desktop side panel */}
+        {/* From xl a docked panel; md–xl a non-modal overlay below the run header and
+            filter row, so the keyboard keeps moving the selection; phones a modal sheet. */}
         <EventDetailPanel
           event={selectedEvent}
-          participants={participants}
-          onClose={() => setSelectedId(null)}
-          variant="panel"
+          index={selectedIndex}
+          total={events.length}
+          onClose={clearSelection}
+          variant={isWide ? "panel" : isDesktop ? "overlay" : "sheet"}
         />
       </div>
 
-      {/* sheet detail below xl: non-modal beside the diagram, so the keyboard keeps moving the selection */}
-      {!isWide && (
-        <EventDetailPanel
-          event={selectedEvent}
-          participants={participants}
-          onClose={() => setSelectedId(null)}
-          variant="sheet"
-          modal={!isDesktop}
+      {events.length >= 2 && (
+        <TransportBar
+          events={events}
+          positions={positions}
+          currentIndex={isReplay ? replayIdx : events.length - 1}
+          isReplay={isReplay}
+          isPlaying={isPlaying}
+          speed={replaySpeed}
+          live={live}
+          onTogglePlay={togglePlay}
+          onSeek={seek}
+          onSpeed={handleSpeed}
+          onBackToLive={exitReplay}
         />
       )}
     </div>

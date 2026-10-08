@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { clockTime } from "../format"
+import { clockTime, clockTimeMs } from "../format"
 
 describe("clockTime", () => {
   it("prints local wall-clock time as HH:MM:SS.cc", () => {
@@ -15,5 +15,15 @@ describe("clockTime", () => {
   })
   it("is empty for an unreadable timestamp", () => {
     expect(clockTime("not a date")).toBe("")
+  })
+})
+
+describe("clockTimeMs", () => {
+  it("HH:MM:SS.mmm in local time", () => {
+    expect(clockTimeMs(new Date(2026, 9, 3, 9, 5, 7, 8).toISOString())).toBe("09:05:07.008")
+    expect(clockTimeMs(new Date(2026, 9, 3, 23, 59, 59, 999).toISOString())).toBe("23:59:59.999")
+  })
+  it("empty for an unreadable timestamp", () => {
+    expect(clockTimeMs("nope")).toBe("")
   })
 })

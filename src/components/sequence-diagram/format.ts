@@ -8,3 +8,10 @@ export function clockTime(iso: string): string {
   if (Number.isNaN(d.getTime())) return ""
   return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(Math.floor(d.getMilliseconds() / 10))}`
 }
+
+/** An event's local wall-clock time with milliseconds, "HH:MM:SS.mmm" (the inspector). */
+export function clockTimeMs(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ""
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${String(d.getMilliseconds()).padStart(3, "0")}`
+}

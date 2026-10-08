@@ -1,12 +1,13 @@
 "use client"
 
-import { useRef } from "react"
-import { motion } from "framer-motion"
-import { TraceEvent, EVENT_COLORS } from "@/lib/types"
-import { Participant } from "@/lib/types"
-import { PARTICIPANT_ICON, KIND_COLOR } from "./participants"
-import { ArrowRight, AlertTriangle } from "lucide-react"
+import { memo, useRef } from "react"
+import { AlertTriangle, ArrowRight } from "lucide-react"
+import { eventPaint, detectParticipantKind, type Participant, type TraceEvent } from "@/lib/types"
+import { formatDuration } from "@/lib/api"
 import { cn } from "@/lib/utils"
+import { PARTICIPANT_ICON, KIND_COLOR } from "./participants"
+import { EventBadge } from "./event-badge"
+import { clockTime } from "./format"
 import { useFollowEnd } from "./follow"
 
 interface Props {
@@ -16,81 +17,78 @@ interface Props {
   onSelect: (id: string) => void
   /** Open at the end and keep new events in view while the reader stays there (a live run). */
   follow?: boolean
+  /** Changing it scrolls to the end and resumes following (a replay seek reveals the playhead's card). */
+  revealKey?: number
 }
 
-export function StackedTimeline({ events, participants: _participants, selectedId, onSelect, follow = false }: Props) {
+/** Phones: the run as a vertical list of event cards. */
+export function StackedTimeline({ events, selectedId, onSelect, follow = false, revealKey = 0 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
-  useFollowEnd(scrollRef, follow, events.length)
+  useFollowEnd(scrollRef, follow, events.length, revealKey)
   return (
-    <div ref={scrollRef} className="at-graticule p-3 space-y-2 at-scroll overflow-y-auto h-full">
-      {events.map((ev, i) => {
-        const meta = EVENT_COLORS[ev.type as keyof typeof EVENT_COLORS] || { color: "var(--ink-3)", text: "var(--ink-2)", label: ev.type }
-        const isError = ev.status === "error"
-        const color = isError ? EVENT_COLORS.error.color : meta.color
-        const textColor = isError ? EVENT_COLORS.error.text : meta.text
-        const selected = ev.id === selectedId
-        const SrcIcon = PARTICIPANT_ICON[kindOf(ev.source)]
-        const TgtIcon = PARTICIPANT_ICON[kindOf(ev.target)]
-        return (
-          <motion.button
-            key={ev.id}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: Math.min(i * 0.02, 0.3) }}
-            onClick={() => onSelect(ev.id)}
-            className={cn(
-              "w-full text-left rounded-md border bg-card/70 px-3 py-2.5 transition-colors",
-              selected ? "border-primary/60 bg-primary/5" : "border-border hover:border-primary/30"
-            )}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="font-mono text-[10px] text-muted-foreground tabular-nums shrink-0">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span
-                  className="rounded px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider shrink-0"
-                  style={{ background: `color-mix(in oklab, ${color} 13%, transparent)`, color: textColor }}
-                >
-                  {ev.type.replace("_", " ")}
-                </span>
-              </div>
-              {ev.durationMs != null && (
-                <span className="font-mono text-[10px] text-muted-foreground shrink-0">{ev.durationMs}ms</span>
-              )}
-            </div>
-            <div className="mt-1.5 flex items-center gap-2 text-sm">
-              <span className="flex items-center gap-1 min-w-0">
-                <SrcIcon className="h-3.5 w-3.5 shrink-0" style={{ color: KIND_COLOR[kindOf(ev.source)] }} />
-                <span className="truncate font-mono text-xs">{ev.source}</span>
-              </span>
-              <ArrowRight className="h-3.5 w-3.5 shrink-0" style={{ color }} />
-              <span className="flex items-center gap-1 min-w-0">
-                <TgtIcon className="h-3.5 w-3.5 shrink-0" style={{ color: KIND_COLOR[kindOf(ev.target)] }} />
-                <span className="truncate font-mono text-xs">{ev.target}</span>
-              </span>
-            </div>
-            {ev.label && (
-              <p className="mt-1 text-xs text-muted-foreground truncate">{ev.label}</p>
-            )}
-            {ev.status === "error" && (
-              <p className="mt-1 flex items-center gap-1 text-[11px] text-red-400">
-                <AlertTriangle className="h-3 w-3" />
-                {typeof ev.payload?.error === "string" ? ev.payload.error : "error"}
-              </p>
-            )}
-          </motion.button>
-        )
-      })}
+    <div ref={scrollRef} className="at-canvas at-scroll h-full space-y-2 overflow-y-auto p-3">
+      {events.map((ev) => (
+        <EventCard key={ev.id} event={ev} selected={ev.id === selectedId} onSelect={onSelect} />
+      ))}
     </div>
   )
 }
 
-function kindOf(name: string): Participant["kind"] {
-  const n = name.toLowerCase()
-  if (n === "user" || n.includes("user")) return "user"
-  if (n.includes("orchestrator") || n.includes("agent") || n.includes("main")) return "orchestrator"
-  if (n === "llm" || n.includes("llm") || n.includes("gpt") || n.includes("claude") || n.includes("model")) return "llm"
-  if (n.includes("sub-agent") || n.includes("subagent") || n.includes("research") || n.includes("assistant")) return "subagent"
-  return "tool"
-}
+const EventCard = memo(function EventCard({
+  event: ev,
+  selected,
+  onSelect,
+}: {
+  event: TraceEvent
+  selected: boolean
+  onSelect: (id: string) => void
+}) {
+  const paint = eventPaint(ev.type, ev.status === "error")
+  const srcKind = detectParticipantKind(ev.source)
+  const tgtKind = detectParticipantKind(ev.target)
+  const SrcIcon = PARTICIPANT_ICON[srcKind]
+  const TgtIcon = PARTICIPANT_ICON[tgtKind]
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(ev.id)}
+      aria-pressed={selected}
+      className={cn(
+        // A new card slides in (CSS, so long runs stay cheap); a fade with reduced motion.
+        "at-card-in relative block w-full overflow-hidden rounded-[var(--radius-panel)] border py-2.5 pr-3 pl-4 text-left transition-colors",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]",
+        selected
+          ? "border-[var(--line-strong)] bg-[var(--surface-2)]"
+          : "border-[var(--line)] bg-[var(--surface-1)] hover:border-[var(--line-strong)]"
+      )}
+      style={{ boxShadow: selected ? `inset 0 0 0 1px ${paint.color}, var(--shadow-raised)` : "var(--shadow-raised)" }}
+    >
+      {/* event colour stripe */}
+      <span aria-hidden className="absolute inset-y-0 left-0 w-[3px]" style={{ background: paint.color }} />
+      <span className="flex items-center justify-between gap-2">
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="shrink-0 font-mono text-[11px] text-[var(--ink-2)] tabular-nums">#{ev.seq}</span>
+          <EventBadge type={ev.type} status={ev.status} />
+        </span>
+        <span className="shrink-0 font-mono text-[11px] text-[var(--ink-2)] tabular-nums">
+          {clockTime(ev.timestamp)}
+          {ev.durationMs != null && <> · {formatDuration(ev.durationMs)}</>}
+        </span>
+      </span>
+      <span className="mt-1.5 flex min-w-0 items-center gap-1.5 font-mono text-[12px] text-[var(--ink)]">
+        <SrcIcon aria-hidden className="size-3.5 shrink-0" style={{ color: KIND_COLOR[srcKind] }} />
+        <span className="truncate">{ev.source}</span>
+        <ArrowRight aria-label="to" className="size-3.5 shrink-0" style={{ color: paint.color }} />
+        <TgtIcon aria-hidden className="size-3.5 shrink-0" style={{ color: KIND_COLOR[tgtKind] }} />
+        <span className="truncate">{ev.target}</span>
+      </span>
+      {ev.label && <span className="mt-1 block truncate text-[12px] text-[var(--ink-2)]">{ev.label}</span>}
+      {ev.status === "error" && (
+        <span className="mt-1 flex items-center gap-1 text-[12px] text-[var(--danger)]">
+          <AlertTriangle aria-hidden className="size-3 shrink-0" />
+          <span className="truncate">{typeof ev.payload?.error === "string" ? ev.payload.error : "Error"}</span>
+        </span>
+      )}
+    </button>
+  )
+})

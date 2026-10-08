@@ -136,6 +136,21 @@
   .at-pulse-ring { animation: none; opacity: 0; }
 }
 
+/* Mobile timeline: a card arrives with a short vertical slide and fade (a fade
+   alone with reduced motion). */
+@keyframes at-card-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes at-card-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.at-card-in { animation: at-card-in 160ms ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .at-card-in { animation: at-card-fade 120ms ease-out both; }
+}
+
 /* Radar sweep */
 @keyframes at-radar-sweep {
   0% { transform: rotate(0deg); }

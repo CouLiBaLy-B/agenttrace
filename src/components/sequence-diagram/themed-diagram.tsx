@@ -44,6 +44,8 @@ export interface ThemedDiagramProps {
   onKeySelect?: (id: string | null) => void
   /** Open at the end and keep new events in view while the reader stays there (a live run). */
   follow?: boolean
+  /** Changing it scrolls to the end and resumes following (a replay seek reveals the playhead's row). */
+  revealKey?: number
   /** The unfiltered events `events` were filtered from. Activation bars pair calls and
    * results on it (a hidden result still ends its tool's bar), and events hidden as they
    * come in count as seen (showing them later doesn't replay their arrival). */
@@ -78,6 +80,7 @@ export function ThemedDiagram({
   matches = null,
   onKeySelect,
   follow = false,
+  revealKey = 0,
   unfilteredEvents,
 }: ThemedDiagramProps) {
   const resolved = useTheme((s) => s.resolved)
@@ -99,7 +102,7 @@ export function ThemedDiagram({
   const scrollRef = useRef<HTMLDivElement>(null)
   // First: a followed run opens at its end before the viewport is first read,
   // so the opening cascade plays on the rows actually shown.
-  useFollowEnd(scrollRef, follow, height)
+  useFollowEnd(scrollRef, follow, height, revealKey)
   const [view, setView] = useState<Viewport | null>(null)
   useLayoutEffect(() => {
     const el = scrollRef.current
