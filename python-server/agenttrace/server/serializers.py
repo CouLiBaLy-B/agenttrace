@@ -6,14 +6,20 @@ each route's shape is small and route-specific (mirrors how the original
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from . import models
 
 
 def _iso(dt: Optional[datetime]) -> Optional[str]:
-    return dt.isoformat() if dt else None
+    """SQLite hands back naive datetimes that are UTC: always emit an explicit
+    offset so browsers don't read them as local time."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.isoformat()
 
 
 def user_out(user: models.User) -> dict[str, Any]:

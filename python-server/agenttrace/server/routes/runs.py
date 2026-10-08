@@ -4,15 +4,17 @@ and src/app/api/runs/[id]/events/route.ts."""
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from .. import models
 from ..db import get_db
 from ..deps import require_user
-from ..serializers import event_out, run_detail_out, run_out
+from ..serializers import _iso, event_out, run_detail_out, run_out
 
 project_runs_router = APIRouter(prefix="/api/projects/{project_id}/runs", tags=["runs"])
 runs_router = APIRouter(prefix="/api/runs", tags=["runs"])
@@ -66,6 +68,47 @@ def create_run(
     db.commit()
     db.refresh(run)
     return {"run": run_out(run, event_count=0)}
+
+
+SHAPE_EVENTS = 12
+
+
+def _shape(events: list[models.Event]) -> dict:
+    participants: list[str] = []
+    for ev in events:
+        for name in (ev.source, ev.target):
+            if name not in participants:
+                participants.append(name)
+    index = {name: i for i, name in enumerate(participants)}
+    return {
+        "participants": participants,
+        "events": [{"s": index[e.source], "t": index[e.target], "type": e.type, "status": e.status} for e in events],
+    }
+
+
+@runs_router.get("/recent")
+def recent_runs(
+    limit: int = Query(12, ge=1, le=50),
+    projectId: Optional[str] = None,
+    user: models.User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    q = db.query(models.Run).join(models.Project).filter(models.Project.user_id == user.id)
+    if projectId:
+        q = q.filter(models.Run.project_id == projectId)
+    runs = q.order_by(models.Run.started_at.desc()).limit(limit).all()
+    out = []
+    for r in runs:
+        first = db.query(models.Event).filter(models.Event.run_id == r.id).order_by(models.Event.seq).limit(SHAPE_EVENTS).all()
+        count = db.query(func.count(models.Event.id)).filter(models.Event.run_id == r.id).scalar()
+        duration = int((r.ended_at - r.started_at).total_seconds() * 1000) if r.ended_at else None
+        out.append({
+            "id": r.id, "name": r.name, "status": r.status,
+            "startedAt": _iso(r.started_at), "endedAt": _iso(r.ended_at), "durationMs": duration,
+            "eventCount": count, "project": {"id": r.project.id, "name": r.project.name},
+            "shape": _shape(first),
+        })
+    return {"runs": out}
 
 
 @runs_router.get("/{run_id}")

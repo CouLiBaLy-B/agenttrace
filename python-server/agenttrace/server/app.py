@@ -24,7 +24,7 @@ from .deps import auth_mode
 from .local_guard import LocalGuardMiddleware
 from .realtime import manager
 from .security import SESSION_COOKIE_NAME, read_session_token
-from .routes import auth, events, keys, projects, runs, seed, stats
+from .routes import auth, events, keys, projects, runs, seed, stats, timeline
 
 DEFAULT_STATIC_DIR = Path(__file__).parent / "static"
 
@@ -102,6 +102,7 @@ def create_app() -> FastAPI:
     app.include_router(keys.router)
     app.include_router(stats.router)
     app.include_router(seed.router)
+    app.include_router(timeline.router)
 
     @app.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket):
