@@ -1,9 +1,10 @@
 "use client"
 
-import { useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react"
+import { useMemo } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { api, formatDuration, formatRelative } from "@/lib/api"
+import { useElementWidth } from "@/lib/hooks"
 import { useNav } from "@/lib/store"
 import { useTheme } from "@/lib/theme"
 import { eventPaint, RUN_STATUS, type RecentRun } from "@/lib/types"
@@ -14,23 +15,10 @@ import { LiveMiniDiagram, MiniDiagram, useLiveRunEvents } from "@/components/min
 
 const TILE_DIAGRAM_H = 88
 
-/** Width of an element, kept current as it resizes (0 until measured). */
-function useWidth(ref: RefObject<HTMLElement | null>): number {
-  const [width, setWidth] = useState(0)
-  useLayoutEffect(() => {
-    const el = ref.current
-    if (!el) return
-    setWidth(Math.floor(el.clientWidth))
-    const ro = new ResizeObserver(([entry]) => setWidth(Math.floor(entry.contentRect.width)))
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [ref])
-  return width
-}
 
 /** Tile chrome: a button with the theme's hover (Studio raises, the dark themes
  * strengthen the border) and the focus ring. */
-function useTileClass() {
+export function useTileClass() {
   const studio = useTheme((s) => s.resolved) === "studio"
   return cn(
     "group block w-full min-w-0 overflow-hidden text-left rounded-[var(--radius-panel)] border border-[var(--line)] bg-[var(--surface-1)]",
@@ -62,8 +50,7 @@ function tileLabel(run: RecentRun): string {
 }
 
 function RunTile({ run, onOpen }: { run: RecentRun; onOpen: () => void }) {
-  const well = useRef<HTMLSpanElement>(null)
-  const width = useWidth(well)
+  const [well, width] = useElementWidth<HTMLSpanElement>()
   return (
     <button type="button" onClick={onOpen} aria-label={tileLabel(run)} className={useTileClass()}>
       <span ref={well} className="at-canvas block border-b border-[var(--line)]" style={{ height: TILE_DIAGRAM_H }}>
@@ -97,8 +84,7 @@ const LIVE_RECENT = 4
 /** The first running run, wide, drawing its events as they arrive; beside it
  * the run's participants and its last few events. */
 function LiveTile({ run, onOpen }: { run: RecentRun; onOpen: () => void }) {
-  const well = useRef<HTMLSpanElement>(null)
-  const width = useWidth(well)
+  const [well, width] = useElementWidth<HTMLSpanElement>()
   const events = useLiveRunEvents(run.id, false) // the live diagram below keeps this query current
   const count = Math.max(run.eventCount, events?.length ?? 0)
   const height = Math.round(width / 2)
@@ -187,10 +173,41 @@ export function EmptyFeed() {
   )
 }
 
+/** No runs in one project: how to get its first run. */
+function EmptyProjectFeed({ projectId, onStartRun }: { projectId: string; onStartRun?: () => void }) {
+  const { go } = useNav()
+  return (
+    <div className="rounded-[var(--radius-panel)] border border-dashed border-[var(--line-strong)] px-6 py-10 text-center">
+      <p className="mx-auto max-w-md text-sm text-[var(--ink-2)]">
+        No runs in this project yet. Start a run, or send events with this project's API key.
+      </p>
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+        {onStartRun && (
+          <Button size="sm" onClick={onStartRun}>
+            Start a run
+          </Button>
+        )}
+        <Button size="sm" variant="outline" onClick={() => go("integration", { projectId })}>
+          Manage API keys
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 const GRID = "grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
 
 /** The most recent runs as mini sequence diagrams, the first running one live. */
-export function RunFeed({ projectId, limit = 12 }: { projectId?: string; limit?: number }) {
+export function RunFeed({
+  projectId,
+  limit = 12,
+  onStartRun,
+}: {
+  projectId?: string
+  limit?: number
+  /** With `projectId`: the empty state's "Start a run" action. */
+  onStartRun?: () => void
+}) {
   const { go } = useNav()
   const query = new URLSearchParams({ limit: String(limit) })
   if (projectId) query.set("projectId", projectId)
@@ -231,7 +248,7 @@ export function RunFeed({ projectId, limit = 12 }: { projectId?: string; limit?:
           </Button>
         </div>
       ) : runs.length === 0 ? (
-        <EmptyFeed />
+        projectId ? <EmptyProjectFeed projectId={projectId} onStartRun={onStartRun} /> : <EmptyFeed />
       ) : (
         <>
           {live && <LiveTile key={live.id} run={live} onOpen={() => open(live)} />}

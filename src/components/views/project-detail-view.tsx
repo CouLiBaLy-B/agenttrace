@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { api } from "@/lib/api"
+import { api, formatDuration, formatRelative } from "@/lib/api"
 import { useNav } from "@/lib/store"
-import type { RecentRun } from "@/lib/types"
+import { RUN_STATUS, type RecentRun, type RunStatus } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,7 +20,7 @@ import {
 import { Chronogram } from "@/components/dashboard/chronogram"
 import { RunFeed } from "@/components/dashboard/run-feed"
 import { toast } from "sonner"
-import { ArrowLeft, Plus } from "lucide-react"
+import { ArrowLeft, ChevronRight, Plus, Search } from "lucide-react"
 
 interface Run {
   id: string
@@ -41,9 +41,10 @@ interface ProjectDetail {
 }
 
 const WINDOWS = [
-  { hours: 24, label: "24 h" },
-  { hours: 168, label: "7 d" },
+  { hours: 24, label: "24 h", name: "Last 24 hours" },
+  { hours: 168, label: "7 d", name: "Last 7 days" },
 ] as const
+const PAGE = 25
 
 const POLL_MS = 5000
 const FEED_LIMIT = 24
@@ -189,7 +190,8 @@ function ProjectDetailBody({ projectId }: { projectId: string }) {
             hours={hours}
             controls={<WindowToggle hours={hours} onChange={setHours} />}
           />
-          <RunFeed projectId={projectId} limit={FEED_LIMIT} />
+          <RunFeed projectId={projectId} limit={FEED_LIMIT} onStartRun={() => setCreateOpen(true)} />
+          {project && project.runs.length > 0 && <AllRuns projectId={projectId} runs={project.runs} />}
         </>
       )}
 
@@ -243,6 +245,7 @@ function WindowToggle({ hours, onChange }: { hours: number; onChange: (hours: nu
             key={w.hours}
             type="button"
             aria-pressed={on}
+            aria-label={w.name}
             onClick={() => onChange(w.hours)}
             className={cn(
               "px-2.5 py-1 font-mono text-[12px] tabular-nums transition-colors duration-150 motion-reduce:transition-none",
@@ -256,5 +259,104 @@ function WindowToggle({ hours, onChange }: { hours: number; onChange: (hours: nu
         )
       })}
     </div>
+  )
+}
+
+function runDuration(r: Run): string {
+  if (!r.endedAt) return r.status === "running" ? "running" : "—"
+  return formatDuration(new Date(r.endedAt).getTime() - new Date(r.startedAt).getTime())
+}
+
+/** Every run of the project, newest first, behind a disclosure: the feed and
+ * the chronogram only reach the latest 24 runs and the last 7 days. */
+function AllRuns({ projectId, runs }: { projectId: string; runs: Run[] }) {
+  const { go } = useNav()
+  const [open, setOpen] = useState(false)
+  const [filter, setFilter] = useState("")
+  const [shown, setShown] = useState(PAGE)
+  const sorted = useMemo(() => [...runs].sort((a, b) => b.startedAt.localeCompare(a.startedAt)), [runs])
+  const needle = filter.trim().toLowerCase()
+  const matching = needle ? sorted.filter((r) => r.name.toLowerCase().includes(needle)) : sorted
+  const visible = matching.slice(0, shown)
+  const panelId = "all-runs-panel"
+
+  return (
+    <section aria-labelledby="all-runs-title" className="space-y-3">
+      <h2 id="all-runs-title" className="text-base font-semibold text-[var(--ink)]">
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => setOpen((o) => !o)}
+          className="inline-flex items-center gap-1.5 rounded-[var(--radius-control)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+        >
+          <ChevronRight
+            aria-hidden="true"
+            className={cn("h-4 w-4 text-[var(--ink-2)] transition-transform duration-150 motion-reduce:transition-none", open && "rotate-90")}
+          />
+          All runs
+          <span className="font-mono text-[12px] font-normal tabular-nums text-[var(--ink-2)]">{runs.length}</span>
+        </button>
+      </h2>
+      {open && (
+        <div id={panelId} className="space-y-3">
+          <div className="relative max-w-xs">
+            <Search aria-hidden="true" className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ink-2)]" />
+            <Input
+              placeholder="Filter runs by name"
+              aria-label="Filter runs by name"
+              value={filter}
+              onChange={(e) => {
+                setFilter(e.target.value)
+                setShown(PAGE)
+              }}
+              className="h-9 pl-9"
+            />
+          </div>
+          {matching.length === 0 ? (
+            <p className="text-[13px] text-[var(--ink-2)]">No runs match "{filter.trim()}".</p>
+          ) : (
+            <ul className="divide-y divide-[var(--line)] overflow-hidden rounded-[var(--radius-panel)] border border-[var(--line)] bg-[var(--surface-1)]">
+              {visible.map((r) => {
+                const status = RUN_STATUS[r.status as RunStatus] ?? RUN_STATUS.completed
+                const events = r._count?.events ?? 0
+                return (
+                  <li key={r.id}>
+                    <button
+                      type="button"
+                      onClick={() => go("run", { runId: r.id, projectId })}
+                      className="flex w-full min-w-0 items-center gap-3 px-3 py-2 text-left text-[13px] hover:bg-[var(--surface-2)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+                    >
+                      <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: status.color }} />
+                      <span className="sr-only">{status.label}</span>
+                      <span className="min-w-0 flex-1 truncate text-[var(--ink)]" title={r.name}>
+                        {r.name}
+                      </span>
+                      <span className="hidden shrink-0 font-mono text-[12px] tabular-nums text-[var(--ink-2)] sm:inline">
+                        {events === 1 ? "1 event" : `${events} events`}
+                      </span>
+                      <span className="w-14 shrink-0 text-right font-mono text-[12px] tabular-nums text-[var(--ink-2)]">
+                        {runDuration(r)}
+                      </span>
+                      <span className="w-16 shrink-0 text-right text-[12px] text-[var(--ink-2)]">{formatRelative(r.startedAt)}</span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+          {matching.length > shown && (
+            <div className="flex items-center gap-3">
+              <Button size="sm" variant="outline" onClick={() => setShown((n) => n + PAGE)}>
+                Load more
+              </Button>
+              <span className="text-[12px] text-[var(--ink-2)]">
+                Showing {visible.length} of {matching.length}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
   )
 }

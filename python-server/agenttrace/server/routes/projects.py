@@ -86,7 +86,18 @@ def _get_owned_project(db: Session, project_id: str, user_id: str) -> models.Pro
 @router.get("/{project_id}")
 def get_project(project_id: str, user: models.User = Depends(require_user), db: Session = Depends(get_db)):
     project = _get_owned_project(db, project_id, user.id)
-    return {"project": project_detail_out(project)}
+    return {"project": project_detail_out(project, _event_counts(db, [r.id for r in project.runs]))}
+
+
+def _event_counts(db: Session, run_ids: list[str]) -> dict[str, int]:
+    if not run_ids:
+        return {}
+    return dict(
+        db.query(models.Event.run_id, func.count(models.Event.id))
+        .filter(models.Event.run_id.in_(run_ids))
+        .group_by(models.Event.run_id)
+        .all()
+    )
 
 
 @router.patch("/{project_id}")

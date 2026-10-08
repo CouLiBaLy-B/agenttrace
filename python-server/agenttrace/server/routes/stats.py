@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from .. import models
@@ -38,7 +39,20 @@ def stats(user: models.User = Depends(require_user), db: Session = Depends(get_d
         else 0
     )
 
-    total_events = sum(len(r.events) for r in runs)
+    run_ids = [r.id for r in runs]
+    total_events = (
+        (db.query(func.count(models.Event.id)).filter(models.Event.run_id.in_(run_ids)).scalar() or 0) if run_ids else 0
+    )
+    event_counts = (
+        dict(
+            db.query(models.Event.run_id, func.count(models.Event.id))
+            .filter(models.Event.run_id.in_([r.id for r in runs[:8]]))
+            .group_by(models.Event.run_id)
+            .all()
+        )
+        if runs
+        else {}
+    )
 
     projects_by_id = {p.id: p for p in projects}
     per_project = []
@@ -64,16 +78,22 @@ def stats(user: models.User = Depends(require_user), db: Session = Depends(get_d
             "startedAt": r.started_at.isoformat(),
             "endedAt": r.ended_at.isoformat() if r.ended_at else None,
             "durationMs": int((r.ended_at - r.started_at).total_seconds() * 1000) if r.ended_at else None,
-            "events": len(r.events),
+            "events": event_counts.get(r.id, 0),
             "project": {"id": r.project_id, "name": projects_by_id[r.project_id].name},
         }
         for r in runs[:8]
     ]
 
-    type_dist: dict[str, int] = {}
-    for r in runs:
-        for e in r.events:
-            type_dist[e.type] = type_dist.get(e.type, 0) + 1
+    type_dist: dict[str, int] = (
+        dict(
+            db.query(models.Event.type, func.count(models.Event.id))
+            .filter(models.Event.run_id.in_(run_ids))
+            .group_by(models.Event.type)
+            .all()
+        )
+        if run_ids
+        else {}
+    )
 
     return {
         "totalProjects": len(projects),

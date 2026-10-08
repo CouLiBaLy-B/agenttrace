@@ -1,6 +1,6 @@
 "use client"
 
-import { useLayoutEffect, useState } from "react"
+import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api, formatRelative } from "@/lib/api"
 import { useNav } from "@/lib/store"
@@ -29,11 +29,11 @@ import {
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
 import { Plus, Trash2, Pencil } from "lucide-react"
-import { useTheme } from "@/lib/theme"
+import { useElementWidth } from "@/lib/hooks"
 import type { RecentRun, RunShape } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { MiniDiagram } from "@/components/mini-diagram/mini-diagram"
-import { useSeedDemo } from "@/components/dashboard/run-feed"
+import { useSeedDemo, useTileClass } from "@/components/dashboard/run-feed"
 import type { DashboardStats } from "@/components/dashboard/stat-strip"
 
 interface Project {
@@ -318,19 +318,6 @@ const DIAGRAM_H = 88
 /** Three bare lifelines: where the last run will be drawn once it loads. */
 const PLACEHOLDER: RunShape = { participants: ["", "", ""], events: [] }
 
-/** Width of an element, kept current as it resizes (0 until measured). */
-function useWidth() {
-  const [el, setEl] = useState<HTMLElement | null>(null)
-  const [width, setWidth] = useState(0)
-  useLayoutEffect(() => {
-    if (!el) return
-    // ResizeObserver reports the initial size on observe.
-    const ro = new ResizeObserver(([entry]) => setWidth(Math.floor(entry.contentRect.width)))
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [el])
-  return [setEl, width] as const
-}
 
 /** The project's last run as a mini diagram: lifelines while it loads, a note when there is none. */
 function LastRun({ projectId, width }: { projectId: string; width: number }) {
@@ -371,17 +358,17 @@ function ProjectCard({
   onEdit: () => void
   onDelete: () => void
 }) {
-  const [well, width] = useWidth()
-  const studio = useTheme((s) => s.resolved) === "studio"
+  const [well, width] = useElementWidth<HTMLDivElement>()
+  const tile = useTileClass()
   const runCount = stats?.runs ?? p._count?.runs ?? 0
   const lastRunAt = stats?.lastRunAt ?? p.runs?.[0]?.startedAt ?? null
   return (
     <div
       className={cn(
-        "group relative flex h-full min-w-0 flex-col overflow-hidden rounded-[var(--radius-panel)] border border-[var(--line)] bg-[var(--surface-1)]",
-        "transition-[box-shadow,border-color] duration-150 motion-reduce:transition-none",
+        tile,
+        "relative flex h-full flex-col",
+        // the card is a div: show the ring when its stretched name button has keyboard focus
         "has-[[data-open]:focus-visible]:outline-2 has-[[data-open]:focus-visible]:outline-offset-2 has-[[data-open]:focus-visible]:outline-[var(--focus-ring)]",
-        studio ? "hover:shadow-[var(--shadow-raised)]" : "hover:border-[var(--line-strong)]",
       )}
     >
       <div ref={well} aria-hidden="true" className="at-canvas border-b border-[var(--line)]" style={{ height: DIAGRAM_H }}>
@@ -428,15 +415,18 @@ function ProjectCard({
         <dl className="mt-auto flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 pt-3 text-[12px] text-[var(--ink-2)]">
           <div className="flex items-baseline gap-1">
             <dt className="sr-only">Runs</dt>
-            <dd className="font-mono tabular-nums text-[var(--ink)]">{runCount}</dd>
-            <span aria-hidden="true">{runCount === 1 ? "run" : "runs"}</span>
+            <dd>
+              <span className="font-mono tabular-nums text-[var(--ink)]">{runCount}</span> {runCount === 1 ? "run" : "runs"}
+            </dd>
           </div>
           <div className="flex items-baseline gap-1">
             <dt className="sr-only">Success rate</dt>
-            <dd className="font-mono tabular-nums text-[var(--ink)]">
-              {statsLoading ? "…" : stats && stats.runs > 0 ? `${stats.successRate}%` : "—"}
+            <dd>
+              <span className="font-mono tabular-nums text-[var(--ink)]">
+                {statsLoading ? "…" : stats && stats.runs > 0 ? `${stats.successRate}%` : "—"}
+              </span>{" "}
+              success
             </dd>
-            <span aria-hidden="true">success</span>
           </div>
           <div className="ml-auto flex items-baseline gap-1">
             <dt className="sr-only">Last activity</dt>

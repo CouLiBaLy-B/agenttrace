@@ -246,3 +246,31 @@ def test_ingest_does_db_work_off_the_event_loop(client, monkeypatch):
     assert client.post("/api/events", json=event, headers=headers).status_code == 201
     assert client.post("/api/events", json={"runId": run_id, "endRun": "completed"}, headers=headers).status_code == 200
     assert on_loop == [False, False, False]
+
+
+def test_event_counts_in_stats_and_project_detail(client):
+    _signup(client)
+    created = client.post("/api/projects", json={"name": "Counts"}).json()
+    project_id = created["project"]["id"]
+    headers = {"Authorization": f"Bearer {created['apiKey']}"}
+
+    def run_with(types):
+        run_id = client.post("/api/events", json={"runId": None, "name": "r"}, headers=headers).json()["runId"]
+        for t in types:
+            ok = client.post(
+                "/api/events", json={"runId": run_id, "source": "A", "target": "B", "type": t}, headers=headers
+            )
+            assert ok.status_code == 201
+        return run_id
+
+    busy = run_with(["llm_call", "tool_call", "tool_result"])
+    small = run_with(["llm_call"])
+    empty = run_with([])
+
+    stats = client.get("/api/stats").json()
+    assert stats["totalEvents"] == 4
+    assert stats["typeDist"] == {"llm_call": 2, "tool_call": 1, "tool_result": 1}
+    assert {r["id"]: r["events"] for r in stats["recent"]} == {busy: 3, small: 1, empty: 0}
+
+    runs = client.get(f"/api/projects/{project_id}").json()["project"]["runs"]
+    assert {r["id"]: r["_count"]["events"] for r in runs} == {busy: 3, small: 1, empty: 0}

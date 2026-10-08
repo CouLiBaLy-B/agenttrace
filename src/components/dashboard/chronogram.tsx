@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useLayoutEffect, useState, type CSSProperties, type ReactNode } from "react"
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { api, formatDuration } from "@/lib/api"
 import { DIAGRAM_STYLES } from "@/lib/diagram-styles"
+import { useElementWidth } from "@/lib/hooks"
 import { useNav } from "@/lib/store"
 import { useTheme } from "@/lib/theme"
 import { RUN_STATUS, type RunStatus } from "@/lib/types"
@@ -35,19 +36,6 @@ interface Timeline {
   projects: { id: string; name: string; runs: TimelineRun[] }[]
 }
 
-/** A callback ref and the width of the element it is attached to (0 until measured). */
-function useWidth() {
-  const [el, setEl] = useState<HTMLDivElement | null>(null)
-  const [width, setWidth] = useState(0)
-  useLayoutEffect(() => {
-    if (!el) return
-    // ResizeObserver reports the initial size on observe.
-    const ro = new ResizeObserver(([entry]) => setWidth(Math.floor(entry.contentRect.width)))
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [el])
-  return [setEl, width] as const
-}
 
 /** "now", re-read every 10 s so running runs grow and the window slides. */
 function useNow() {
@@ -73,9 +61,9 @@ function title(hours: number) {
 /** Five labels need ~60 px each, so a phone-width track gets three. A week
  * gets one tick per day when eight labels fit, otherwise just its two ends. */
 function tickCount(hours: number, width: number) {
-  const narrow = width > 0
-  if (hours === 168) return narrow && width < 420 ? 1 : 7
-  return narrow && width < 300 ? 2 : 4
+  const measured = width > 0
+  if (hours === 168) return measured && width < 420 ? 1 : 7
+  return measured && width < 300 ? 2 : 4
 }
 
 /** A run as a segment on its project's row: fill and border in its status
@@ -147,7 +135,7 @@ export function Chronogram({
   const { go } = useNav()
   const lifeline = DIAGRAM_STYLES[useTheme((s) => s.resolved)].lifeline
   const now = useNow()
-  const [track, width] = useWidth()
+  const [track, width] = useElementWidth<HTMLDivElement>()
 
   const query = new URLSearchParams({ hours: String(hours) })
   if (projectId) query.set("projectId", projectId)

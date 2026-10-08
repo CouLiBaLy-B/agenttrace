@@ -44,9 +44,11 @@ def project_out(project: models.Project, *, run_count: int | None = None, latest
     return data
 
 
-def project_detail_out(project: models.Project) -> dict[str, Any]:
+def project_detail_out(project: models.Project, event_counts: dict[str, int]) -> dict[str, Any]:
+    """`event_counts` maps run id to its number of events (from one grouped
+    count query, so the events themselves are never loaded)."""
     data = project_out(project)
-    data["runs"] = [run_out(r, event_count=len(r.events)) for r in project.runs]
+    data["runs"] = [run_out(r, event_count=event_counts.get(r.id, 0)) for r in project.runs]
     data["apiKeys"] = [
         {
             "id": k.id,
