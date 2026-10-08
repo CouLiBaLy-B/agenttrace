@@ -34,3 +34,17 @@ describe("indexAtPosition", () => {
     expect(indexAtPosition([0, 1], 0.5)).toBe(0)
   })
 })
+
+describe("scrubberPositions with unreadable timestamps", () => {
+  const ev = (...ts: string[]) => ts.map((timestamp, seq) => ({ seq, timestamp }))
+  const iso = (ms: number) => new Date(1_700_000_000_000 + ms).toISOString()
+  it("an unreadable timestamp takes the previous valid time", () => {
+    expect(scrubberPositions(ev(iso(0), "nope", iso(1000)))).toEqual([0, 0, 1])
+  })
+  it("leading unreadable timestamps take the first valid time", () => {
+    expect(scrubberPositions(ev("nope", iso(0), iso(1000)))).toEqual([0, 0, 1])
+  })
+  it("all unreadable: evenly spaced, never NaN", () => {
+    expect(scrubberPositions(ev("a", "b", "c"))).toEqual([0, 0.5, 1])
+  })
+})

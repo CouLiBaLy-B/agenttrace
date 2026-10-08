@@ -118,32 +118,7 @@ export function TransportBar({
         {isPlaying ? <Pause aria-hidden className="size-4" /> : <Play aria-hidden className="ml-0.5 size-4" />}
       </button>
 
-      <div
-        role="radiogroup"
-        aria-label="Replay speed"
-        className="flex shrink-0 items-center rounded-[var(--radius-control)] border border-[var(--line)] p-0.5"
-      >
-        {SPEEDS.map((s) => {
-          const on = s.value === speed
-          return (
-            <button
-              key={s.value}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              onClick={() => onSpeed(s.value)}
-              className={cn(
-                "h-6 rounded-[calc(var(--radius-control)-2px)] px-2 font-mono text-[11px] tabular-nums transition-colors",
-                on ? "bg-[var(--surface-2)] text-[var(--ink)]" : "text-[var(--ink-2)] hover:text-[var(--ink)]",
-                FOCUS
-              )}
-              style={on ? { boxShadow: "inset 0 0 0 1px var(--line-strong)" } : undefined}
-            >
-              {s.label}
-            </button>
-          )
-        })}
-      </div>
+      <SpeedControl speed={speed} onSpeed={onSpeed} />
 
       {/* The scrubber: a full row on phones, the remaining width from sm. */}
       <div
@@ -233,3 +208,50 @@ const Ticks = memo(function Ticks({ events, positions }: { events: TraceEvent[];
     </div>
   )
 })
+
+/** Replay speed as a radio group: one tab stop (the checked speed); ←/→ (↑/↓) move and select. */
+function SpeedControl({ speed, onSpeed }: { speed: ReplaySpeed; onSpeed: (speed: ReplaySpeed) => void }) {
+  const refs = useRef<(HTMLButtonElement | null)[]>([])
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const step = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0
+    if (!step) return
+    e.preventDefault()
+    const at = SPEEDS.findIndex((s) => s.value === speed)
+    const next = (at + step + SPEEDS.length) % SPEEDS.length
+    onSpeed(SPEEDS[next].value)
+    refs.current[next]?.focus()
+  }
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Replay speed"
+      onKeyDown={onKeyDown}
+      className="flex shrink-0 items-center rounded-[var(--radius-control)] border border-[var(--line)] p-0.5"
+    >
+      {SPEEDS.map((s, i) => {
+        const on = s.value === speed
+        return (
+          <button
+            key={s.value}
+            ref={(el) => {
+              refs.current[i] = el
+            }}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            tabIndex={on ? 0 : -1}
+            onClick={() => onSpeed(s.value)}
+            className={cn(
+              "h-6 rounded-[calc(var(--radius-control)-2px)] px-2 font-mono text-[11px] tabular-nums transition-colors",
+              on ? "bg-[var(--surface-2)] text-[var(--ink)]" : "text-[var(--ink-2)] hover:text-[var(--ink)]",
+              FOCUS
+            )}
+            style={on ? { boxShadow: "inset 0 0 0 1px var(--line-strong)" } : undefined}
+          >
+            {s.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, type ReactNode } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { toast } from "sonner"
 import { ArrowRight, Check, Copy, PanelRightClose, PanelRightOpen, X } from "lucide-react"
@@ -22,6 +22,8 @@ interface Props {
   index: number
   total: number
   onClose: () => void
+  /** Overlay only: where focus goes when the overlay closes itself (the diagram canvas). */
+  returnFocus?: () => void
   /**
    * - panel: the docked, resizable, collapsible side panel (xl and up);
    * - overlay: a non-modal panel over the right of the diagram (md to xl), below
@@ -38,7 +40,7 @@ const ICON_BUTTON = cn(
   FOCUS
 )
 
-export function EventDetailPanel({ event, index, total, onClose, variant }: Props) {
+export function EventDetailPanel({ event, index, total, onClose, returnFocus, variant }: Props) {
   const { detailCollapsed, detailWidth, toggleDetail, setDetailWidth } = useLayout()
   const [dragging, setDragging] = useState(false)
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)")
@@ -59,6 +61,10 @@ export function EventDetailPanel({ event, index, total, onClose, variant }: Prop
   }
 
   if (variant === "overlay") {
+    const closeOverlay = () => {
+      onClose()
+      returnFocus?.()
+    }
     return (
       <AnimatePresence>
         {event && (
@@ -74,13 +80,14 @@ export function EventDetailPanel({ event, index, total, onClose, variant }: Prop
             onKeyDown={(e) => {
               if (e.key === "Escape") {
                 e.stopPropagation()
-                onClose()
+                closeOverlay()
               }
             }}
-            className="absolute inset-y-0 right-0 z-20 flex w-[min(24rem,calc(100%-3rem))] flex-col border-l border-[var(--line)] bg-[var(--surface-1)] shadow-[-8px_0_24px_-12px_rgb(0_0_0/0.35)]"
+            className="absolute inset-y-0 right-0 z-20 flex w-[min(24rem,calc(100%-3rem))] flex-col border-l border-[var(--line)] bg-[var(--surface-1)]"
+            style={{ boxShadow: "var(--shadow-overlay)" }}
           >
             <PanelHeader>
-              <button type="button" className={ICON_BUTTON} onClick={onClose} aria-label="Close inspector" title="Close">
+              <button type="button" className={ICON_BUTTON} onClick={closeOverlay} aria-label="Close inspector" title="Close">
                 <X aria-hidden className="size-4" />
               </button>
             </PanelHeader>
@@ -202,9 +209,10 @@ function EventBody({ event, index, total }: { event: TraceEvent; index: number; 
       <section aria-label="Payload" className="space-y-1.5">
         <div className="flex items-center justify-between">
           <h4 className="text-[12px] font-semibold text-[var(--ink-2)]">Payload</h4>
-          <CopyJson value={event.payload} />
+          <CopyJson key={event.id} value={event.payload} />
         </div>
         <JsonView
+          key={event.id}
           value={event.payload}
           className="at-scroll max-h-[min(28rem,55vh)] overflow-auto rounded-[var(--radius-control)] border border-[var(--line)] bg-[var(--surface-1)] p-3"
         />
@@ -224,13 +232,18 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 function CopyJson({ value }: { value: unknown }) {
   const [copied, setCopied] = useState(false)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current)
+  }, [])
   const copy = async () => {
     try {
       if (!navigator.clipboard) throw new Error("no clipboard")
       await navigator.clipboard.writeText(formatJson(value))
       toast.success("Payload copied")
       setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
+      if (timer.current) clearTimeout(timer.current)
+      timer.current = setTimeout(() => setCopied(false), 1500)
     } catch {
       toast.error("Couldn't copy the payload. Select the JSON and copy it by hand.")
     }

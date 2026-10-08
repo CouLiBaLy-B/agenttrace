@@ -251,6 +251,8 @@ export function SequenceDiagram({
 
   // Play enters replay (from the start when the playhead is at the end).
   const togglePlay = useCallback(() => {
+    // Instant outside replay: everything is already shown, nothing to play.
+    if (replaySpeed === 0 && !isReplay) return
     setIsReplay(true)
     // instant speed → jump straight to the end
     if (replaySpeed === 0) {
@@ -288,10 +290,15 @@ export function SequenceDiagram({
   )
 
   const clearSelection = useCallback(() => setSelectedId(null), [])
+  const rootRef = useRef<HTMLDivElement>(null)
+  const focusCanvas = useCallback(
+    () => rootRef.current?.querySelector<HTMLElement>('[data-testid="diagram"]')?.focus({ preventScroll: true }),
+    []
+  )
   const liveState: LiveState | null = !live ? null : connected ? "listening" : everConnected ? "reconnecting" : "connecting"
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div ref={rootRef} className="flex flex-col h-full min-h-0">
       <FilterBar
         hidden={hidden}
         onToggle={toggleType}
@@ -350,6 +357,7 @@ export function SequenceDiagram({
           index={selectedIndex}
           total={events.length}
           onClose={clearSelection}
+          returnFocus={focusCanvas}
           variant={isWide ? "panel" : isDesktop ? "overlay" : "sheet"}
         />
       </div>

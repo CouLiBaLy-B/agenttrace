@@ -14,7 +14,7 @@ const REQUIRED = [
   "--st-running", "--st-ok", "--st-failed",
   "--action", "--on-action", "--danger", "--on-danger",
   "--kind-user", "--kind-orchestrator", "--kind-llm", "--kind-tool", "--kind-subagent",
-  "--font-ui", "--font-data", "--radius-panel", "--radius-control", "--shadow-raised", "--focus-ring",
+  "--font-ui", "--font-data", "--radius-panel", "--radius-control", "--shadow-raised", "--shadow-overlay", "--focus-ring",
 ]
 
 function tokens(theme: string): Record<string, string> {
