@@ -4,9 +4,21 @@
 
 Watch signals move through your agents in real time: one vertical lifeline per participant (User, Orchestrator, LLM, each Tool, each Sub-agent), each event rendering as an animated arrow in a UML-inspired sequence diagram.
 
-![Run view](run-view.png)
+![Run view in the Phosphore theme](docs/screenshots/run-phosphore.png)
 
-<img src="mobile.png" alt="Mobile layout" width="240">
+## Themes
+
+AgentTrace ships three themes, each with its own palette, typography and motion.
+
+| Phosphore | Cyanotype | Studio |
+| --- | --- | --- |
+| <img src="docs/screenshots/run-phosphore.png" alt="Run view, Phosphore theme" width="320"> | <img src="docs/screenshots/run-cyanotype.png" alt="Run view, Cyanotype theme" width="320"> | <img src="docs/screenshots/run-studio.png" alt="Run view, Studio theme" width="320"> |
+| Dark oscilloscope: phosphor-green glow, mono labels, arrows that draw like a beam. | Dark blueprint: drafting-table blues, technical type, arrows that plot in crisply. | Light and calm: paper surfaces, soft shadows, arrows that settle with a spring. |
+
+Switch themes with the swatches at the bottom of the sidebar, or in Settings →
+Theme. **Auto** (the default) follows your OS: dark picks Cyanotype, light picks
+Studio. Your choice is remembered in the browser. All motion respects
+`prefers-reduced-motion`: animations shrink to a short fade with no travel.
 
 ## Stack
 

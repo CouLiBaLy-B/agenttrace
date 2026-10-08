@@ -10,6 +10,8 @@ module, the CLI command, and the product itself are still called
 API (and a `/ws` live-stream) with **zero Node/Bun process**, `mlflow ui`-style.
 For local development against this checkout: `pip install -e "python-server[dev]"`.
 
+The bundled dashboard has three themes (Phosphore, Cyanotype, Studio); see [Themes](../README.md#themes).
+
 The package contains a FastAPI backend (`/api/*`, plus a `/ws` live stream),
 the CLI, the tracking SDK, and the **bundled dashboard**: the static Next.js
 export is served by the same process at `/`, so nothing else needs to run.
