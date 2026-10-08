@@ -22,11 +22,15 @@ export function chronoLayout(
   })
 }
 
-/** `count + 1` evenly spaced ticks (x in 0..1), labelled in hours before now. */
+/** `count + 1` evenly spaced ticks (x in 0..1), labelled in time before now:
+ * in days on a window longer than a day when every tick lands on a whole day,
+ * otherwise in hours. */
 export function chronoTicks(from: number, to: number, count = 4): { x: number; label: string }[] {
   const hours = Math.round((to - from) / 3_600_000)
-  return Array.from({ length: count + 1 }, (_, i) => {
-    const left = Math.round(hours * (1 - i / count))
-    return { x: i / count, label: i === count ? "now" : `−${left} h` }
-  })
+  const lefts = Array.from({ length: count + 1 }, (_, i) => Math.round(hours * (1 - i / count)))
+  const days = hours > 24 && lefts.every((h) => h % 24 === 0)
+  return lefts.map((left, i) => ({
+    x: i / count,
+    label: i === count ? "now" : days ? `−${left / 24} d` : `−${left} h`,
+  }))
 }

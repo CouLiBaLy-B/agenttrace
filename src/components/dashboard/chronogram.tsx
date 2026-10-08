@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useLayoutEffect, useState, type CSSProperties } from "react"
+import { useEffect, useLayoutEffect, useState, type CSSProperties, type ReactNode } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { api, formatDuration } from "@/lib/api"
 import { DIAGRAM_STYLES } from "@/lib/diagram-styles"
@@ -66,7 +66,16 @@ function runDuration(r: TimelineRun, now: number): string {
 }
 
 function title(hours: number) {
-  return hours === 1 ? "Last hour" : `Last ${hours} hours`
+  if (hours === 1) return "Last hour"
+  return hours > 24 && hours % 24 === 0 ? `Last ${hours / 24} days` : `Last ${hours} hours`
+}
+
+/** Five labels need ~60 px each, so a phone-width track gets three. A week
+ * gets one tick per day when eight labels fit, otherwise just its two ends. */
+function tickCount(hours: number, width: number) {
+  const narrow = width > 0
+  if (hours === 168) return narrow && width < 420 ? 1 : 7
+  return narrow && width < 300 ? 2 : 4
 }
 
 /** A run as a segment on its project's row: fill and border in its status
@@ -125,7 +134,16 @@ function Segment({
 }
 
 /** Runs of the last `hours` hours, one row per project, placed in time. */
-export function Chronogram({ projectId, hours = 24 }: { projectId?: string; hours?: number }) {
+export function Chronogram({
+  projectId,
+  hours = 24,
+  controls,
+}: {
+  projectId?: string
+  hours?: number
+  /** Shown at the end of the header, e.g. a window toggle. */
+  controls?: ReactNode
+}) {
   const { go } = useNav()
   const lifeline = DIAGRAM_STYLES[useTheme((s) => s.resolved)].lifeline
   const now = useNow()
@@ -143,8 +161,7 @@ export function Chronogram({ projectId, hours = 24 }: { projectId?: string; hour
   // A refetch can land between two ticks of the clock: never draw "now" before the data.
   const to = Math.max(now, dataUpdatedAt)
   const from = to - hours * H
-  // Five labels need ~60 px each; a phone-width track gets three.
-  const ticks = chronoTicks(from, to, width > 0 && width < 300 ? 2 : 4)
+  const ticks = chronoTicks(from, to, tickCount(hours, width))
   const projects = data?.projects ?? []
   const runs = projects.flatMap((p) => p.runs)
   const running = runs.filter((r) => r.status === "running").length
@@ -161,6 +178,7 @@ export function Chronogram({ projectId, hours = 24 }: { projectId?: string; hour
           {data.truncated && " · Showing the latest 500 runs"}
         </span>
       )}
+      {controls && <div className="ml-auto">{controls}</div>}
     </div>
   )
 
@@ -188,29 +206,31 @@ export function Chronogram({ projectId, hours = 24 }: { projectId?: string; hour
         </div>
       ) : (
         <div className="flex">
-          {/* project names */}
-          <ul className="w-24 shrink-0 pr-3 sm:w-40" aria-label="Projects">
-            {(isLoading ? [] : projects).map((p) => (
-              <li key={p.id} className="flex items-center" style={{ height: ROW_H }}>
-                <button
-                  type="button"
-                  onClick={() => go("project", { projectId: p.id })}
-                  title={p.name}
-                  className="max-w-full truncate rounded-[var(--radius-control)] text-left text-[13px] text-[var(--ink)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
-                >
-                  {p.name}
-                </button>
-              </li>
-            ))}
-          </ul>
+          {/* project names (one project's own page already names it) */}
+          {!projectId && (
+            <ul className="w-24 shrink-0 pr-3 sm:w-40" aria-label="Projects">
+              {(isLoading ? [] : projects).map((p) => (
+                <li key={p.id} className="flex items-center" style={{ height: ROW_H }}>
+                  <button
+                    type="button"
+                    onClick={() => go("project", { projectId: p.id })}
+                    title={p.name}
+                    className="max-w-full truncate rounded-[var(--radius-control)] text-left text-[13px] text-[var(--ink)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+                  >
+                    {p.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
 
           {/* the time track */}
           <div className="min-w-0 flex-1">
             <div ref={track} className="relative" style={{ minHeight: isLoading ? 3 * ROW_H : undefined }}>
               {width > 0 && (
                 <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-                  {ticks.slice(0, -1).map((t) => (
-                    <span key={t.label} className="absolute inset-y-0 w-px bg-[var(--line)]" style={{ left: t.x * width }} />
+                  {ticks.slice(0, -1).map((t, i) => (
+                    <span key={i} className="absolute inset-y-0 w-px bg-[var(--line)]" style={{ left: t.x * width }} />
                   ))}
                   {/* now */}
                   <span
@@ -267,7 +287,7 @@ export function Chronogram({ projectId, hours = 24 }: { projectId?: string; hour
               <div aria-hidden="true" className="relative mt-1.5 h-4 font-mono text-[11px] text-[var(--ink-2)]">
                 {ticks.map((t, i) => (
                   <span
-                    key={t.label}
+                    key={i}
                     className={cn("absolute top-0 whitespace-nowrap tabular-nums", i === ticks.length - 1 && "font-medium")}
                     style={{
                       left: t.x * width,

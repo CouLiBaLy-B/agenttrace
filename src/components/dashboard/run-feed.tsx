@@ -1,12 +1,12 @@
 "use client"
 
-import { useLayoutEffect, useRef, useState, type RefObject } from "react"
+import { useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { api, formatDuration, formatRelative } from "@/lib/api"
 import { useNav } from "@/lib/store"
 import { useTheme } from "@/lib/theme"
-import { RUN_STATUS, type RecentRun } from "@/lib/types"
+import { eventPaint, RUN_STATUS, type RecentRun } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -92,47 +92,87 @@ function RunTile({ run, onOpen }: { run: RecentRun; onOpen: () => void }) {
   )
 }
 
-/** The first running run, wide, drawing its events as they arrive. */
+const LIVE_RECENT = 4
+
+/** The first running run, wide, drawing its events as they arrive; beside it
+ * the run's participants and its last few events. */
 function LiveTile({ run, onOpen }: { run: RecentRun; onOpen: () => void }) {
   const well = useRef<HTMLSpanElement>(null)
   const width = useWidth(well)
   const events = useLiveRunEvents(run.id, false) // the live diagram below keeps this query current
   const count = Math.max(run.eventCount, events?.length ?? 0)
   const height = Math.round(width / 2)
+  const participants = useMemo(() => {
+    const seen: string[] = []
+    for (const e of events ?? []) for (const p of [e.source, e.target]) if (!seen.includes(p)) seen.push(p)
+    return seen.length > 0 ? seen : run.shape.participants
+  }, [events, run.shape.participants])
+  const recent = (events ?? []).slice(-LIVE_RECENT)
   return (
     <button type="button" onClick={onOpen} aria-label={tileLabel(run)} className={cn(useTileClass(), "sm:flex sm:items-stretch")}>
       <span ref={well} className="at-canvas block aspect-[2/1] w-full border-b border-[var(--line)] sm:w-1/2 sm:max-w-[520px] sm:border-r sm:border-b-0">
         {width > 0 && <LiveMiniDiagram runId={run.id} width={width} height={height} />}
       </span>
-      <span className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 px-4 py-3">
-        <span
-          className="inline-flex w-fit items-center gap-1.5 rounded-[var(--radius-control)] px-1.5 py-0.5 text-[12px] font-medium text-[var(--ev-handoff-text)]"
-          style={{ background: "color-mix(in oklab, var(--ev-handoff) 6%, transparent)" }}
-        >
-          <StatusDot status="running" />
-          Live, {count === 1 ? "1 event" : `${count} events`}
+      <span className="flex min-w-0 flex-1 flex-col justify-center gap-3 px-4 py-3">
+        <span className="flex min-w-0 flex-col gap-1.5">
+          <span
+            className="inline-flex w-fit items-center gap-1.5 rounded-[var(--radius-control)] px-1.5 py-0.5 text-[12px] font-medium text-[var(--ev-handoff-text)]"
+            style={{ background: "color-mix(in oklab, var(--ev-handoff) 6%, transparent)" }}
+          >
+            <StatusDot status="running" />
+            Live, {count === 1 ? "1 event" : `${count} events`}
+          </span>
+          <span className="truncate text-base font-semibold text-[var(--ink)]" title={run.name}>
+            {run.name}
+          </span>
+          <span className="truncate text-[13px] text-[var(--ink-2)]" title={run.project.name}>
+            {run.project.name} · started {formatRelative(run.startedAt)}
+          </span>
         </span>
-        <span className="truncate text-base font-semibold text-[var(--ink)]" title={run.name}>
-          {run.name}
-        </span>
-        <span className="truncate text-[13px] text-[var(--ink-2)]" title={run.project.name}>
-          {run.project.name} · started {formatRelative(run.startedAt)}
-        </span>
+        {participants.length > 0 && (
+          <span className="block min-w-0 truncate font-mono text-[12px] text-[var(--ink-2)]" title={participants.join(", ")}>
+            {participants.join(" · ")}
+          </span>
+        )}
+        {recent.length > 0 && (
+          <span className="block min-w-0 border-t border-[var(--line)] pt-2">
+            <span className="block text-[12px] text-[var(--ink-2)]">Latest events</span>
+            {recent.map((e) => {
+              const paint = eventPaint(e.type, e.status === "error")
+              return (
+                <span key={e.id} className="mt-1 flex min-w-0 items-center gap-2 text-[12px]">
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: paint.color }} />
+                  <span className="max-w-[55%] shrink-0 truncate font-mono text-[var(--ink)]" title={`${e.source} → ${e.target}`}>
+                    {e.source} → {e.target}
+                  </span>
+                  <span className="min-w-0 truncate text-[var(--ink-2)]" title={e.label || paint.label}>
+                    {e.label || paint.label}
+                  </span>
+                </span>
+              )
+            })}
+          </span>
+        )}
       </span>
     </button>
   )
 }
 
-/** No runs: how to start tracing, and a button that loads the demo projects. */
-export function EmptyFeed() {
+/** POSTs /api/seed and refreshes everything that lists projects or runs. */
+export function useSeedDemo() {
   const qc = useQueryClient()
-  const seed = useMutation({
+  return useMutation({
     mutationFn: () => api<{ seeded: number }>("/api/seed", { method: "POST" }),
     onSuccess: () => {
       for (const key of ["stats", "timeline", "runs-recent", "projects"]) qc.invalidateQueries({ queryKey: [key] })
     },
     onError: (e) => toast.error(`Couldn't load the demo projects: ${(e as Error).message}. Try again from Settings.`),
   })
+}
+
+/** No runs: how to start tracing, and a button that loads the demo projects. */
+export function EmptyFeed() {
+  const seed = useSeedDemo()
   return (
     <div className="rounded-[var(--radius-panel)] border border-dashed border-[var(--line-strong)] px-6 py-10 text-center">
       <p className="mx-auto max-w-md text-sm text-[var(--ink-2)]">

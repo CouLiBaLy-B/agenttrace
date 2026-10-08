@@ -45,4 +45,14 @@ describe("chronoTicks", () => {
     expect(chronoTicks(from, to).map((t) => t.label)).toEqual(["−24 h", "−18 h", "−12 h", "−6 h", "now"])
     expect(chronoTicks(from, to).map((t) => t.x)).toEqual([0, 0.25, 0.5, 0.75, 1])
   })
+
+  it("labels whole days in days on a window longer than a day", () => {
+    expect(chronoTicks(from, from + 168 * H, 7).map((t) => t.label)).toEqual([
+      "−7 d", "−6 d", "−5 d", "−4 d", "−3 d", "−2 d", "−1 d", "now",
+    ])
+  })
+
+  it("keeps hours when a tick falls between days", () => {
+    expect(chronoTicks(from, from + 168 * H, 2).map((t) => t.label)).toEqual(["−168 h", "−84 h", "now"])
+  })
 })

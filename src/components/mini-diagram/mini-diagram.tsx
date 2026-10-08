@@ -236,27 +236,45 @@ export function useLiveRunEvents(runId: string, live = true): TraceEvent[] | und
     if (!live) return
     const key = ["run", runId]
     let active = true
+    // Events streamed before the run is in the cache (the first load or the
+    // snapshot still in flight) wait here and are merged when it lands.
+    let pending: TraceEvent[] = []
+    const merge = (old: RunSnapshot, more: TraceEvent[]): RunSnapshot => ({
+      ...old,
+      run: { ...old.run, events: mergeById(old.run.events ?? [], more) },
+    })
     const unsubscribe = subscribeRun(runId, {
       onConnectionChange: setConnected,
       // Events between the REST load and the subscription are not streamed:
       // fetch the run once and merge it by id, so an event streamed while the
-      // snapshot was in flight is kept (a refetch would overwrite it).
-      onSubscribed: () => {
-        api<RunSnapshot>(`/api/runs/${runId}`)
-          .then((snap) => {
-            if (!active) return
-            qc.setQueryData<RunSnapshot>(key, (old) =>
-              old
-                ? { ...old, run: { ...old.run, ...snap.run, events: mergeById(old.run.events ?? [], snap.run.events ?? []) } }
-                : snap,
-            )
+      // snapshot was in flight is kept. The first load is cancelled first, so
+      // it can't land later and overwrite the merged cache.
+      onSubscribed: async () => {
+        try {
+          const snap = await api<RunSnapshot>(`/api/runs/${runId}`)
+          if (!active) return
+          await qc.cancelQueries({ queryKey: key })
+          if (!active) return
+          const buffered = pending
+          pending = []
+          qc.setQueryData<RunSnapshot>(key, (old) => {
+            const base = old ? { ...old, run: { ...old.run, ...snap.run, events: old.run.events ?? [] } } : snap
+            return merge(base, [...(snap.run.events ?? []), ...buffered])
           })
-          .catch(() => {})
+        } catch {
+          // The snapshot failed (or the first load was cancelled): load again.
+          if (active) qc.invalidateQueries({ queryKey: key })
+        }
       },
-      onEvent: (event) =>
-        qc.setQueryData<RunSnapshot>(key, (old) =>
-          old ? { ...old, run: { ...old.run, events: mergeById(old.run.events ?? [], [event]) } } : old,
-        ),
+      onEvent: (event) => {
+        if (!qc.getQueryData<RunSnapshot>(key)) {
+          pending.push(event)
+          return
+        }
+        const buffered = pending
+        pending = []
+        qc.setQueryData<RunSnapshot>(key, (old) => (old ? merge(old, [...buffered, event]) : old))
+      },
       onError: () => setConnected(false),
     })
     return () => {

@@ -5,7 +5,7 @@ import { useNav, useLayout, NAV_SIZE } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import { Sidebar, MobileTopBar } from "@/components/layout/sidebar"
 import { ResizeHandle } from "@/components/layout/resize-handle"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
 import { DashboardView } from "@/components/views/dashboard-view"
 import { ProjectsView } from "@/components/views/projects-view"
 import { ProjectDetailView } from "@/components/views/project-detail-view"
@@ -73,6 +73,8 @@ export function AppShell() {
         {/* Mobile sidebar drawer */}
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetContent side="left" className="w-72 p-0">
+            <SheetTitle className="sr-only">Navigation</SheetTitle>
+            <SheetDescription className="sr-only">Go to a page, or change the theme.</SheetDescription>
             <Sidebar onNavigate={() => setSidebarOpen(false)} />
           </SheetContent>
         </Sheet>
@@ -85,6 +87,7 @@ export function AppShell() {
               variant="ghost"
               size="icon"
               className="h-9 w-9"
+              aria-label="Open navigation"
               onClick={() => setSidebarOpen(true)}
             >
               <Menu className="h-5 w-5" />
