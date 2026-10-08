@@ -53,16 +53,24 @@ function StatusDot({ status }: { status: RecentRun["status"] }) {
   )
 }
 
+/** A tile's accessible name: "{name}, {status}, {project}, {duration}" (a
+ * running run has no duration yet, so it says how long ago it started). */
+function tileLabel(run: RecentRun): string {
+  const status = (RUN_STATUS[run.status] ?? RUN_STATUS.completed).label.toLowerCase()
+  const duration = run.durationMs != null ? formatDuration(run.durationMs) : `started ${formatRelative(run.startedAt)}`
+  return `${run.name}, ${status}, ${run.project.name}, ${duration}`
+}
+
 function RunTile({ run, onOpen }: { run: RecentRun; onOpen: () => void }) {
-  const well = useRef<HTMLDivElement>(null)
+  const well = useRef<HTMLSpanElement>(null)
   const width = useWidth(well)
   return (
-    <button type="button" onClick={onOpen} className={useTileClass()}>
-      <div ref={well} className="at-canvas border-b border-[var(--line)]" style={{ height: TILE_DIAGRAM_H }}>
+    <button type="button" onClick={onOpen} aria-label={tileLabel(run)} className={useTileClass()}>
+      <span ref={well} className="at-canvas block border-b border-[var(--line)]" style={{ height: TILE_DIAGRAM_H }}>
         {width > 0 && <MiniDiagram shape={run.shape} width={width} height={TILE_DIAGRAM_H} />}
-      </div>
-      <div className="px-3 py-2.5">
-        <div className="flex min-w-0 items-center gap-2">
+      </span>
+      <span className="block px-3 py-2.5">
+        <span className="flex min-w-0 items-center gap-2">
           <StatusDot status={run.status} />
           <span className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--ink)]" title={run.name}>
             {run.name}
@@ -70,33 +78,33 @@ function RunTile({ run, onOpen }: { run: RecentRun; onOpen: () => void }) {
           <span className="shrink-0 font-mono text-[11px] tabular-nums text-[var(--ink-2)]">
             {formatDuration(run.durationMs)}
           </span>
-        </div>
-        <div className="mt-1 flex min-w-0 items-center gap-1.5 text-[12px] text-[var(--ink-2)]">
+        </span>
+        <span className="mt-1 flex min-w-0 items-center gap-1.5 text-[12px] text-[var(--ink-2)]">
           <span className="min-w-0 truncate" title={run.project.name}>
             {run.project.name}
           </span>
           <span aria-hidden="true">·</span>
           <span className="shrink-0">{run.eventCount === 1 ? "1 event" : `${run.eventCount} events`}</span>
           <span className="ml-auto shrink-0">{formatRelative(run.startedAt)}</span>
-        </div>
-      </div>
+        </span>
+      </span>
     </button>
   )
 }
 
 /** The first running run, wide, drawing its events as they arrive. */
 function LiveTile({ run, onOpen }: { run: RecentRun; onOpen: () => void }) {
-  const well = useRef<HTMLDivElement>(null)
+  const well = useRef<HTMLSpanElement>(null)
   const width = useWidth(well)
   const events = useLiveRunEvents(run.id, false) // the live diagram below keeps this query current
   const count = Math.max(run.eventCount, events?.length ?? 0)
   const height = Math.round(width / 2)
   return (
-    <button type="button" onClick={onOpen} className={cn(useTileClass(), "sm:flex sm:items-stretch")}>
-      <div ref={well} className="at-canvas aspect-[2/1] w-full border-b border-[var(--line)] sm:w-1/2 sm:max-w-[520px] sm:border-r sm:border-b-0">
+    <button type="button" onClick={onOpen} aria-label={tileLabel(run)} className={cn(useTileClass(), "sm:flex sm:items-stretch")}>
+      <span ref={well} className="at-canvas block aspect-[2/1] w-full border-b border-[var(--line)] sm:w-1/2 sm:max-w-[520px] sm:border-r sm:border-b-0">
         {width > 0 && <LiveMiniDiagram runId={run.id} width={width} height={height} />}
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 px-4 py-3">
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 px-4 py-3">
         <span
           className="inline-flex w-fit items-center gap-1.5 rounded-[var(--radius-control)] px-1.5 py-0.5 text-[12px] font-medium text-[var(--ev-handoff-text)]"
           style={{ background: "color-mix(in oklab, var(--ev-handoff) 6%, transparent)" }}
@@ -110,12 +118,13 @@ function LiveTile({ run, onOpen }: { run: RecentRun; onOpen: () => void }) {
         <span className="truncate text-[13px] text-[var(--ink-2)]" title={run.project.name}>
           {run.project.name} · started {formatRelative(run.startedAt)}
         </span>
-      </div>
+      </span>
     </button>
   )
 }
 
-function EmptyFeed() {
+/** No runs: how to start tracing, and a button that loads the demo projects. */
+export function EmptyFeed() {
   const qc = useQueryClient()
   const seed = useMutation({
     mutationFn: () => api<{ seeded: number }>("/api/seed", { method: "POST" }),

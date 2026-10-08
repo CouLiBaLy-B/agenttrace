@@ -74,3 +74,20 @@ def test_seed_payload_literals_are_faithful():
     assert _event("Code Review Bot", "PR #145", "changes requested")["payload"]["status"] == "changes_requested"
     assert not any("{}" == repr(v) for sp in SEED_PROJECTS for r in sp["runs"] for e in r["events"]
                    for v in e["payload"].get("args", {}).values())
+
+
+def test_seed_runs_fall_in_the_dashboard_24h_window(tmp_path):
+    # the dashboard chronogram shows the last 24 hours: demo runs must be in it
+    from datetime import datetime, timedelta, timezone
+
+    url = f"sqlite:///{tmp_path}/window.db"
+    store_db.init_db(url)
+    with store_db.get_sessionmaker(url)() as db:
+        user = local.get_or_create_local_user(db)
+        seed_demo(db, user)
+        now = datetime.now(timezone.utc)
+        runs = db.query(models.Run).all()
+        for r in runs:
+            started = r.started_at if r.started_at.tzinfo else r.started_at.replace(tzinfo=timezone.utc)
+            assert now - timedelta(hours=24) < started < now
+        assert len({r.started_at for r in runs}) == len(runs)  # staggered, not stacked

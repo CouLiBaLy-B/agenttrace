@@ -235,16 +235,34 @@ export function useLiveRunEvents(runId: string, live = true): TraceEvent[] | und
   useEffect(() => {
     if (!live) return
     const key = ["run", runId]
-    return subscribeRun(runId, {
+    let active = true
+    const unsubscribe = subscribeRun(runId, {
       onConnectionChange: setConnected,
-      // Events between the REST load and the subscription are not streamed.
-      onSubscribed: () => void qc.invalidateQueries({ queryKey: key }),
+      // Events between the REST load and the subscription are not streamed:
+      // fetch the run once and merge it by id, so an event streamed while the
+      // snapshot was in flight is kept (a refetch would overwrite it).
+      onSubscribed: () => {
+        api<RunSnapshot>(`/api/runs/${runId}`)
+          .then((snap) => {
+            if (!active) return
+            qc.setQueryData<RunSnapshot>(key, (old) =>
+              old
+                ? { ...old, run: { ...old.run, ...snap.run, events: mergeById(old.run.events ?? [], snap.run.events ?? []) } }
+                : snap,
+            )
+          })
+          .catch(() => {})
+      },
       onEvent: (event) =>
         qc.setQueryData<RunSnapshot>(key, (old) =>
           old ? { ...old, run: { ...old.run, events: mergeById(old.run.events ?? [], [event]) } } : old,
         ),
       onError: () => setConnected(false),
     })
+    return () => {
+      active = false
+      unsubscribe()
+    }
   }, [runId, live, qc])
   return data?.run.events
 }

@@ -12,8 +12,6 @@ from sqlalchemy.orm import Session
 from ..store import models
 from .security import generate_api_key, hash_api_key, key_prefix
 
-DAY = timedelta(days=1)
-
 SEED_PROJECTS: list[dict] = [
     {
         "name": "Customer Support Agent",
@@ -220,7 +218,7 @@ def seed_demo(db: Session, user: models.User) -> int:
     if db.query(models.Project).filter(models.Project.user_id == user.id).count():
         return 0
     now = datetime.now(timezone.utc)
-    for sp in SEED_PROJECTS:
+    for p_idx, sp in enumerate(SEED_PROJECTS):
         project = models.Project(name=sp["name"], description=sp["description"], user_id=user.id)
         db.add(project)
         db.flush()
@@ -234,7 +232,8 @@ def seed_demo(db: Session, user: models.User) -> int:
             )
         )
         for run_idx, sr in enumerate(sp["runs"]):
-            started = now - len(SEED_PROJECTS) * DAY + timedelta(hours=6 * run_idx)
+            # Spread over the last day (the dashboard's 24 h chronogram), staggered per project.
+            started = now - timedelta(hours=22) + timedelta(hours=4.5 * run_idx, minutes=50 * p_idx)
             total_ms = max(
                 ((e["offset_sec"] + (e.get("duration_ms") or 0) / 1000) * 1000 for e in sr["events"]),
                 default=0,

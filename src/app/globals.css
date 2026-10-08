@@ -136,6 +136,26 @@
   .at-pulse-ring { animation: none; opacity: 0; }
 }
 
+/* Dashboard chronogram: a running run's right edge (its "now") breathes. */
+@keyframes at-chrono-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.at-chrono-live::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  right: -1px;
+  width: 3px;
+  border-radius: 1px;
+  background: var(--st-running);
+  animation: at-chrono-live 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .at-chrono-live::after { animation: none; }
+}
+
 /* Mobile timeline: a card arrives with a short vertical slide and fade (a fade
    alone with reduced motion). */
 @keyframes at-card-in {

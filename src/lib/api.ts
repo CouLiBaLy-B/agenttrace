@@ -33,6 +33,7 @@ export function formatDuration(ms: number | null | undefined): string {
   if (ms == null) return "—"
   if (ms < 1000) return `${ms}ms`
   if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`
+  if (ms >= 3_600_000) return `${Math.floor(ms / 3_600_000)}h ${Math.floor((ms % 3_600_000) / 60000)}m`
   const m = Math.floor(ms / 60000)
   const s = Math.round((ms % 60000) / 1000)
   return `${m}m ${s}s`
