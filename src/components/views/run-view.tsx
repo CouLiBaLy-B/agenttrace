@@ -1,5 +1,6 @@
 "use client"
 
+import { LoadError } from "@/components/load-error"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api, formatDuration } from "@/lib/api"
 import { useNav } from "@/lib/store"
@@ -50,7 +51,7 @@ export function RunView() {
     [runId]
   )
 
-  const { data, isLoading } = useQuery<{ run: RunDetail }>({
+  const { data, isLoading, isError, refetch } = useQuery<{ run: RunDetail }>({
     queryKey: ["run", runId],
     queryFn: () => api(`/api/runs/${runId}`),
     enabled: !!runId,
@@ -113,13 +114,24 @@ export function RunView() {
     )
   }
 
+  if (isError && !data) {
+    return (
+      <div className="p-4 sm:p-6 space-y-4">
+        <Button variant="ghost" size="sm" onClick={() => go("projects")} className="gap-1.5">
+          <ArrowLeft className="h-4 w-4" /> Back
+        </Button>
+        <LoadError what="this run" onRetry={refetch} />
+      </div>
+    )
+  }
+
   if (isLoading || !data) {
     return (
       <div className="h-full flex flex-col">
         <div className="p-4 border-b border-border">
           <Skeleton className="h-6 w-72" />
         </div>
-        <div className="flex-1 at-graticule flex items-center justify-center">
+        <div className="flex-1 at-canvas flex items-center justify-center">
           <Skeleton className="h-64 w-full max-w-3xl" />
         </div>
       </div>

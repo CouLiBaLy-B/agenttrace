@@ -189,7 +189,9 @@ function EventBody({ event, index, total }: { event: TraceEvent; index: number; 
       </div>
 
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 border-y border-[var(--line)] py-3 text-[12px]">
-        <Field label="Time">{clockTimeMs(event.timestamp) || "—"}</Field>
+        <Field label="Time">
+          <span className="at-clock">{clockTimeMs(event.timestamp) || "—"}</span>
+        </Field>
         <Field label="Duration">{formatDuration(event.durationMs)}</Field>
         <Field label="Status">
           <span className="inline-flex items-center gap-1.5">

@@ -1,9 +1,9 @@
 "use client"
 
+import { LoadError } from "@/components/load-error"
 import { useQuery } from "@tanstack/react-query"
 import { api, formatDuration } from "@/lib/api"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export interface DashboardStats {
@@ -37,12 +37,7 @@ export function StatStrip() {
   return (
     <div className="space-y-2">
       {isError && (
-        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 text-[13px] text-[var(--ink-2)]">
-          <span>Couldn't load the totals. Check that the AgentTrace server is running, then retry.</span>
-          <Button size="sm" variant="outline" onClick={() => refetch()}>
-            Retry
-          </Button>
-        </div>
+        <LoadError what="the totals" onRetry={refetch} framed={false} className="text-[13px]" />
       )}
       <dl
         aria-busy={isLoading || undefined}

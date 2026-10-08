@@ -18,6 +18,7 @@
   --kind-tool: var(--ev-tool); --kind-subagent: var(--ev-handoff);
   --font-ui: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
   --font-data: "Martian Mono", ui-monospace, monospace;
+  --font-clock: var(--font-data);
   --radius-panel: 6px; --radius-control: 4px;
   --shadow-raised: none;
   --shadow-overlay: -8px 0 24px -12px rgb(0 0 0 / 0.6);
@@ -40,6 +41,9 @@
   --kind-tool: var(--ev-tool); --kind-subagent: var(--ev-handoff);
   --font-ui: "B612", ui-sans-serif, system-ui, sans-serif;
   --font-data: "B612 Mono", ui-monospace, monospace;
+  /* B612 Mono sets ":" and "." in full cells ("17: 34: 23"); B612's own digits
+     are already tabular, so times stay aligned with tight punctuation. */
+  --font-clock: "B612", ui-sans-serif, system-ui, sans-serif;
   --radius-panel: 2px; --radius-control: 2px;
   --shadow-raised: none;
   --shadow-overlay: -8px 0 24px -12px rgb(3 14 30 / 0.6);
@@ -62,6 +66,7 @@
   --kind-tool: var(--ev-tool); --kind-subagent: var(--ev-handoff);
   --font-ui: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
   --font-data: "DM Mono", ui-monospace, monospace;
+  --font-clock: var(--font-data);
   --radius-panel: 10px; --radius-control: 7px;
   --shadow-raised: 0 1px 2px rgb(11 18 32 / 0.12), 0 1px 1px rgb(11 18 32 / 0.06);
   --shadow-overlay: -8px 0 24px -12px rgb(11 18 32 / 0.22);

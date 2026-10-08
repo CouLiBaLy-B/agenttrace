@@ -1,5 +1,6 @@
 "use client"
 
+import { LoadError } from "@/components/load-error"
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { api, formatDuration } from "@/lib/api"
@@ -9,7 +10,6 @@ import { useNav } from "@/lib/store"
 import { useTheme } from "@/lib/theme"
 import { RUN_STATUS, type RunStatus } from "@/lib/types"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { chronoLayout, chronoTicks } from "./chrono-scale"
 import { EmptyFeed } from "./run-feed"
@@ -186,12 +186,7 @@ export function Chronogram({
     >
       {header}
       {isError ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-[var(--ink-2)]">
-          <span>Couldn't load the timeline. Check that the AgentTrace server is running, then retry.</span>
-          <Button size="sm" variant="outline" onClick={() => refetch()}>
-            Retry
-          </Button>
-        </div>
+        <LoadError what="the timeline" onRetry={refetch} framed={false} />
       ) : (
         <div className="flex">
           {/* project names (one project's own page already names it) */}

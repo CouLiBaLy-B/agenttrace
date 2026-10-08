@@ -1,5 +1,6 @@
 "use client"
 
+import { LoadError } from "@/components/load-error"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api, formatDuration, formatRelative } from "@/lib/api"
@@ -134,15 +135,7 @@ function ProjectDetailBody({ projectId }: { projectId: string }) {
       </Button>
 
       {isError ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-panel)] border border-[var(--line)] px-4 py-3 text-sm text-[var(--ink-2)]">
-          <span>
-            Couldn't load this project. It may have been deleted; otherwise check that the AgentTrace server is
-            running, then retry.
-          </span>
-          <Button size="sm" variant="outline" onClick={() => refetch()}>
-            Retry
-          </Button>
-        </div>
+        <LoadError what="this project" onRetry={refetch} />
       ) : isLoading || !project ? (
         <div className="space-y-3">
           <Skeleton className="h-8 w-64 rounded-[var(--radius-control)]" />

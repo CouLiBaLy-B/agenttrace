@@ -7,9 +7,20 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { ThemePicker } from "@/components/settings/theme-picker"
 import { toast } from "sonner"
-import { User, Database, Sparkles, LogOut, Bell, Palette } from "lucide-react"
-import { Switch } from "@/components/ui/switch"
+import { User, Database, Sparkles, LogOut, Palette } from "lucide-react"
+
+function SectionTitle({ id, icon: Icon, children }: { id?: string; icon: typeof User; children: string }) {
+  return (
+    <div className="mb-4 flex items-center gap-2">
+      <Icon className="h-4 w-4 text-[var(--ink-2)]" />
+      <h2 id={id} className="text-sm font-semibold text-[var(--ink)]">
+        {children}
+      </h2>
+    </div>
+  )
+}
 
 export function SettingsView() {
   const { user, authMode, version } = useSession()
@@ -21,52 +32,54 @@ export function SettingsView() {
     onSuccess: ({ seeded }) => {
       qc.invalidateQueries({ queryKey: ["stats"] })
       qc.invalidateQueries({ queryKey: ["projects"] })
+      qc.invalidateQueries({ queryKey: ["timeline"] })
+      qc.invalidateQueries({ queryKey: ["runs-recent"] })
       toast.success(
         seeded
           ? `Loaded ${seeded} demo projects`
           : "Demo projects already present (only added when you have no projects)",
       )
     },
-    onError: (e) => toast.error("Failed: " + (e as Error).message),
+    onError: (e) => toast.error(`Couldn't load the demo projects: ${(e as Error).message}`),
   })
 
   return (
     <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-6">
-      <div>
-        <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-          {"// configuration"}
-        </p>
-        <h1 className="text-2xl font-semibold mt-0.5">Settings</h1>
-      </div>
+      <h1 className="text-2xl font-semibold text-[var(--ink)]">Settings</h1>
+
+      {/* Appearance */}
+      <Card className="p-5 gap-0">
+        <SectionTitle id="settings-theme" icon={Palette}>
+          Theme
+        </SectionTitle>
+        <ThemePicker labelledBy="settings-theme" />
+      </Card>
 
       {/* Account */}
-      <Card className="p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <User className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-medium">Account</h2>
-        </div>
+      <Card className="p-5 gap-0">
+        <SectionTitle icon={User}>Account</SectionTitle>
         {authMode === "none" ? (
-          <p className="text-sm text-muted-foreground">
-            Local mode — no account (started with <span className="font-mono">agenttrace ui --auth none</span>).
+          <p className="text-sm text-[var(--ink-2)]">
+            Local mode: no account (started with <code className="font-mono text-[var(--ink)]">agenttrace ui --auth none</code>).
           </p>
         ) : (
           <>
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                <Label htmlFor="settings-name" className="text-xs text-[var(--ink-2)]">
                   Name
                 </Label>
-                <Input value={user?.name || ""} readOnly className="bg-card" />
+                <Input id="settings-name" value={user?.name || ""} readOnly className="bg-card" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                <Label htmlFor="settings-email" className="text-xs text-[var(--ink-2)]">
                   Email
                 </Label>
-                <Input value={user?.email || ""} readOnly className="bg-card" />
+                <Input id="settings-email" value={user?.email || ""} readOnly className="bg-card" />
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">Sign out of AgentTrace on this device.</p>
+            <div className="mt-4 pt-4 border-t border-[var(--line)] flex items-center justify-between gap-3">
+              <p className="text-xs text-[var(--ink-2)]">Sign out of AgentTrace on this device.</p>
               <Button
                 variant="outline"
                 size="sm"
@@ -89,65 +102,25 @@ export function SettingsView() {
       </Card>
 
       {/* Demo data */}
-      <Card className="p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Database className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-medium">Demo data</h2>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Reload the three sample projects (Customer Support Agent, Research Assistant, Code
-          Review Bot) with fresh traces. Existing projects are left untouched.
+      <Card className="p-5 gap-0">
+        <SectionTitle icon={Database}>Demo data</SectionTitle>
+        <p className="text-sm text-[var(--ink-2)]">
+          Load the three sample projects (Customer Support Agent, Research Assistant, Code Review Bot) with their
+          traces. They are only added when you have no projects yet.
         </p>
-        <Button
-          className="mt-4 gap-1.5"
-          onClick={() => seedMut.mutate()}
-          disabled={seedMut.isPending}
-        >
+        <Button className="mt-4 gap-1.5 self-start" onClick={() => seedMut.mutate()} disabled={seedMut.isPending}>
           <Sparkles className="h-4 w-4" />
-          {seedMut.isPending ? "Reloading…" : "Reload demo projects"}
+          {seedMut.isPending ? "Loading…" : "Load demo projects"}
         </Button>
       </Card>
 
-      {/* Preferences */}
-      <Card className="p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Palette className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-medium">Preferences</h2>
-        </div>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm">Phosphor theme</p>
-              <p className="text-xs text-muted-foreground">Dark oscilloscope aesthetic — recommended.</p>
-            </div>
-            <Switch defaultChecked disabled />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm flex items-center gap-1.5">
-                <Bell className="h-3.5 w-3.5" />
-                Live event toasts
-              </p>
-              <p className="text-xs text-muted-foreground">Notify when a run completes or fails.</p>
-            </div>
-            <Switch defaultChecked />
-          </div>
-        </div>
-      </Card>
-
       {/* About */}
-      <Card className="p-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-mono text-xs text-muted-foreground">AgentTrace</p>
-            <p className="text-[11px] text-muted-foreground/70 mt-0.5">
-              {`v${version} · FastAPI · live /ws`}
-            </p>
-          </div>
-          <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/60">
-            trace · replay · debug
-          </div>
+      <Card className="p-5 gap-0">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <p className="text-sm font-semibold text-[var(--ink)]">AgentTrace</p>
+          <p className="at-clock text-xs text-[var(--ink-2)]">{`v${version}`}</p>
         </div>
+        <p className="mt-1 text-xs text-[var(--ink-2)]">Trace, replay and debug your agents.</p>
       </Card>
     </div>
   )

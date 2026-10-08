@@ -13,7 +13,6 @@ import { FilterBar, type LiveState } from "./filter-bar"
 import { TransportBar, type ReplaySpeed } from "./transport-bar"
 import { scrubberPositions } from "./scrubber"
 import { useMediaQuery } from "@/lib/hooks"
-import { motion, AnimatePresence } from "framer-motion"
 
 // Hidden event types last for the browser session (across runs), not longer.
 const HIDDEN_TYPES_KEY = "agenttrace-hidden-types"
@@ -384,41 +383,26 @@ export function SequenceDiagram({
 function ListeningState({ runId, live }: { runId: string; live: boolean }) {
   return (
     <div className="h-full at-canvas relative flex flex-col items-center justify-center p-6 text-center overflow-hidden">
-      <AnimatePresence>
-        <motion.div
-          key="scope"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="relative"
-        >
-          {/* radar-style sweep */}
-          <div className="relative h-40 w-40 rounded-full border border-primary/30 flex items-center justify-center">
-            <div className="absolute inset-2 rounded-full border border-primary/20" />
-            <div className="absolute inset-6 rounded-full border border-primary/15" />
-            <div className="absolute inset-0 rounded-full overflow-hidden">
-              <div
-                className="at-radar-sweep absolute top-1/2 left-1/2 h-1/2 w-1/2 origin-top-left"
-                style={{
-                  background: "linear-gradient(to right, color-mix(in oklab, var(--action) 35%, transparent), transparent)",
-                  clipPath: "polygon(0 0, 100% 0, 0 100%)",
-                }}
-              />
-            </div>
-            <div className="h-2 w-2 rounded-full bg-primary at-glow" />
-          </div>
-        </motion.div>
-      </AnimatePresence>
-
-      <p className="mt-6 font-mono text-sm text-primary at-glow uppercase tracking-widest">
-        {live ? "listening for your agent's first event" : "no events recorded"}
-      </p>
-      <p className="mt-2 text-xs text-muted-foreground max-w-sm">
+      {/* A live run waits: the dot breathes. A finished run is simply empty. */}
+      <span aria-hidden className="relative flex h-3 w-3">
+        {live && <span className="absolute inline-flex h-full w-full rounded-full bg-[var(--st-running)] opacity-60 at-pulse-ring" />}
+        <span
+          className={
+            "relative inline-flex h-3 w-3 rounded-full " +
+            (live ? "bg-[var(--st-running)]" : "border border-[var(--line-strong)]")
+          }
+        />
+      </span>
+      <h2 className="mt-5 text-base font-semibold text-[var(--ink)]">
+        {live ? "Waiting for the first event" : "This run has no events"}
+      </h2>
+      <p className="mt-1.5 max-w-sm text-sm text-[var(--ink-2)]">
         {live
-          ? "Point your agent at the ingestion endpoint below. The first event will render here the instant it arrives."
-          : "This run has no events. Start a new run or send events via the ingestion API."}
+          ? "Events appear here the moment your agent sends them."
+          : "Start a new run or send events with the SDK."}
       </p>
-      <div className="mt-4 rounded-md border border-border bg-background/60 px-3 py-2 font-mono text-[11px] text-muted-foreground">
-        POST /api/events <span className="text-primary/70">· run {runId.slice(0, 8)}…</span>
+      <div className="mt-4 rounded-[var(--radius-control)] border border-[var(--line)] bg-[var(--surface-1)] px-3 py-2 font-mono text-[11px] text-[var(--ink-2)]">
+        POST /api/events · run {runId.slice(0, 8)}…
       </div>
     </div>
   )

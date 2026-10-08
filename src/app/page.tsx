@@ -13,9 +13,10 @@ export default function Home() {
   if (status === "loading" || booting) return <BootScreen />
   if (status === "error")
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 at-graticule">
-        <p className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase">
-          Can&apos;t reach the AgentTrace server
+      <div role="alert" className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background p-6 text-center">
+        <p className="max-w-sm text-sm text-[var(--ink-2)]">
+          Can&apos;t reach the AgentTrace server. Check that{" "}
+          <code className="font-mono text-[var(--ink)]">agenttrace ui</code> is running, then retry.
         </p>
         <Button variant="outline" onClick={() => retry()}>
           Retry

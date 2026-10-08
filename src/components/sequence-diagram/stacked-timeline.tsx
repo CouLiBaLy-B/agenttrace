@@ -71,7 +71,7 @@ const EventCard = memo(function EventCard({
           <EventBadge type={ev.type} status={ev.status} />
         </span>
         <span className="shrink-0 font-mono text-[11px] text-[var(--ink-2)] tabular-nums">
-          {clockTime(ev.timestamp)}
+          <span className="at-clock">{clockTime(ev.timestamp)}</span>
           {ev.durationMs != null && <> · {formatDuration(ev.durationMs)}</>}
         </span>
       </span>

@@ -4,11 +4,14 @@ import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api, formatRelative } from "@/lib/api"
 import { useSession } from "@/lib/session"
+import { cn } from "@/lib/utils"
 import { useNav } from "@/lib/store"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
+import { LoadError } from "@/components/load-error"
+import { highlightLine, type TokenKind } from "@/lib/highlight"
 import {
   Select,
   SelectContent,
@@ -52,7 +55,11 @@ export function IntegrationView() {
   const [revealedKey, setRevealedKey] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
-  const { data: projectsData } = useQuery<{ projects: Project[] }>({
+  const {
+    data: projectsData,
+    isError: projectsError,
+    refetch: refetchProjects,
+  } = useQuery<{ projects: Project[] }>({
     queryKey: ["projects"],
     queryFn: () => api("/api/projects"),
   })
@@ -61,7 +68,12 @@ export function IntegrationView() {
   // derive the effective project: explicit selection, or the first available
   const effectiveProject = selectedProject || projects[0]?.id || null
 
-  const { data: keysData, isLoading: keysLoading } = useQuery<{ keys: KeyRow[] }>({
+  const {
+    data: keysData,
+    isLoading: keysLoading,
+    isError: keysError,
+    refetch: refetchKeys,
+  } = useQuery<{ keys: KeyRow[] }>({
     queryKey: ["keys", effectiveProject],
     queryFn: () => api(`/api/keys?projectId=${effectiveProject}`),
     enabled: !!effectiveProject && !local,
@@ -78,7 +90,7 @@ export function IntegrationView() {
       setRevealedKey(data.rawKey)
       toast.success("Key regenerated")
     },
-    onError: (e) => toast.error("Failed: " + (e as Error).message),
+    onError: (e) => toast.error("Couldn't create the key: " + (e as Error).message),
   })
 
   const deleteKeyMut = useMutation({
@@ -88,6 +100,7 @@ export function IntegrationView() {
       qc.invalidateQueries({ queryKey: ["keys", effectiveProject] })
       toast.success("Key revoked")
     },
+    onError: (e) => toast.error("Couldn't revoke the key: " + (e as Error).message),
   })
 
   const keys = keysData?.keys || []
@@ -102,21 +115,20 @@ export function IntegrationView() {
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
       <div>
-        <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-          {"// wire your agents in"}
-        </p>
-        <h1 className="text-2xl font-semibold mt-0.5">Integration</h1>
-        <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+        <h1 className="text-2xl font-semibold text-[var(--ink)]">Integration</h1>
+        <p className="text-sm text-[var(--ink-2)] mt-1 max-w-2xl">
           {local
             ? "Stream events from your agent to this server. Ingestion needs no key in local mode; runs are grouped by project name."
             : "Stream events from your agent with a single HTTP endpoint. Use an API key to authenticate — it's scoped per project, not per user session."}
         </p>
       </div>
 
-      {projects.length === 0 && !local ? (
+      {projectsError && !projectsData ? (
+        <LoadError what="your projects" onRetry={refetchProjects} />
+      ) : projects.length === 0 && !local ? (
         <Card className="p-10 text-center">
-          <Cable className="h-8 w-8 text-muted-foreground mx-auto" />
-          <p className="mt-3 text-sm text-muted-foreground">
+          <Cable className="h-8 w-8 text-[var(--ink-3)] mx-auto" />
+          <p className="mt-3 text-sm text-[var(--ink-2)]">
             Create a project first to get an API key and integration snippets.
           </p>
           <Button className="mt-4" onClick={() => go("projects")}>
@@ -128,12 +140,13 @@ export function IntegrationView() {
           {/* project selector */}
           <div className="flex flex-wrap items-end gap-3">
             <div className="space-y-1.5">
-              <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              <label id="integration-project" className="block text-xs font-medium text-[var(--ink-2)]">
                 Project
               </label>
-              <Select value={effectiveProject || undefined} onValueChange={setSelectedProject}>
-                <SelectTrigger className="w-64">
-                  <SelectValue placeholder="Select project" />
+              {/* Always controlled: "" (no project yet) shows the placeholder. */}
+              <Select value={effectiveProject ?? ""} onValueChange={setSelectedProject}>
+                <SelectTrigger className="w-64" aria-labelledby="integration-project">
+                  <SelectValue placeholder="Select a project" />
                 </SelectTrigger>
                 <SelectContent>
                   {projects.map((p) => (
@@ -146,7 +159,7 @@ export function IntegrationView() {
             </div>
             {!local && (
               <Button onClick={() => createKeyMut.mutate()} disabled={createKeyMut.isPending} className="gap-1.5">
-                <RefreshCw className={`h-4 w-4 ${createKeyMut.isPending ? "animate-spin" : ""}`} />
+                <RefreshCw className={`h-4 w-4 ${createKeyMut.isPending ? "animate-spin motion-reduce:animate-none" : ""}`} />
                 Regenerate key
               </Button>
             )}
@@ -154,10 +167,10 @@ export function IntegrationView() {
 
           {/* revealed key */}
           {!local && revealedKey && (
-            <Card className="p-4 border-amber-500/40 bg-amber-500/5">
+            <Card className="p-4 border-[var(--ev-handoff)] bg-[color-mix(in_oklab,var(--ev-handoff)_6%,var(--surface-1))]">
               <div className="flex items-center gap-2">
-                <KeyRound className="h-4 w-4 text-amber-400" />
-                <p className="text-sm font-medium">New API key — copy it now</p>
+                <KeyRound className="h-4 w-4 text-[var(--ev-handoff-text)]" />
+                <p className="text-sm font-medium">New API key: copy it now</p>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -171,10 +184,10 @@ export function IntegrationView() {
                   Dismiss
                 </Button>
               </div>
-              <code className="mt-2 block rounded-md bg-background/60 border border-border px-3 py-2 font-mono text-xs break-all">
+              <code className="mt-2 block rounded-[var(--radius-control)] bg-[var(--surface-0)] border border-[var(--line)] px-3 py-2 font-mono text-xs break-all">
                 {revealedKey}
               </code>
-              <p className="mt-2 text-[11px] text-amber-400/80">
+              <p className="mt-2 text-[11px] text-[var(--ev-handoff-text)]">
                 We only show the full key once. Store it somewhere safe.
               </p>
             </Card>
@@ -182,41 +195,42 @@ export function IntegrationView() {
 
           {/* keys list */}
           {!local && (
-          <div>
-            <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2">
-              API keys
-            </p>
-            {keysLoading ? (
-              <Skeleton className="h-16" />
-            ) : keys.length === 0 ? (
-              <Card className="p-6 text-center text-sm text-muted-foreground">
-                No keys yet. Generate one above.
-              </Card>
-            ) : (
-              <div className="space-y-1.5">
-                {keys.map((k) => (
-                  <Card key={k.id} className="px-4 py-3 flex items-center gap-3">
-                    <KeyRound className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <code className="font-mono text-sm">{k.prefix}…</code>
-                    <span className="text-xs text-muted-foreground hidden sm:inline">
-                      {k.label || "Default key"}
-                    </span>
-                    <span className="ml-auto font-mono text-[11px] text-muted-foreground">
-                      used {formatRelative(k.lastUsedAt)}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-red-400"
-                      onClick={() => deleteKeyMut.mutate(k.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
+            <div>
+              <h2 className="text-sm font-medium text-[var(--ink)] mb-2">API keys</h2>
+              {keysError && !keysData ? (
+                <LoadError what="the API keys" onRetry={refetchKeys} />
+              ) : keysLoading ? (
+                <Skeleton className="h-16" />
+              ) : keys.length === 0 ? (
+                <Card className="p-6 text-center text-sm text-[var(--ink-2)]">
+                  No keys yet. Generate one with Regenerate key above.
+                </Card>
+              ) : (
+                <div className="space-y-1.5">
+                  {keys.map((k) => (
+                    <Card key={k.id} className="px-4 py-3 flex flex-row items-center gap-3">
+                      <KeyRound className="h-4 w-4 text-[var(--ink-3)] shrink-0" />
+                      <code className="font-mono text-sm">{k.prefix}…</code>
+                      <span className="text-xs text-[var(--ink-2)] hidden sm:inline">
+                        {k.label || "Default key"}
+                      </span>
+                      <span className="ml-auto font-mono text-[11px] text-[var(--ink-2)]">
+                        used {formatRelative(k.lastUsedAt)}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-[var(--ink-2)] hover:text-[var(--danger)]"
+                        aria-label={`Revoke key ${k.prefix}`}
+                        onClick={() => deleteKeyMut.mutate(k.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           {/* snippets */}
@@ -227,16 +241,21 @@ export function IntegrationView() {
           />
 
           {/* endpoint reference */}
-          <Card className="p-4">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-3">
-              endpoint reference
-            </p>
+          <Card className="p-4 gap-0">
+            <h2 className="text-sm font-medium text-[var(--ink)] mb-3">Endpoint reference</h2>
             <div className="space-y-2 font-mono text-xs">
               <RefRow method="POST" path="/api/events" desc="Create a run, append an event, or end a run" />
             </div>
-            <div className="mt-4 rounded-md border border-border bg-background/60 p-3 font-mono text-[11px] text-muted-foreground">
-              <p className="text-foreground/80">Event body:</p>
-              <pre className="mt-1.5 whitespace-pre-wrap">{`{
+            <p className="mt-4 mb-1.5 text-xs text-[var(--ink-2)]">Event body</p>
+            <CodeBlock code={EVENT_BODY} className="text-[11px]" />
+          </Card>
+        </>
+      )}
+    </div>
+  )
+}
+
+const EVENT_BODY = `{
   "runId": "run_abc123",       // omit/null to create a new run
   "source": "Orchestrator",
   "target": "web_search",
@@ -246,23 +265,52 @@ export function IntegrationView() {
   "durationMs": 720,
   "status": "ok",               // ok | error | pending
   "endRun": "completed"         // optional: "completed" | "failed" to close the run
-}`}</pre>
-            </div>
-          </Card>
-        </>
+}`
+
+const TOKEN_COLOR: Record<TokenKind, string | undefined> = {
+  plain: undefined,
+  comment: "text-[var(--ink-3)]",
+  string: "text-[var(--ev-result-text)]",
+  key: "text-[var(--ev-llm-text)]",
+}
+
+/** A code listing in the theme's data font, lightly highlighted. The text is
+ * the code exactly (copying a selection gives the original). */
+function CodeBlock({ code, className }: { code: string; className?: string }) {
+  return (
+    <pre
+      className={cn(
+        "at-scroll overflow-x-auto rounded-[var(--radius-control)] border border-[var(--line)] bg-[var(--surface-0)] p-4 font-mono text-[12px] leading-relaxed text-[var(--ink)]",
+        className
       )}
-    </div>
+    >
+      <code>
+        {code.split("\n").map((line, i) => (
+          <span key={i} className="block min-h-[1lh]">
+            {highlightLine(line).map((t, j) =>
+              TOKEN_COLOR[t.kind] ? (
+                <span key={j} className={TOKEN_COLOR[t.kind]}>
+                  {t.text}
+                </span>
+              ) : (
+                t.text
+              )
+            )}
+          </span>
+        ))}
+      </code>
+    </pre>
   )
 }
 
 function RefRow({ method, path, desc }: { method: string; path: string; desc: string }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="rounded bg-primary/15 text-primary px-1.5 py-0.5 text-[10px] font-bold w-12 text-center">
+      <span className="rounded-[var(--radius-control)] border border-[var(--action)] text-[var(--action)] px-1.5 py-0.5 text-[10px] font-medium w-12 text-center">
         {method}
       </span>
-      <code className="text-primary/90">{path}</code>
-      <span className="text-muted-foreground hidden sm:inline">— {desc}</span>
+      <code className="text-[var(--ink)]">{path}</code>
+      <span className="font-sans text-[var(--ink-2)] hidden sm:inline">{desc}</span>
     </div>
   )
 }
@@ -295,14 +343,12 @@ function SnippetBlock({
   }
 
   return (
-    <Card className="overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border bg-card/60">
-        <Terminal className="h-4 w-4 text-primary" />
-        <span className="text-sm font-medium">Instrument your agent</span>
-        <span className="font-mono text-[10px] text-muted-foreground hidden sm:inline">
-          · {projectName}
-        </span>
-        <Tabs value={lang} onValueChange={(v) => setLang(v as any)} className="ml-auto">
+    <Card className="overflow-hidden gap-0 p-0">
+      <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 border-b border-[var(--line)]">
+        <Terminal className="h-4 w-4 text-[var(--ink-2)]" />
+        <h2 className="text-sm font-medium">Instrument your agent</h2>
+        <span className="font-mono text-[11px] text-[var(--ink-2)] hidden sm:inline">· {projectName}</span>
+        <Tabs value={lang} onValueChange={(v) => setLang(v as typeof lang)} className="ml-auto">
           <TabsList className="h-7">
             <TabsTrigger value="python" className="text-xs px-2.5 py-0.5">Python SDK</TabsTrigger>
             <TabsTrigger value="http" className="text-xs px-2.5 py-0.5">HTTP</TabsTrigger>
@@ -310,21 +356,19 @@ function SnippetBlock({
           </TabsList>
         </Tabs>
         <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs" onClick={copy}>
-          {copied ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? <Check className="h-3.5 w-3.5 text-[var(--action)]" /> : <Copy className="h-3.5 w-3.5" />}
           {copied ? "Copied" : "Copy"}
         </Button>
       </div>
       {lang === "deepagents" && (
-        <div className="px-4 py-2 border-b border-border bg-primary/5 text-[11px] text-muted-foreground">
-          <code className="font-mono text-primary/80">agenttrace.langchain.autolog()</code> turns
-          every <code className="font-mono">agent.invoke()</code> into a run — LLM calls, tool
-          calls/results, handoffs and the final answer as a live sequence diagram.
+        <div className="px-4 py-2 border-b border-[var(--line)] text-[12px] text-[var(--ink-2)]">
+          <code className="font-mono text-[var(--ink)]">agenttrace.langchain.autolog()</code> turns
+          every <code className="font-mono text-[var(--ink)]">agent.invoke()</code> into a run: LLM calls, tool
+          calls and results, handoffs and the final answer, drawn live as a sequence diagram.
         </div>
       )}
-      <div className="relative">
-        <pre className="at-graticule p-4 overflow-x-auto at-scroll text-[12px] leading-relaxed font-mono text-foreground/90 max-h-[520px]">
-          <code>{snippet}</code>
-        </pre>
+      <div className="p-3">
+        <CodeBlock code={snippet} className="max-h-[520px]" />
       </div>
     </Card>
   )

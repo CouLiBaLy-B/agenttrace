@@ -1,5 +1,6 @@
 "use client"
 
+import { LoadError } from "@/components/load-error"
 import { useMemo } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
@@ -241,12 +242,7 @@ export function RunFeed({
           ))}
         </div>
       ) : isError ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-panel)] border border-[var(--line)] px-4 py-3 text-sm text-[var(--ink-2)]">
-          <span>Couldn't load recent runs. Check that the AgentTrace server is running, then retry.</span>
-          <Button size="sm" variant="outline" onClick={() => refetch()}>
-            Retry
-          </Button>
-        </div>
+        <LoadError what="recent runs" onRetry={refetch} />
       ) : runs.length === 0 ? (
         projectId ? <EmptyProjectFeed projectId={projectId} onStartRun={onStartRun} /> : <EmptyFeed />
       ) : (

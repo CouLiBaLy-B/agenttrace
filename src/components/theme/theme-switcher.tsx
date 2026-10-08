@@ -3,33 +3,45 @@
 import type { MouseEvent, ReactNode } from "react"
 import { Monitor } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { THEME_IDS, THEME_LABELS, revealOrigin, useTheme, type ThemePreference } from "@/lib/theme"
 
+/** A swatch button. Its name shows in a tooltip on hover and on keyboard focus
+ * (and is its accessible name). */
 function ChoiceButton({
-  title,
+  label,
+  side,
   pressed,
   onClick,
   children,
 }: {
-  title: string
+  label: string
+  side: "top" | "right"
   pressed: boolean
   onClick: (e: MouseEvent<HTMLButtonElement>) => void
   children: ReactNode
 }) {
   return (
-    <button
-      type="button"
-      title={title}
-      aria-pressed={pressed}
-      onClick={onClick}
-      className={cn(
-        "grid size-7 shrink-0 place-items-center rounded-[var(--radius-control)] border-2 transition-colors",
-        "hover:bg-sidebar-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-        pressed ? "border-primary" : "border-transparent"
-      )}
-    >
-      {children}
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label={label}
+          aria-pressed={pressed}
+          onClick={onClick}
+          className={cn(
+            "grid size-7 shrink-0 place-items-center rounded-[var(--radius-control)] border-2 transition-colors",
+            "hover:bg-sidebar-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+            pressed ? "border-primary" : "border-transparent"
+          )}
+        >
+          {children}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side={side} sideOffset={6}>
+        {label}
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -39,6 +51,7 @@ function ChoiceButton({
 export function ThemeSwitcher({ compact = false }: { compact?: boolean }) {
   const preference = useTheme((s) => s.preference)
   const setPreference = useTheme((s) => s.setPreference)
+  const side = compact ? "right" : "top"
   const choose = (pref: ThemePreference) => (e: MouseEvent<HTMLButtonElement>) => setPreference(pref, revealOrigin(e))
 
   return (
@@ -53,7 +66,7 @@ export function ThemeSwitcher({ compact = false }: { compact?: boolean }) {
         </span>
       )}
       <div className={cn("flex gap-1", compact && "flex-col")}>
-        <ChoiceButton title="Auto (follows your system)" pressed={preference === "auto"} onClick={choose("auto")}>
+        <ChoiceButton label="Auto (follows your system)" side={side} pressed={preference === "auto"} onClick={choose("auto")}>
           <span
             aria-hidden
             className="grid size-5 place-items-center rounded-[var(--radius-control)] border border-sidebar-border bg-sidebar-accent text-muted-foreground"
@@ -62,7 +75,7 @@ export function ThemeSwitcher({ compact = false }: { compact?: boolean }) {
           </span>
         </ChoiceButton>
         {THEME_IDS.map((id) => (
-          <ChoiceButton key={id} title={THEME_LABELS[id]} pressed={preference === id} onClick={choose(id)}>
+          <ChoiceButton key={id} label={THEME_LABELS[id]} side={side} pressed={preference === id} onClick={choose(id)}>
             <span
               data-theme={id}
               aria-hidden

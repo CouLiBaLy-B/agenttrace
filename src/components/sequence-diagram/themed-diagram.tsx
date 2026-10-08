@@ -23,6 +23,8 @@ export interface ThemedDiagramProps {
   selectedId: string | null
   onSelect: (id: string) => void
   live: boolean
+  /** Under a live run's cursor, the "Waiting for the next event" caption (off in small previews). */
+  liveCaption?: boolean
   /** Defaults to the active theme's style; pass one to force a theme (demo loop, previews). */
   style?: DiagramStyle
   /** Run details for the Cyanotype title block (no title block without it). */
@@ -71,6 +73,7 @@ export function ThemedDiagram({
   selectedId,
   onSelect,
   live,
+  liveCaption = true,
   style: forcedStyle,
   run,
   layout = LAYOUT,
@@ -240,7 +243,7 @@ export function ThemedDiagram({
                       x={layout.leftGutter - 10}
                       y={a.y + 3}
                       textAnchor="end"
-                      fontFamily="var(--font-data)"
+                      fontFamily="var(--font-clock)"
                       fontSize={9}
                       fill="var(--ink-3)"
                     >
@@ -274,9 +277,11 @@ export function ThemedDiagram({
                     strokeWidth={1}
                     shapeRendering="crispEdges"
                   />
-                  <text x={layout.leftGutter} y={lifelineEnd + 16} fontFamily="var(--font-ui)" fontSize={10} fill="var(--ink-2)">
-                    Waiting for the next event
-                  </text>
+                  {liveCaption && (
+                    <text x={layout.leftGutter} y={lifelineEnd + 16} fontFamily="var(--font-ui)" fontSize={10} fill="var(--ink-2)">
+                      Waiting for the next event
+                    </text>
+                  )}
                 </g>
               )}
             </g>

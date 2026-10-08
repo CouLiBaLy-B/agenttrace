@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useNav, useLayout, NAV_SIZE } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import { Sidebar, MobileTopBar } from "@/components/layout/sidebar"
@@ -39,6 +39,18 @@ export function AppShell() {
     setRunNavExpanded(true)
     if (navCollapsed) toggleNav()
   }
+
+  // A new view moves focus to <main> (unless focus is already inside it), so
+  // keyboard scrolling works right after a nav click. Programmatic focus on a
+  // container, so no focus ring.
+  const mainRef = useRef<HTMLElement>(null)
+  const shownView = useRef(view)
+  useEffect(() => {
+    if (shownView.current === view) return
+    shownView.current = view
+    const main = mainRef.current
+    if (main && !main.contains(document.activeElement)) main.focus({ preventScroll: true })
+  }, [view])
 
   // Persisted layout is rehydrated after mount to avoid SSR hydration mismatch.
   useEffect(() => {
@@ -95,7 +107,7 @@ export function AppShell() {
             <MobileTopBar />
           </div>
 
-          <main className="flex-1 min-h-0 overflow-y-auto at-scroll">
+          <main ref={mainRef} tabIndex={-1} className="flex-1 min-h-0 overflow-y-auto at-scroll outline-none">
             {view === "dashboard" && <DashboardView />}
             {view === "projects" && <ProjectsView />}
             {view === "project" && <ProjectDetailView />}

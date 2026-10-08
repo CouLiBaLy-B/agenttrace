@@ -166,7 +166,12 @@ export function TransportBar({
 
       <span className="shrink-0 font-mono text-[11px] text-[var(--ink-2)] tabular-nums">
         {at + 1} / {total}
-        {current && <span className="hidden md:inline"> · {clockTime(current.timestamp)}</span>}
+        {current && (
+          <span className="hidden md:inline">
+            {" · "}
+            <span className="at-clock">{clockTime(current.timestamp)}</span>
+          </span>
+        )}
       </span>
 
       {isReplay && (
