@@ -26,6 +26,25 @@ export interface TraceEvent {
   status: EventStatus
 }
 
+/** The first events of a run, reduced to lane indexes: what a mini diagram draws. */
+export interface RunShape {
+  participants: string[]
+  events: { s: number; t: number; type: EventType; status: EventStatus }[]
+}
+
+/** A row of `GET /api/runs/recent`. */
+export interface RecentRun {
+  id: string
+  name: string
+  status: RunStatus
+  startedAt: string
+  endedAt: string | null
+  durationMs: number | null
+  eventCount: number
+  project: { id: string; name: string }
+  shape: RunShape
+}
+
 export interface Participant {
   id: string
   name: string
