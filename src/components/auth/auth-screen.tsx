@@ -8,6 +8,9 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
 import { Mail, Lock, User, ArrowRight } from "lucide-react"
+import { DemoLoop } from "@/components/demo/demo-loop"
+import { TraceLogo } from "@/components/trace-logo"
+import { useMediaQuery } from "@/lib/hooks"
 
 export function AuthScreen() {
   const [mode, setMode] = useState<"signin" | "signup">("signin")
@@ -16,6 +19,8 @@ export function AuthScreen() {
   const [name, setName] = useState("")
   const [loading, setLoading] = useState(false)
   const { signIn, signUp } = useAuthActions()
+  // The demo only plays beside the form on wide screens (not mounted otherwise).
+  const wide = useMediaQuery("(min-width: 1024px)")
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,67 +45,17 @@ export function AuthScreen() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
-      <div className="relative hidden lg:flex flex-1 at-graticule at-scanlines overflow-hidden">
-        <div className="relative z-10 flex flex-col justify-between p-10 w-full">
-          <div className="flex items-center gap-2">
-            <TraceLogo />
-            <span className="font-mono text-sm tracking-[0.3em] text-primary/90 at-glow uppercase">
-              AgentTrace
-            </span>
-          </div>
-
-          <div className="max-w-md">
-            <h1 className="font-mono text-3xl xl:text-4xl leading-tight text-foreground">
-              Watch signals move
-              <br />
-              <span className="text-primary at-glow">through your agents.</span>
-            </h1>
-            <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
-              A live sequence diagram for AI engineers building autonomous and multi-agent
-              systems. Stream LLM calls, tool calls, handoffs, and errors — then replay any run
-              frame by frame.
-            </p>
-
-            <div className="mt-8 grid grid-cols-3 gap-3 max-w-sm">
-              <ScopeStat label="llm_call" color="#22d3ee" />
-              <ScopeStat label="tool_call" color="#a78bfa" />
-              <ScopeStat label="handoff" color="#fbbf24" />
-            </div>
-          </div>
-
-          <div className="font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
-            {"// trace · replay · debug"}
-          </div>
-        </div>
-
-        <svg
-          className="absolute bottom-0 left-0 w-full h-32 opacity-50"
-          viewBox="0 0 800 120"
-          preserveAspectRatio="none"
-        >
-          <path
-            d="M0 60 L80 60 L100 30 L130 90 L160 20 L195 100 L220 60 L300 60 L320 40 L350 80 L380 60 L500 60 L520 25 L555 95 L590 60 L800 60"
-            fill="none"
-            stroke="oklch(0.78 0.17 155)"
-            strokeWidth="1.5"
-            className="at-glow"
-          />
-        </svg>
-      </div>
-
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-10 bg-background">
+    <div className="grid min-h-dvh bg-card lg:grid-cols-[minmax(400px,5fr)_7fr]">
+      <main className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-sm">
-          <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
-            <TraceLogo />
-            <span className="font-mono text-sm tracking-[0.3em] text-primary/90 at-glow uppercase">
-              AgentTrace
-            </span>
+          <div className="mb-10 flex items-center gap-2">
+            <TraceLogo className="text-primary" />
+            <span className="text-base font-semibold tracking-tight">AgentTrace</span>
           </div>
 
-          <h2 className="text-xl font-semibold">
+          <h1 className="text-2xl font-semibold tracking-tight">
             {mode === "signin" ? "Welcome back" : "Create your account"}
-          </h2>
+          </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {mode === "signin"
               ? "Sign in to open your traces."
@@ -117,9 +72,7 @@ export function AuthScreen() {
           <form onSubmit={submit} className="mt-5 space-y-4">
             {mode === "signup" && (
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                  Name
-                </Label>
+                <Label htmlFor="name">Name</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -127,15 +80,13 @@ export function AuthScreen() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Ada Lovelace"
-                    className="pl-9 bg-card"
+                    className="pl-9 bg-(--surface-2)"
                   />
                 </div>
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                Email
-              </Label>
+              <Label htmlFor="email">Email</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -144,15 +95,13 @@ export function AuthScreen() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@team.dev"
-                  className="pl-9 bg-card"
+                  className="pl-9 bg-(--surface-2)"
                   autoComplete="email"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                Password
-              </Label>
+              <Label htmlFor="password">Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -161,7 +110,7 @@ export function AuthScreen() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="pl-9 bg-card"
+                  className="pl-9 bg-(--surface-2)"
                   autoComplete={mode === "signin" ? "current-password" : "new-password"}
                 />
               </div>
@@ -179,35 +128,23 @@ export function AuthScreen() {
             </Button>
           </form>
         </div>
-      </div>
-    </div>
-  )
-}
+      </main>
 
-function TraceLogo() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" className="text-primary">
-      <rect x="2" y="2" width="20" height="20" rx="3" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.5" />
-      <path
-        d="M2 12 L7 12 L9 7 L11 17 L13 9 L15 15 L17 12 L22 12"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="at-glow"
-      />
-    </svg>
-  )
-}
-
-function ScopeStat({ label, color }: { label: string; color: string }) {
-  return (
-    <div className="rounded-md border border-border bg-card/60 px-3 py-2">
-      <div className="flex items-center gap-1.5">
-        <span className="h-2 w-2 rounded-full" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
-        <span className="font-mono text-[10px] text-muted-foreground">{label}</span>
-      </div>
+      {wide && (
+        <aside className="flex min-w-0 items-center justify-center border-l border-border bg-background p-10 xl:p-14">
+          <figure className="w-full max-w-[720px]">
+            <div
+              className="overflow-hidden border border-border"
+              style={{ borderRadius: "var(--radius-panel)", boxShadow: "var(--shadow-raised)" }}
+            >
+              <DemoLoop />
+            </div>
+            <figcaption className="mt-3 text-sm text-muted-foreground">
+              A live sequence diagram of your agent&apos;s signals.
+            </figcaption>
+          </figure>
+        </aside>
+      )}
     </div>
   )
 }
