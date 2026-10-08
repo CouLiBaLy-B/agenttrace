@@ -3,6 +3,7 @@
 #   1. ui      — lint, typecheck, unit tests (Vitest), static export (uploaded as the `ui-bundle` artifact)
 #   2. python  — pytest (server + SDK + shim), then a wheel check that the UI ships
 #   3. e2e     — Playwright drives the bundled dashboard served by `agenttrace ui`
+#                (theme screenshots uploaded as the `theme-screenshots` artifact)
 #   4. docker  — build the single image and smoke test it against Postgres
 #
 # Bun is the package manager, as in local dev; the ui job also installs Node 22
@@ -162,3 +163,10 @@ jobs:
         run: .venv/bin/python -c "import agenttrace.server.app as a, pathlib; assert (pathlib.Path(a.__file__).parent/'static'/'index.html').is_file()"
       - name: E2E
         run: .venv/bin/pytest python-server/tests_e2e -q
+      # dashboard, run and sign-in screens in each theme (saved by test_themes.py)
+      - name: Upload theme screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: theme-screenshots
+          path: python-server/tests_e2e/artifacts/
