@@ -81,7 +81,7 @@ export function Sidebar({
       {/* Nav */}
       <nav className={cn("flex-1 min-h-0 overflow-y-auto overflow-x-hidden at-scroll py-4 space-y-1", collapsed ? "px-2" : "px-3")}>
         {!collapsed && (
-          <div className="px-2 pb-2 text-xs font-medium text-[var(--ink-3)]">Monitor</div>
+          <div className="px-2 pb-2 text-xs font-medium text-[var(--ink-2)]">Monitor</div>
         )}
         {NAV.map((item) => {
           const active = view === item.id || (item.id === "projects" && (view === "project" || view === "run"))

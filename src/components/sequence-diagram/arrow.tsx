@@ -240,10 +240,13 @@ export interface ArrowProps {
   arrival?: ArrivalPlan
   /** With a search active: whether this event matches it (ringed) or not (dimmed). */
   match?: boolean
+  /** Give the arrow its DOM id (the keyboard canvas points aria-activedescendant at it).
+   * Off for decorative diagrams, so several on one page don't repeat ids. */
+  domId?: boolean
 }
 
 /** One event: its line (dashed for a tool result), head, error cross, label and duration. */
-export const Arrow = memo(function Arrow({ a, source, target, style, selected, onSelect, arrival, match }: ArrowProps) {
+export const Arrow = memo(function Arrow({ a, source, target, style, selected, onSelect, arrival, match, domId = true }: ArrowProps) {
   const { color, text: textColor, label: typeLabel } = eventPaint(a.type, a.isError)
   const detail = DETAIL[style.theme]
   const s = shapeOf(a, style)
@@ -279,7 +282,7 @@ export const Arrow = memo(function Arrow({ a, source, target, style, selected, o
   // aria-activedescendant), so arrows take no focus: a click focuses the canvas.
   return (
     <g
-      id={arrowDomId(a.id)}
+      id={domId ? arrowDomId(a.id) : undefined}
       role="button"
       aria-label={`${typeLabel} ${source} to ${target}: ${a.title}`}
       aria-current={selected ? "true" : undefined}

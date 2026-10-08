@@ -263,6 +263,7 @@ export function ThemedDiagram({
                   onSelect={onSelect}
                   arrival={arrivals?.plans.get(a.id)}
                   match={matches ? matches.has(a.id) : undefined}
+                  domId={!!onKeySelect}
                 />
               ))}
               {live && (

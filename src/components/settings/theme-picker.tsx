@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, type KeyboardEvent, type MouseEvent, type ReactNode } from "react"
+import { useId, useRef, type KeyboardEvent, type MouseEvent, type ReactNode } from "react"
 import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { THEME_LABELS, revealOrigin, useTheme, type ThemeId, type ThemePreference } from "@/lib/theme"
@@ -28,9 +28,10 @@ function Swatch({ theme, caption }: { theme: ThemeId; caption: string }) {
   return (
     <div
       data-theme={theme}
+      aria-hidden
       className="flex min-w-0 flex-1 flex-col justify-between gap-3 bg-[var(--surface-0)] p-3 font-sans text-[var(--ink)]"
     >
-      <div className="space-y-2" aria-hidden>
+      <div className="space-y-2">
         {(["handoff", "llm", "tool", "result"] as const).map((k, i) => (
           <span
             key={k}
@@ -80,12 +81,15 @@ function ChoiceCard({
   buttonRef: (el: HTMLButtonElement | null) => void
   children: ReactNode
 }) {
+  const id = useId()
   return (
     <button
       ref={buttonRef}
       type="button"
       role="radio"
       aria-checked={checked}
+      aria-labelledby={`${id}-name`}
+      aria-describedby={`${id}-desc`}
       tabIndex={checked ? 0 : -1}
       onClick={onSelect}
       onKeyDown={onKeyDown}
@@ -102,8 +106,12 @@ function ChoiceCard({
       </div>
       <div className="flex items-start gap-3 p-3">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-[var(--ink)]">{name}</p>
-          <p className="mt-0.5 text-xs leading-snug text-[var(--ink-2)]">{description}</p>
+          <p id={`${id}-name`} className="text-sm font-semibold text-[var(--ink)]">
+            {name}
+          </p>
+          <p id={`${id}-desc`} className="mt-0.5 text-xs leading-snug text-[var(--ink-2)]">
+            {description}
+          </p>
         </div>
         <span
           aria-hidden

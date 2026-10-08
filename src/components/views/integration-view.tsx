@@ -269,7 +269,7 @@ const EVENT_BODY = `{
 
 const TOKEN_COLOR: Record<TokenKind, string | undefined> = {
   plain: undefined,
-  comment: "text-[var(--ink-3)]",
+  comment: "text-[var(--ink-2)]",
   string: "text-[var(--ev-result-text)]",
   key: "text-[var(--ev-llm-text)]",
 }
