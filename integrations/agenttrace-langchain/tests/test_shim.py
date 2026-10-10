@@ -87,3 +87,42 @@ async def test_0_2_2_usage_still_works(mocker):
     assert [b.get("type") for b in bodies[1:-1]] == ["handoff", "handoff", "final_answer"]
     assert bodies[-2]["label"] == "réponse"
     assert bodies[-1] == {"runId": "run_1", "endRun": "completed"}
+
+
+async def test_0_2_2_keyless_with_injected_httpx_client_and_masking(monkeypatch):
+    """0.2.2 pattern with api_key=None and the app's own httpx.AsyncClient:
+    posts keylessly (no Authorization header) and masks every payload/label."""
+    import json
+
+    import httpx
+
+    monkeypatch.delenv("AGENTTRACE_KEY", raising=False)
+    sent = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        sent.append(request)
+        return httpx.Response(201, json={"runId": "run_1"})
+
+    def mask(value):
+        if isinstance(value, str):
+            return value.replace("Jane Doe", "<name>")
+        if isinstance(value, dict):
+            return {k: mask(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [mask(v) for v in value]
+        return value
+
+    shim = _fresh("agenttrace_langchain")
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http:
+        client = shim.AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key=None, client=http)
+        h = shim.AgentTraceCallbackHandler("session for Jane Doe", client=client, anonymizer=mask)
+        h.on_user_message("Is Jane Doe eligible?")
+        h.approval_required([{"patient": "Jane Doe"}])
+        await h.finish("completed", answer="Jane Doe is eligible")
+        await h.aclose()
+
+    assert len(sent) == 5  # create, user message, approval, final answer, end
+    assert all("authorization" not in r.headers for r in sent)
+    wire = [json.loads(r.content) for r in sent]
+    assert "Jane Doe" not in str(wire)
+    assert wire[0]["name"] == "session for <name>" and "project" in wire[0]

@@ -17,6 +17,21 @@
 > Note: `agenttrace.langchain.AgentTraceCallbackHandler` (no `Async`) is the
 > sync handler used by `autolog()`, not the 0.2.2 class.
 
+## Upgrading from 0.2.x
+
+- **No API key now posts keylessly.** An `AsyncAgentTraceClient` with no key
+  (`api_key=None` and no `AGENTTRACE_KEY`) used to disable tracing; it now
+  sends without an `Authorization` header, for a local
+  `agenttrace ui --auth none`. A server that wants a key answers 401, and the
+  run is then disabled with one warning. If you relied on a missing key as an
+  off switch, gate tracing in your app (don't attach the handler).
+- **The anonymizer also receives strings.** It is called with every payload
+  (a JSON-safe dict), every label (a str) and the run name, and must handle
+  both. If it raises, or returns a non-str for a label, the field is redacted
+  instead of being sent unmasked.
+- **Only a tool named exactly `task`** (or containing `handoff`/`delegate`)
+  counts as a sub-agent handoff; e.g. `create_task` is a plain tool call.
+
 # agenttrace-langchain
 
 `AgentTraceMiddleware` — an `AgentMiddleware` for LangChain's `create_agent` /
