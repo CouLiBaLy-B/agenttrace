@@ -17,7 +17,8 @@ data)`, and close it when the run ends.
 Guarantees (same contract as the thread-based `AgentTraceRun`, ported to
 asyncio): non-blocking (`asyncio.Queue` drained by a single background task
 per run), never fatal (first HTTP failure disables the run, one warning
-logged), bounded payloads (`run.truncate`/`compact`).
+logged), bounded payloads (`run.truncate`/`compact`). Without an API key it
+posts keyless (for a local `agenttrace ui --auth none`) and names the project.
 
 `on_stream_event`'s tool_call/tool_result mapping accepts an optional
 `tool_server` callback so an app can attach its own "which backend serves
@@ -33,6 +34,7 @@ import time
 from typing import Any, Callable, Optional
 
 from .async_http import AsyncHttpEventClient
+from .fluent import get_project
 from .run import ANSWER_LIMIT, LABEL_LIMIT, PAYLOAD_LIMIT, RESULT_LIMIT, compact, truncate
 
 logger = logging.getLogger(__name__)
@@ -72,21 +74,25 @@ class AsyncAgentTraceRun:
         orchestrator: str = "Orchestrator",
         tool_server: Optional[Callable[[str], str]] = None,
         phrases: Optional[dict[str, str]] = None,
+        anonymizer: Optional[Callable[[Any], Any]] = None,
     ):
         self._name = truncate(name, 120)
         self._client = client
         self._orchestrator = orchestrator
         self._tool_server = tool_server
         self._phrases = {**DEFAULT_PHRASES, **(phrases or {})}
+        # Optional PII scrubber applied to every event payload right before it
+        # is queued (see `emit`). Lets an app (e.g. clinical data) pass one
+        # callable once instead of masking at every call site. Never fatal: a
+        # failing anonymizer logs a warning and the payload passes through, so
+        # tracing can't crash the run it's observing.
+        self._anonymizer = anonymizer
         self._queue: "asyncio.Queue[Optional[dict]]" = asyncio.Queue()
         self._run_id: Optional[str] = None
-        self._failed = not bool(client.api_key)
-        if self._failed:
-            logger.warning(
-                "AgentTrace tracing disabled for run %r — no API key configured "
-                "(pass api_key=... to the client or set AGENTTRACE_KEY).",
-                self._name,
-            )
+        # No API key: rely on the server's `--auth none` local mode (a 401
+        # disables the run with one warning naming AGENTTRACE_KEY), like the
+        # sync RestStore path.
+        self._failed = False
         self._tool_started: dict[str, float] = {}
         self._subagent_started: dict[str, float] = {}
         self._worker = asyncio.create_task(self._drain())
@@ -198,12 +204,23 @@ class AsyncAgentTraceRun:
         if label is not None:
             event["label"] = label
         if payload is not None:
-            event["payload"] = payload
+            event["payload"] = self._anonymize(payload)
         if duration_ms is not None:
             event["durationMs"] = duration_ms
         if status is not None:
             event["status"] = status
         self._queue.put_nowait(event)
+
+    def _anonymize(self, payload: Any) -> Any:
+        if self._anonymizer is None:
+            return payload
+        try:
+            return self._anonymizer(payload)
+        except Exception:  # noqa: BLE001 - tracing must never crash the run
+            logger.warning(
+                "AgentTrace anonymizer raised for run %r — payload sent unmasked", self._name
+            )
+            return payload
 
     def end(self, status: str = "completed") -> None:
         if self._failed:
@@ -218,6 +235,14 @@ class AsyncAgentTraceRun:
         except Exception:  # noqa: BLE001 - tracing must never block shutdown
             self._worker.cancel()
 
+    def _create_body(self) -> dict[str, Any]:
+        body: dict[str, Any] = {"runId": None, "name": self._name}
+        if not self._client.api_key:
+            # Keyless servers (`--auth none`) need the project named; with a
+            # key the key determines the project.
+            body["project"] = get_project()
+        return body
+
     async def _drain(self) -> None:
         while True:
             item = await self._queue.get()
@@ -227,7 +252,7 @@ class AsyncAgentTraceRun:
                 continue
             try:
                 if self._run_id is None:
-                    created = await self._client.emit({"runId": None, "name": self._name})
+                    created = await self._client.emit(self._create_body())
                     self._run_id = created["runId"]
                 await self._client.emit({"runId": self._run_id, **item})
             except Exception as exc:  # noqa: BLE001 - must never crash the caller

@@ -1,3 +1,6 @@
+import json
+
+import httpx
 import pytest
 
 from agenttrace.tracking.async_http import AsyncHttpEventClient as AsyncAgentTraceClient
@@ -120,13 +123,112 @@ async def test_tool_server_callback_enriches_payload(post):
     assert events[0]["payload"]["server"] == "iam-mcp"
 
 
-async def test_on_error_and_never_fatal_without_api_key(post):
-    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key=None)
-    run = AsyncAgentTraceRun("test run", client=client)
-
-    run.on_user_message("hi")
+async def test_on_error_and_end_failed_are_sent(run, post):
     run.on_error("boom")
     run.end("failed")
-    await run.aclose(timeout=2.0)  # never raises
+    await run.aclose(timeout=2.0)
 
-    post.assert_not_called()
+    bodies = _bodies(post)
+    assert bodies[1]["type"] == "error" and bodies[1]["status"] == "error"
+    assert bodies[-1] == {"runId": "run_1", "endRun": "failed"}
+
+
+async def test_keyed_request_sends_bearer_and_no_project(run, post):
+    run.on_user_message("hi")
+    await run.aclose(timeout=2.0)
+
+    assert post.call_args_list[0].kwargs["headers"]["Authorization"] == "Bearer atr_test"
+    assert "project" not in _bodies(post)[0]
+
+
+async def test_anonymizer_applied_to_every_payload(post):
+    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    run = AsyncAgentTraceRun("test run", client=client, anonymizer=lambda p: {"masked": True})
+    run.on_user_message("Jane Doe, SSN 123")
+    run.on_stream_event("final", "main", {"message": "Jane Doe is fine"})
+    await run.aclose(timeout=2.0)
+
+    events = [b for b in _bodies(post) if "type" in b]
+    assert len(events) == 2
+    assert all(e["payload"] == {"masked": True} for e in events)
+
+
+async def test_failing_anonymizer_is_never_fatal(post, caplog):
+    def broken(payload):
+        raise RuntimeError("scrubber down")
+
+    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    run = AsyncAgentTraceRun("test run", client=client, anonymizer=broken)
+    run.on_user_message("hello")
+    await run.aclose(timeout=2.0)
+
+    events = [b for b in _bodies(post) if "type" in b]
+    assert events[0]["payload"] == {"message": "hello"}  # passed through unmasked
+    assert any("anonymizer raised" in r.getMessage() for r in caplog.records)
+
+
+# ----- keyless (`agenttrace ui --auth none`) -----
+
+
+@pytest.fixture
+def local_server(monkeypatch):
+    """An httpx MockTransport bridging into the real FastAPI app (keyless mode)."""
+    from fastapi.testclient import TestClient
+
+    from agenttrace.server.app import app
+
+    monkeypatch.setenv("AGENTTRACE_AUTH", "none")
+    monkeypatch.setenv("AGENTTRACE_ALLOWED_HOSTS", "testserver")
+    monkeypatch.setenv("AGENTTRACE_PROJECT", "async-keyless")
+    monkeypatch.delenv("AGENTTRACE_KEY", raising=False)
+    with TestClient(app) as test_client:
+        seen = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            seen.append(request)
+            resp = test_client.post(
+                request.url.path, content=request.content, headers=dict(request.headers)
+            )
+            return httpx.Response(resp.status_code, content=resp.content, headers=resp.headers)
+
+        yield test_client, seen, httpx.MockTransport(handler)
+
+
+async def test_keyless_run_posts_to_local_server(local_server):
+    test_client, seen, transport = local_server
+    async with httpx.AsyncClient(transport=transport) as http:
+        client = AsyncAgentTraceClient(url="http://testserver/api/events", client=http)
+        run = AsyncAgentTraceRun("keyless run", client=client)
+        run.on_user_message("hi")
+        run.on_stream_event("final", "main", {"message": "done"})
+        run.end("completed")
+        await run.aclose(timeout=5.0)
+
+    assert all("authorization" not in r.headers for r in seen)
+    created = json.loads(seen[0].content)
+    assert created == {"runId": None, "name": "keyless run", "project": "async-keyless"}
+    run_id = json.loads(seen[1].content)["runId"]
+    stored = test_client.get(f"/api/runs/{run_id}").json()["run"]
+    assert stored["status"] == "completed"
+    assert [e["type"] for e in stored["events"]] == ["handoff", "final_answer"]
+
+
+async def test_keyless_401_disables_run_with_one_warning(caplog, monkeypatch):
+    monkeypatch.delenv("AGENTTRACE_KEY", raising=False)
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        return httpx.Response(401, json={"error": "Invalid API key"})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http:
+        client = AsyncAgentTraceClient(url="http://h/api/events", client=http)
+        run = AsyncAgentTraceRun("test run", client=client)
+        run.on_user_message("hi")
+        run.on_error("boom")
+        run.end("failed")
+        await run.aclose(timeout=2.0)  # never raises
+
+    assert len(calls) == 1  # disabled after the first 401
+    warnings = [r for r in caplog.records if r.levelname == "WARNING"]
+    assert len(warnings) == 1 and "AGENTTRACE_KEY" in warnings[0].getMessage()
