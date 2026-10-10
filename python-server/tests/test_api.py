@@ -154,6 +154,29 @@ def test_stats_endpoint(client):
     assert stats["totalRuns"] == 1
     assert stats["completed"] == 1
     assert stats["successRate"] == 100
+    # Timestamps carry an explicit UTC offset so browsers don't read them as local time.
+    assert stats["perProject"][0]["lastRunAt"].endswith("+00:00")
+    [recent] = stats["recent"]
+    assert recent["startedAt"].endswith("+00:00") and recent["endedAt"].endswith("+00:00")
+    assert recent["events"] == 0 and recent["project"]["name"] == "Stats demo"
+    assert stats["totalEvents"] == 0 and stats["typeDist"] == {}
+
+
+def test_stats_counts_only_the_current_users_events(client):
+    _signup(client)
+    created = client.post("/api/projects", json={"name": "Mine"}).json()
+    headers = {"Authorization": f"Bearer {created['apiKey']}"}
+    run_id = client.post("/api/events", json={"runId": None, "name": "r"}, headers=headers).json()["runId"]
+    for type_ in ("llm_call", "llm_call", "tool_call"):
+        client.post("/api/events", json={"runId": run_id, "source": "a", "target": "b", "type": type_}, headers=headers)
+    mine = client.get("/api/stats").json()
+    assert mine["totalEvents"] == 3 and mine["typeDist"] == {"llm_call": 2, "tool_call": 1}
+    assert mine["recent"][0]["events"] == 3
+
+    client.post("/api/auth/signout")
+    _signup(client)
+    other = client.get("/api/stats").json()
+    assert other["totalEvents"] == 0 and other["typeDist"] == {} and other["recent"] == []
 
 
 def test_websocket_receives_broadcast_event(client):

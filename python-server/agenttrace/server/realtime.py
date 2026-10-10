@@ -31,7 +31,7 @@ from fastapi import WebSocket
 
 from . import models
 from .db import SessionLocal
-from .serializers import event_out
+from .serializers import _iso, event_out
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ MAX_SUBSCRIPTIONS_PER_SOCKET = 50
 
 
 def _run_state(run: models.Run) -> tuple[str, Optional[str]]:
-    return run.status, run.ended_at.isoformat() if run.ended_at else None
+    return run.status, _iso(run.ended_at)
 
 
 class ConnectionManager:
