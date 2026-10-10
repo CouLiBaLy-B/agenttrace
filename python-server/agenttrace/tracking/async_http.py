@@ -41,19 +41,17 @@ class AsyncHttpEventClient:
             await self._client.aclose()
 
     async def emit(self, event: dict) -> dict:
-        if not self.api_key:
-            raise RuntimeError(
-                "AgentTrace API key missing — pass api_key=... or set AGENTTRACE_KEY "
-                "(project key from the Integration tab, prefixed 'atr_')."
+        # No key: rely on the server's `--auth none` local mode (same as the
+        # sync `RestStore`); a 401 then means the server wants a key.
+        headers = {"Content-Type": "application/json"}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        response = await self._get_client().post(self.url, json=event, headers=headers)
+        if response.status_code == 401 and not self.api_key:
+            raise PermissionError(
+                f"{self.url} requires an API key — set AGENTTRACE_KEY "
+                "(or start the server with `agenttrace ui --auth none`)."
             )
-        response = await self._get_client().post(
-            self.url,
-            json=event,
-            headers={
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            },
-        )
         response.raise_for_status()
         return response.json()
 

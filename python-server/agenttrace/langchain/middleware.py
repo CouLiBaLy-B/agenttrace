@@ -41,10 +41,18 @@ from ..tracking.http import DEFAULT_URL
 from ..tracking.run import ANSWER_LIMIT, LABEL_LIMIT, RESULT_LIMIT, ActiveRun, compact, truncate
 from ..tracking.stores import TrackingStore, store_for_uri
 from ..tracking.stores.rest import RestStore
+from .projection import HANDOFF_MARKERS
+from .projection import content_to_text as _content_to_text  # noqa: F401 - re-exported
+from .projection import extract_handoff_target as _extract_handoff_target
+from .projection import last_model_message as _last_model_message
+from .projection import messages_preview as _messages_preview
+from .projection import model_name as _model_name
+from .projection import response_preview as _response_preview
+from .projection import result_content as _result_content
+from .projection import token_usage as _token_usage
 
 logger = logging.getLogger(__name__)
 
-HANDOFF_MARKERS = ("handoff", "delegate")
 
 
 class AgentTraceMiddleware(AgentMiddleware):
@@ -115,7 +123,7 @@ class AgentTraceMiddleware(AgentMiddleware):
         model_name = _model_name(request)
         start = time.time()
         response = handler(request)
-        self._emit_llm_call(run, model_name, response, start)
+        self._emit_llm_call(run, model_name, request, response, start)
         return response
 
     async def awrap_model_call(self, request, handler: Callable) -> Any:
@@ -123,10 +131,12 @@ class AgentTraceMiddleware(AgentMiddleware):
         model_name = _model_name(request)
         start = time.time()
         response = await handler(request)
-        self._emit_llm_call(run, model_name, response, start)
+        self._emit_llm_call(run, model_name, request, response, start)
         return response
 
-    def _emit_llm_call(self, run: ActiveRun, model_name: str, response: Any, start: float) -> None:
+    def _emit_llm_call(
+        self, run: ActiveRun, model_name: str, request: Any, response: Any, start: float
+    ) -> None:
         # wrap_model_call's handler returns a `ModelResponse` dataclass
         # (`.result: list[BaseMessage]`), not a bare message — unwrap to the
         # last message before reading content/usage. Some middleware/tests
@@ -138,6 +148,7 @@ class AgentTraceMiddleware(AgentMiddleware):
             type="llm_call",
             label="llm step",
             payload={
+                "input": _messages_preview(request),
                 "output_preview": truncate(_response_preview(message), 240),
                 "tokens": _token_usage(message),
             },
@@ -212,49 +223,6 @@ class AgentTraceMiddleware(AgentMiddleware):
             payload={"error": type(exc).__name__, "message": str(exc)},
             status="error",
         )
-
-
-def _model_name(request) -> str:
-    model = getattr(request, "model", None)
-    name = getattr(model, "model", None) or getattr(model, "model_name", None)
-    return str(name) if name else "LLM"
-
-
-def _last_model_message(response) -> Any:
-    """Unwrap a `ModelResponse` (`.result: list[BaseMessage]`) to its last
-    message. Falls back to `response` itself if it isn't a ModelResponse
-    (e.g. a bare AIMessage, as some tests/middleware hand back directly)."""
-    result = getattr(response, "result", None)
-    if isinstance(result, list) and result:
-        return result[-1]
-    return response
-
-
-def _response_preview(response) -> str:
-    content = _result_content(response)
-    return content if isinstance(content, str) else str(content)
-
-
-def _result_content(result) -> Any:
-    for attr in ("content", "result", "text"):
-        value = getattr(result, attr, None)
-        if value is not None:
-            return value
-    return result
-
-
-def _token_usage(response) -> Optional[dict]:
-    for attr in ("usage_metadata", "response_metadata"):
-        value = getattr(response, attr, None)
-        if value:
-            return value
-    return None
-
-
-def _extract_handoff_target(tool_args: dict) -> Optional[str]:
-    if isinstance(tool_args, dict):
-        return tool_args.get("to") or tool_args.get("name") or tool_args.get("agent")
-    return None
 
 
 def _last_message_text(state) -> str:
