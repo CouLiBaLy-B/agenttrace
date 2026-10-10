@@ -40,6 +40,37 @@ describe("chronoLayout", () => {
   })
 })
 
+describe("chronoLayout with unreadable timestamps", () => {
+  it("marks a run whose start cannot be read as unplaceable, with finite numbers", () => {
+    const rows = chronoLayout(
+      [
+        { startedAt: "not a date", endedAt: iso(from + 2 * H), status: "completed" },
+        { startedAt: iso(from + 12 * H), endedAt: iso(from + 18 * H), status: "completed" },
+      ],
+      from,
+      to,
+      240,
+    )
+    expect(rows[0]).toEqual({ x: 0, w: 0, startedBefore: false, live: false, placeable: false })
+    expect(rows[1]).toMatchObject({ placeable: true })
+    expect(rows[1].x).toBeCloseTo(120)
+  })
+  it("treats an unreadable end like a missing one", () => {
+    const [done, live] = chronoLayout(
+      [
+        { startedAt: iso(from + 2 * H), endedAt: "garbage", status: "failed" },
+        { startedAt: iso(from + 20 * H), endedAt: "garbage", status: "running" },
+      ],
+      from,
+      to,
+      240,
+    )
+    expect(done).toMatchObject({ x: 20, w: 4, placeable: true })
+    expect(Number.isFinite(live.w)).toBe(true)
+    expect(live.x + live.w).toBeCloseTo(240)
+  })
+})
+
 describe("chronoTicks", () => {
   it("labels a 24 h window", () => {
     expect(chronoTicks(from, to).map((t) => t.label)).toEqual(["−24 h", "−18 h", "−12 h", "−6 h", "now"])

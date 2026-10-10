@@ -246,7 +246,8 @@ export function Chronogram({
                           />
                         </svg>
                         {p.runs.map((r, i) => {
-                          const { x, w, startedBefore, live } = layout[i]
+                          const { x, w, startedBefore, live, placeable } = layout[i]
+                          if (!placeable) return null
                           return (
                             <Segment
                               key={r.id}

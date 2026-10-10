@@ -1,7 +1,14 @@
 "use client"
 
 import { create } from "zustand"
-import { parsePreference, resolveTheme, writeStoredPreference, type ThemeId, type ThemePreference } from "./theme-core"
+import {
+  parsePreference,
+  resolveTheme,
+  THEME_STORAGE_KEY,
+  writeStoredPreference,
+  type ThemeId,
+  type ThemePreference,
+} from "./theme-core"
 
 export * from "./theme-core"
 
@@ -62,6 +69,7 @@ interface ThemeState {
   systemDark: boolean
   setPreference: (pref: ThemePreference, origin?: { x: number; y: number }) => void
   syncFromDocument: () => void
+  adoptStoredPreference: (raw: string | null) => void
   setSystemDark: (dark: boolean) => void
 }
 
@@ -90,6 +98,17 @@ export const useTheme = create<ThemeState>((set, get) => ({
     requested = null // the document is the source of truth again
     set({ preference, systemDark, resolved })
   },
+  adoptStoredPreference: (raw) => {
+    // Another tab already stored this preference and played its reveal: follow
+    // it instantly here (no transition, no storage write back).
+    const preference = parsePreference(raw)
+    const resolved = resolveTheme(preference, get().systemDark)
+    const root = document.documentElement
+    root.setAttribute("data-theme-pref", preference)
+    requested = resolved // a reveal still pending in this tab commits this theme, not its own
+    root.setAttribute("data-theme", resolved)
+    set({ preference, resolved })
+  },
   setSystemDark: (systemDark) => {
     const { preference } = get()
     const resolved = resolveTheme(preference, systemDark)
@@ -97,3 +116,10 @@ export const useTheme = create<ThemeState>((set, get) => ({
     if (preference === "auto") applyTheme(resolved)
   },
 }))
+
+/** `storage` event handler: keeps every open tab on the theme chosen in any of
+ * them. `key` is null when another tab cleared its storage (back to auto). */
+export function themeStorageListener(e: Pick<StorageEvent, "key" | "newValue">): void {
+  if (e.key !== THEME_STORAGE_KEY && e.key !== null) return
+  useTheme.getState().adoptStoredPreference(e.key === null ? null : e.newValue)
+}

@@ -266,3 +266,46 @@ describe("revealOrigin", () => {
     expect(revealOrigin({ detail: 0, clientX: 0, clientY: 0, currentTarget: target })).toEqual({ x: 114, y: 414 })
   })
 })
+
+describe("adoptStoredPreference (another tab changed the theme)", () => {
+  it("applies the new preference instantly, without a reveal or a storage write", () => {
+    const env = setup({ attrs: { "data-theme": "cyanotype", "data-theme-pref": "auto" }, dark: true })
+    useTheme.getState().adoptStoredPreference("studio")
+    expect(env.attributes.get("data-theme")).toBe("studio")
+    expect(env.attributes.get("data-theme-pref")).toBe("studio")
+    expect(env.startViewTransition).not.toHaveBeenCalled()
+    expect(env.attributes.has("data-theme-switching")).toBe(false)
+    expect(env.saved.size).toBe(0)
+    expect(useTheme.getState()).toMatchObject({ preference: "studio", resolved: "studio" })
+  })
+
+  it("resolves auto (or a cleared key) against the OS", () => {
+    const env = setup({ attrs: { "data-theme": "phosphore", "data-theme-pref": "phosphore" }, dark: false })
+    useTheme.setState({ systemDark: false })
+    useTheme.getState().adoptStoredPreference(null)
+    expect(env.attributes.get("data-theme")).toBe("studio")
+    expect(useTheme.getState()).toMatchObject({ preference: "auto", resolved: "studio" })
+  })
+
+  it("is not undone by a reveal this tab still had pending", () => {
+    const env = setup({ attrs: { "data-theme": "cyanotype", "data-theme-pref": "cyanotype" } })
+    useTheme.getState().setPreference("studio") // reveal pending in this tab
+    useTheme.getState().adoptStoredPreference("phosphore")
+    env.runTransitions()
+    expect(env.attributes.get("data-theme")).toBe("phosphore")
+  })
+})
+
+describe("themeStorageListener", () => {
+  it("only reacts to the theme key", async () => {
+    const env = setup({ attrs: { "data-theme": "cyanotype", "data-theme-pref": "auto" }, dark: true })
+    const { themeStorageListener } = await import("@/lib/theme")
+    themeStorageListener({ key: "something-else", newValue: "studio" })
+    expect(env.attributes.get("data-theme")).toBe("cyanotype")
+    themeStorageListener({ key: THEME_STORAGE_KEY, newValue: "phosphore" })
+    expect(env.attributes.get("data-theme")).toBe("phosphore")
+    themeStorageListener({ key: null, newValue: null }) // localStorage.clear() in another tab
+    expect(useTheme.getState().preference).toBe("auto")
+    expect(env.attributes.get("data-theme")).toBe("cyanotype")
+  })
+})
