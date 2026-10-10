@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from ..tracking.run import LABEL_LIMIT, RESULT_LIMIT, truncate
+from ..tracking.run import LABEL_LIMIT, RESULT_LIMIT, compact, truncate
 
 # Tool-name substrings that mark a delegation to a sub-agent rather than a
 # plain tool call (deepagents' `task`, or any `handoff_to_*`/`delegate_*`).
@@ -45,13 +45,26 @@ def content_to_text(content: Any) -> str:
     return str(content)
 
 
-def message_dict(message: Any, limit: int = RESULT_LIMIT) -> dict[str, Any]:
+SYSTEM_LIMIT = LABEL_LIMIT * 4
+
+
+def _cap(text: str, limit: Optional[int]) -> str:
+    return text if limit is None else truncate(text, limit)
+
+
+def message_dict(message: Any, limit: Optional[int] = RESULT_LIMIT) -> dict[str, Any]:
     role = getattr(message, "type", None) or type(message).__name__
     content = getattr(message, "content", message)
-    return {"role": role, "content": truncate(content_to_text(content), limit)}
+    return {"role": role, "content": _cap(content_to_text(content), limit)}
 
 
-def messages_preview(messages: Any, system_message: Any = None) -> dict[str, Any]:
+def messages_preview(
+    messages: Any,
+    system_message: Any = None,
+    *,
+    limit: Optional[int] = RESULT_LIMIT,
+    system_limit: Optional[int] = SYSTEM_LIMIT,
+) -> dict[str, Any]:
     """The input to an LLM call: system prompt (if any) + conversation messages.
 
     Accepts either a `ModelRequest`-style object (has `.messages`/
@@ -59,6 +72,8 @@ def messages_preview(messages: Any, system_message: Any = None) -> dict[str, Any
     callback shape). A `system`-role message found inside the list is lifted
     into its own `system` field. Each field is truncated on its own so a huge,
     mostly-unchanging system prompt can't crowd out the conversation turns.
+    Pass ``limit=None, system_limit=None`` for the full text (e.g. to
+    anonymize before truncating), then `bound_input` it.
     """
     # ModelRequest-style object: unwrap its fields.
     if not isinstance(messages, list):
@@ -73,14 +88,38 @@ def messages_preview(messages: Any, system_message: Any = None) -> dict[str, Any
         if system_text is None and role in ("system", "SystemMessage"):
             system_text = content_to_text(getattr(m, "content", m if not isinstance(m, dict) else m.get("content")))
             continue
-        convo.append(message_dict(m))
+        convo.append(message_dict(m, limit))
 
     preview: dict[str, Any] = {"messages": convo}
     if system_message is not None:
         system_text = content_to_text(getattr(system_message, "content", system_message))
     if system_text is not None:
-        preview["system"] = truncate(system_text, LABEL_LIMIT * 4)
+        preview["system"] = _cap(system_text, system_limit)
     return preview
+
+
+def bound_input(preview: Any) -> Any:
+    """Apply `messages_preview`'s per-field limits to an untruncated LLM input
+    preview (``{"system", "messages"}``) or a text-completion ``{"prompts"}``
+    — after anonymization. Shapes it doesn't recognise are `compact`-ed."""
+    if not isinstance(preview, dict):
+        return compact(preview)
+    bounded: dict[str, Any] = {}
+    for key, value in preview.items():
+        if key == "system":
+            bounded[key] = truncate(str(value), SYSTEM_LIMIT)
+        elif key == "messages" and isinstance(value, list):
+            bounded[key] = [
+                {**m, "content": truncate(str(m.get("content", "")), RESULT_LIMIT)}
+                if isinstance(m, dict)
+                else compact(m, RESULT_LIMIT)
+                for m in value
+            ]
+        elif key == "prompts" and isinstance(value, list):
+            bounded[key] = [truncate(str(p), RESULT_LIMIT) for p in value]
+        else:
+            bounded[key] = compact(value)
+    return bounded
 
 
 def last_model_message(response: Any) -> Any:

@@ -286,3 +286,33 @@ async def test_client_required_for_non_http_tracking_uri(tracking_uri, tmp_path)
     tracking_uri(f"sqlite:///{tmp_path}/agenttrace.db")
     with pytest.raises(ValueError, match="AGENTTRACE_TRACKING_URI=http://host:port"):
         AsyncAgentTraceCallbackHandler("run")
+
+
+async def test_llm_input_and_output_anonymized_before_truncation(post):
+    from agenttrace.langchain.projection import SYSTEM_LIMIT
+    from agenttrace.tracking.run import RESULT_LIMIT
+    from tests.tracking.test_async_run import _scrub, _straddle, assert_no_token_fragment
+
+    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    h = AsyncAgentTraceCallbackHandler("run", client=client, anonymizer=_scrub)
+    chat, text, tool = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    await h.on_chat_model_start(
+        {},
+        [[FakeMessage("system", _straddle(SYSTEM_LIMIT)), FakeMessage("human", _straddle(RESULT_LIMIT))]],
+        run_id=chat,
+        metadata={"ls_model_name": "gpt"},
+    )
+    await h.on_llm_end(FakeLLMResult(FakeAIMessage(_straddle(240))), run_id=chat)
+    await h.on_llm_start({}, [_straddle(RESULT_LIMIT)], run_id=text)
+    await h.on_llm_end(FakeLLMResult(FakeAIMessage("ok")), run_id=text)
+    await h.on_tool_start({"name": "lookup"}, "", run_id=tool, inputs={"q": _straddle(60)})
+    await h.on_tool_end(_straddle(RESULT_LIMIT), run_id=tool)
+    await h.finish("completed", answer=_straddle(500))
+    await h.aclose()
+
+    assert_no_token_fragment(_bodies(post))
+    llm = [e for e in _events(post) if e["type"] == "llm_call"]
+    assert len(llm[0]["payload"]["input"]["system"]) <= SYSTEM_LIMIT + 1
+    assert len(llm[0]["payload"]["input"]["messages"][0]["content"]) <= RESULT_LIMIT + 1
+    assert len(llm[0]["payload"]["output_preview"]) <= 241
+    assert len(llm[1]["payload"]["input"]["prompts"][0]) <= RESULT_LIMIT + 1

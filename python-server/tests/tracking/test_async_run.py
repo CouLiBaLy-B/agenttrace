@@ -187,6 +187,75 @@ async def test_failing_anonymizer_fails_closed_and_warns_once(post, caplog):
     assert "Jane Doe" not in warnings[0].getMessage()
 
 
+# ----- anonymize the full value, THEN truncate -----
+
+TOKEN = "ID-739104628351"  # 15 chars
+
+
+def _scrub(value):
+    import re
+
+    if isinstance(value, str):
+        return re.sub(r"ID-\d{12}", "<id>", value)
+    if isinstance(value, dict):
+        return {k: _scrub(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_scrub(v) for v in value]
+    return value
+
+
+def _straddle(limit):
+    """Text whose TOKEN starts 5 chars before `limit`, i.e. across the cut."""
+    return "x" * (limit - 5) + TOKEN + " tail"
+
+
+def assert_no_token_fragment(data):
+    text = str(data)
+    for i in range(len(TOKEN) - 3):
+        assert TOKEN[i : i + 4] not in text, f"fragment {TOKEN[i:i + 4]!r} leaked"
+
+
+async def test_anonymizer_sees_full_values_before_truncation(post):
+    from agenttrace.tracking.run import ANSWER_LIMIT, LABEL_LIMIT, PAYLOAD_LIMIT, RESULT_LIMIT
+
+    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    run = AsyncAgentTraceRun(_straddle(120), client=client, anonymizer=_scrub)
+    run.on_user_message(_straddle(LABEL_LIMIT) + "y" * PAYLOAD_LIMIT)  # label cut
+    run.on_user_message(_straddle(PAYLOAD_LIMIT))  # payload cut
+    run.on_stream_event("tool_call", "main", {"id": "1", "name": "t", "args": _straddle(60)})
+    run.on_stream_event("tool_call", "main", {"id": "2", "name": "t", "args": {"q": _straddle(2000)}})
+    run.on_stream_event("tool_result", "main", {"id": "1", "name": "t", "result": _straddle(RESULT_LIMIT)})
+    run.on_stream_event("agent_start", "sub", {"scope": "subagent", "label": _straddle(PAYLOAD_LIMIT)})
+    run.on_stream_event("final", "main", {"message": _straddle(ANSWER_LIMIT)})
+    run.on_error(_straddle(PAYLOAD_LIMIT))
+    await run.aclose(timeout=2.0)
+
+    bodies = _bodies(post)
+    assert len(bodies) == 9
+    assert_no_token_fragment(bodies)
+    assert "<id>" in bodies[0]["name"]
+    events = [b for b in bodies if "type" in b]
+    # Size bounds still hold after anonymization.
+    assert len(events[0]["label"]) <= LABEL_LIMIT + 1
+    assert len(events[1]["payload"]["message"]) <= PAYLOAD_LIMIT + 1
+    assert events[2]["label"].startswith("t(") and len(events[2]["label"]) <= 60 + 4
+    assert len(events[4]["payload"]["result"]) <= RESULT_LIMIT + 1
+    assert len(events[6]["payload"]["answer"]) <= ANSWER_LIMIT + 1
+
+
+async def test_without_anonymizer_payloads_are_still_bounded(run, post):
+    from agenttrace.tracking.run import LABEL_LIMIT, PAYLOAD_LIMIT
+
+    run.on_user_message("z" * 5000)
+    run.on_stream_event("tool_call", "main", {"id": "1", "name": "t", "args": "a" * 5000})
+    await run.aclose(timeout=2.0)
+
+    events = [b for b in _bodies(post) if "type" in b]
+    assert events[0]["label"] == "z" * LABEL_LIMIT + "…"
+    assert events[0]["payload"]["message"] == "z" * PAYLOAD_LIMIT + "…"
+    assert events[1]["label"] == "t(" + "a" * 60 + "…)"
+
+
 # ----- keyless (`agenttrace ui --auth none`) -----
 
 

@@ -57,10 +57,10 @@ from langchain_core.callbacks import AsyncCallbackHandler
 
 from ..tracking._uri import events_url, get_tracking_uri, is_http_uri
 from ..tracking.async_http import AsyncHttpEventClient
-from ..tracking.async_run import AsyncAgentTraceRun
-from ..tracking.run import RESULT_LIMIT, truncate
+from ..tracking.async_run import AsyncAgentTraceRun, unbounded, text_bound
 from .projection import (
     HANDOFF_MARKERS,
+    bound_input,
     emitting_agent,
     extract_handoff_target,
     messages_preview,
@@ -170,7 +170,8 @@ class AsyncAgentTraceCallbackHandler(AsyncCallbackHandler):
         # `messages` is list[list[BaseMessage]] — one inner list per prompt.
         msgs = messages[0] if messages and isinstance(messages[0], list) else messages
         self._llm[run_id] = {
-            "input": messages_preview(msgs),
+            # Full text: anonymized before it is bounded (see on_llm_end).
+            "input": messages_preview(msgs, limit=None, system_limit=None),
             "metadata": metadata or {},
             "model": self._resolve_model(serialized, metadata),
             "start": time.monotonic(),
@@ -181,7 +182,7 @@ class AsyncAgentTraceCallbackHandler(AsyncCallbackHandler):
     ) -> None:
         # Text-completion models (no chat interface): keep the raw prompts.
         self._llm[run_id] = {
-            "input": {"prompts": [truncate(str(p), RESULT_LIMIT) for p in (prompts or [])]},
+            "input": {"prompts": [str(p) for p in (prompts or [])]},
             "metadata": metadata or {},
             "model": self._resolve_model(serialized, metadata),
             "start": time.monotonic(),
@@ -203,10 +204,12 @@ class AsyncAgentTraceCallbackHandler(AsyncCallbackHandler):
             label="llm step",
             payload={
                 "input": info.get("input") or {},
-                "output_preview": truncate(response_preview(message), 240),
+                "output_preview": response_preview(message),
                 "tokens": tokens,
             },
             duration_ms=self._elapsed(info.get("start")),
+            # Raw values above; AsyncAgentTraceRun.emit anonymizes, then bounds.
+            payload_bounds={"input": bound_input, "output_preview": text_bound(240), "tokens": unbounded},
         )
 
     async def on_llm_error(self, error, *, run_id: UUID, **kwargs) -> None:
@@ -219,6 +222,7 @@ class AsyncAgentTraceCallbackHandler(AsyncCallbackHandler):
             label="llm failed",
             payload={"error": type(error).__name__, "message": str(error)},
             status="error",
+            payload_bounds={"error": unbounded, "message": unbounded},
         )
 
     # ----- tool calls (deepagents tools + sub-agent handoffs) -----
@@ -284,6 +288,7 @@ class AsyncAgentTraceCallbackHandler(AsyncCallbackHandler):
             label=f"{name} failed",
             payload={"error": type(error).__name__, "message": str(error)},
             status="error",
+            payload_bounds={"error": unbounded, "message": unbounded},
         )
 
     # ----- helpers -----

@@ -44,6 +44,37 @@ def _elapsed_ms(started: Optional[float]) -> Optional[int]:
     return int((time.monotonic() - started) * 1000) if started is not None else None
 
 
+def text_bound(limit: int) -> Callable[[Any], str]:
+    """A bound for a free-text field: `str()` it, then truncate to `limit`."""
+    return lambda value: truncate(str(value), limit)
+
+
+def unbounded(value: Any) -> Any:
+    """A bound that leaves the (already anonymized) value as-is."""
+    return value
+
+
+def _call_label_bound(name: str) -> Callable[[Any], str]:
+    """`name(args)` label: keep the tool name, truncate the args part to 60."""
+    head = f"{name}("
+
+    def bound(label: Any) -> str:
+        text = str(label)
+        if text.startswith(head) and text.endswith(")"):
+            return f"{head}{truncate(text[len(head):-1], 60)})"
+        return truncate(text, LABEL_LIMIT)
+
+    return bound
+
+
+def _bound_payload(payload: Any, bounds: Optional[dict[str, Callable[[Any], Any]]]) -> Any:
+    if bounds is None:
+        return payload
+    if not isinstance(payload, dict):
+        return compact(payload)
+    return {key: bounds.get(key, compact)(value) for key, value in payload.items()}
+
+
 # What a field becomes when the anonymizer raises (fail closed).
 REDACTED_PAYLOAD = {"redacted": "anonymizer failed"}
 REDACTED_TEXT = "[redacted]"
@@ -106,13 +137,19 @@ class AsyncAgentTraceRun:
         self._worker = asyncio.create_task(self._drain())
 
     # ----- high-level API mirroring a chat-run lifecycle -----
+    # Every method below hands `emit` the RAW (untruncated) label/payload plus
+    # the bounds to apply: `emit` anonymizes the full values first and only
+    # then truncates, so a PII token straddling a truncation boundary can't
+    # leak as a fragment the anonymizer no longer recognises.
     def on_user_message(self, message: str) -> None:
         self.emit(
             source="User",
             target=self._orchestrator,
             type="handoff",
-            label=truncate(message, LABEL_LIMIT) or self._phrases["user_message_fallback"],
-            payload={"message": truncate(message, PAYLOAD_LIMIT)},
+            label=message or self._phrases["user_message_fallback"],
+            payload={"message": message},
+            label_bound=text_bound(LABEL_LIMIT),
+            payload_bounds={"message": text_bound(PAYLOAD_LIMIT)},
         )
 
     def on_stream_event(self, kind: str, source: str, data: dict[str, Any]) -> None:
@@ -133,33 +170,36 @@ class AsyncAgentTraceRun:
             tool_id = str(data.get("id", ""))
             self._tool_started[tool_id] = time.monotonic()
             args = data.get("args", {})
-            args_preview = truncate(str(args), 60)
-            payload: dict[str, Any] = {"args": compact(args)}
+            payload: dict[str, Any] = {"args": args}
             if self._tool_server:
                 payload["server"] = self._tool_server(name)
             self.emit(
                 source=actor, target=name, type="tool_call",
-                label=f"{name}({args_preview})", payload=payload,
+                label=f"{name}({args})", payload=payload,
+                label_bound=_call_label_bound(name),
+                payload_bounds={"args": compact, "server": unbounded},
             )
         elif kind == "tool_result":
             name = str(data.get("name", "tool"))
             if name == "task":
                 return
             started = self._tool_started.pop(str(data.get("id", "")), None)
-            payload = {"result": truncate(str(data.get("result", "")), RESULT_LIMIT)}
+            payload = {"result": str(data.get("result", ""))}
             if self._tool_server:
                 payload["server"] = self._tool_server(name)
             self.emit(
                 source=name, target=actor, type="tool_result",
                 label=self._phrases["tool_result"].format(name=name), payload=payload,
                 duration_ms=_elapsed_ms(started),
+                payload_bounds={"result": text_bound(RESULT_LIMIT), "server": unbounded},
             )
         elif kind == "agent_start" and data.get("scope") == "subagent":
             self._subagent_started[source] = time.monotonic()
             self.emit(
                 source=self._orchestrator, target=source, type="handoff",
                 label=self._phrases["delegate"].format(target=source),
-                payload={"task": truncate(str(data.get("label", "")), PAYLOAD_LIMIT)},
+                payload={"task": str(data.get("label", ""))},
+                payload_bounds={"task": text_bound(PAYLOAD_LIMIT)},
             )
         elif kind == "agent_end" and data.get("scope") == "subagent":
             started = self._subagent_started.pop(source, None)
@@ -171,27 +211,31 @@ class AsyncAgentTraceRun:
                 label=self._phrases[label_key].format(name=source),
                 payload={"status": data.get("status"), "error": data.get("error")},
                 duration_ms=_elapsed_ms(started), status="error" if failed else "ok",
+                payload_bounds={"status": unbounded, "error": unbounded},
             )
         elif kind == "approval_required":
             self.emit(
                 source=self._orchestrator, target="User", type="handoff",
                 label=self._phrases["approval_required"],
-                payload={"actionRequests": compact(data.get("action_requests", []))},
+                payload={"actionRequests": data.get("action_requests", [])},
                 status="pending",
+                payload_bounds={"actionRequests": compact},
             )
         elif kind == "final":
             self.emit(
                 source=self._orchestrator, target="User", type="final_answer",
                 label=self._phrases["final_answer"],
-                payload={"answer": truncate(str(data.get("message", "")), ANSWER_LIMIT)},
+                payload={"answer": str(data.get("message", ""))},
+                payload_bounds={"answer": text_bound(ANSWER_LIMIT)},
             )
         # token / todo / chart: UI-only noise for a sequence diagram — ignored.
 
     def on_error(self, message: str) -> None:
         self.emit(
             source=self._orchestrator, target="User", type="error",
-            label=self._phrases["run_failed"], payload={"error": truncate(message, PAYLOAD_LIMIT)},
+            label=self._phrases["run_failed"], payload={"error": message},
             status="error",
+            payload_bounds={"error": text_bound(PAYLOAD_LIMIT)},
         )
 
     # ----- low-level emit / lifecycle -----
@@ -205,7 +249,14 @@ class AsyncAgentTraceRun:
         payload: Optional[dict] = None,
         duration_ms: Optional[int] = None,
         status: Optional[str] = None,
+        label_bound: Optional[Callable[[Any], str]] = None,
+        payload_bounds: Optional[dict[str, Callable[[Any], Any]]] = None,
     ) -> None:
+        """Queue one event. `label`/`payload` should be the full, raw values:
+        they are anonymized first, then bounded — `label_bound` on the label,
+        and `payload_bounds[key]` on each payload field (keys without a bound,
+        or a non-dict anonymizer result, get `compact`). Without bounds the
+        anonymized values are sent as-is."""
         if self._failed:
             return
         # source/target are participant names (agent, tool, model, "User") and
@@ -214,9 +265,11 @@ class AsyncAgentTraceRun:
         # built by on_user_message/on_stream_event/on_error, pass through here.
         event: dict[str, Any] = {"source": source, "target": target, "type": type}
         if label is not None:
-            event["label"] = self._anonymize(label, REDACTED_TEXT)
+            masked = self._anonymize(label, REDACTED_TEXT)
+            event["label"] = label_bound(masked) if label_bound is not None else masked
         if payload is not None:
-            event["payload"] = self._anonymize(payload, REDACTED_PAYLOAD)
+            masked = self._anonymize(payload, REDACTED_PAYLOAD)
+            event["payload"] = _bound_payload(masked, payload_bounds)
         if duration_ms is not None:
             event["durationMs"] = duration_ms
         if status is not None:
