@@ -46,6 +46,30 @@ with agenttrace.start_run("triage"):
 def web_search(query: str) -> str: ...
 ```
 
+### Async servers (cached agent, one handler per request)
+
+A server that compiles the agent once can't bake a per-run middleware into
+it; attach a fresh async callback handler per request instead. It traces the
+main agent and every deepagents sub-agent, and posts to a running
+`agenttrace ui` (`AGENTTRACE_TRACKING_URI=http://host:port`, plus
+`AGENTTRACE_KEY` with `--auth password`), or pass `client=`:
+
+```python
+from agenttrace.langchain import AsyncAgentTraceCallbackHandler
+from agenttrace.tracking.async_http import AsyncHttpEventClient
+
+client = AsyncHttpEventClient(url=..., api_key=..., client=httpx_async_client)  # optional
+handler = AsyncAgentTraceCallbackHandler(session_id, client=client, phrases=_PHRASES, anonymizer=fn)
+handler.on_user_message(query)        # then config={"callbacks": [handler]} on astream_events
+handler.approval_required(info)       # HITL pause
+await handler.finish(status, answer=report); await handler.aclose()
+```
+
+`anonymizer` sees every payload (dict), label (str) and the run name; if it
+raises, the field is redacted, never sent unmasked. The 0.2.2 import
+`from agenttrace_langchain import AgentTraceCallbackHandler, AsyncAgentTraceClient`
+still works (deprecated).
+
 | MLflow | AgentTrace |
 | --- | --- |
 | `mlflow.set_tracking_uri()` / `MLFLOW_TRACKING_URI` | `agenttrace.set_tracking_uri()` / `AGENTTRACE_TRACKING_URI` |

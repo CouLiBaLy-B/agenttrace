@@ -1,11 +1,21 @@
 > **Deprecated.** This package is now a thin shim. Use
 > `pip install 'deepagents-trace[langchain]'` and `import agenttrace.langchain`
-> (or `agenttrace.langchain.autolog()`). Existing top-level imports
-> (`from agenttrace_langchain import AgentTraceMiddleware`, `AgentTraceRun`,
-> `AgentTraceClient`, `AsyncAgentTraceRun`, `AsyncAgentTraceClient`) keep
+> (or `agenttrace.langchain.autolog()`). Existing top-level imports keep
 > working and emit a `DeprecationWarning`, as do the old submodule paths
 > (`agenttrace_langchain.client`, `.async_client`, `.run`, `.async_run`,
-> `.middleware`), which are now aliases.
+> `.middleware`, `.callback`, `.projection`), which are now aliases.
+>
+> | `agenttrace_langchain` | New import |
+> | --- | --- |
+> | `AgentTraceMiddleware` | `agenttrace.langchain.AgentTraceMiddleware` |
+> | `AgentTraceCallbackHandler` (0.2.2, async) | `agenttrace.langchain.AsyncAgentTraceCallbackHandler` |
+> | `AgentTraceClient` | `agenttrace.tracking.http.HttpEventClient` |
+> | `AgentTraceRun` | `agenttrace.tracking.http.AgentTraceRun` |
+> | `AsyncAgentTraceClient` | `agenttrace.tracking.async_http.AsyncHttpEventClient` |
+> | `AsyncAgentTraceRun` | `agenttrace.tracking.async_run.AsyncAgentTraceRun` |
+>
+> Note: `agenttrace.langchain.AgentTraceCallbackHandler` (no `Async`) is the
+> sync handler used by `autolog()`, not the 0.2.2 class.
 
 # agenttrace-langchain
 
@@ -99,7 +109,12 @@ run's `after_agent` closes the AgentTrace run, and every later request on that
 cached agent silently traces into an already-closed run. The middleware is
 only correct when the agent is (re)built per invocation.
 
-For a cached-agent server, create one `AsyncAgentTraceRun` **per request**
+The least-code option is one `AgentTraceCallbackHandler` (0.2.2 API, now
+`agenttrace.langchain.AsyncAgentTraceCallbackHandler`) per request, attached via
+`config={"callbacks": [handler]}`; see "Async servers" in the
+[deepagents-trace README](../../python-server/README.md).
+
+Lower-level: create one `AsyncAgentTraceRun` **per request**
 instead, independent of the agent build, and feed it events from your own
 stream projection (`agent.astream_events(...)`) rather than from `middleware`:
 
