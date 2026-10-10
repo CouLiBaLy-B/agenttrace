@@ -14,6 +14,8 @@ from typing import Any, Optional
 
 import httpx
 
+from ._uri import events_url
+
 from .http import DEFAULT_URL, VALID_EVENT_TYPES
 
 
@@ -25,7 +27,8 @@ class AsyncHttpEventClient:
         timeout: float = 10.0,
         client: Optional[httpx.AsyncClient] = None,
     ):
-        self.url = url or os.getenv("AGENTTRACE_URL", DEFAULT_URL)
+        # Base server URL or the full /api/events URL — both accepted.
+        self.url = events_url(url or os.getenv("AGENTTRACE_URL", DEFAULT_URL))
         self.api_key = api_key or os.getenv("AGENTTRACE_KEY")
         self.timeout = timeout
         self._client = client

@@ -159,3 +159,14 @@ def test_network_failure_disables_run_without_raising(mocker):
     run.close(timeout=2.0)
 
     assert run._failed is True
+
+
+@pytest.mark.parametrize(
+    "url",
+    ["http://host:3000", "http://host:3000/", "http://host:3000/api/events", "http://host:3000/api/events/"],
+)
+def test_clients_accept_base_or_events_url(url):
+    from agenttrace.langchain import AsyncHttpEventClient
+
+    assert AgentTraceClient(url=url).url == "http://host:3000/api/events"
+    assert AsyncHttpEventClient(url=url).url == "http://host:3000/api/events"
