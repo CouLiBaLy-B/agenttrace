@@ -17,6 +17,8 @@ def test_shim_reexports_and_warns():
     sys.modules.pop("agenttrace_langchain", None)
     with pytest.warns(DeprecationWarning, match="agenttrace.langchain"):
         shim = importlib.import_module("agenttrace_langchain")
+    from agenttrace.langchain import AgentTraceCallbackHandler as SyncHandler
+    from agenttrace.langchain.async_callback import AsyncAgentTraceCallbackHandler
     from agenttrace.langchain.middleware import AgentTraceMiddleware
     from agenttrace.tracking.async_http import AsyncHttpEventClient
     from agenttrace.tracking.async_run import AsyncAgentTraceRun
@@ -27,6 +29,10 @@ def test_shim_reexports_and_warns():
     assert shim.AgentTraceRun is AgentTraceRun
     assert shim.AsyncAgentTraceClient is AsyncHttpEventClient
     assert shim.AsyncAgentTraceRun is AsyncAgentTraceRun
+    # 0.2.2 name/semantics: the async per-request handler, not the sync autolog one.
+    assert shim.AgentTraceCallbackHandler is AsyncAgentTraceCallbackHandler
+    assert shim.AgentTraceCallbackHandler is not SyncHandler
+    assert "AgentTraceCallbackHandler" in shim.__all__
 
 
 def test_pre_0_2_submodules_still_import():
@@ -47,3 +53,37 @@ def test_pre_0_2_submodules_still_import():
 
     assert _fresh("agenttrace_langchain.async_run").AsyncAgentTraceRun is async_run.AsyncAgentTraceRun
     assert _fresh("agenttrace_langchain.middleware").AgentTraceMiddleware is new_middleware.AgentTraceMiddleware
+
+
+def test_0_2_2_submodules_still_import():
+    from agenttrace.langchain import projection
+    from agenttrace.langchain.async_callback import AsyncAgentTraceCallbackHandler
+
+    assert _fresh("agenttrace_langchain.callback").AgentTraceCallbackHandler is AsyncAgentTraceCallbackHandler
+    old_projection = _fresh("agenttrace_langchain.projection")
+    for name in old_projection.__all__:
+        assert getattr(old_projection, name) is getattr(projection, name)
+
+
+async def test_0_2_2_usage_still_works(mocker):
+    """The downstream 0.2.2 call pattern: explicit AsyncAgentTraceClient,
+    phrases + anonymizer, user message, HITL pause, finish, aclose."""
+    post = mocker.patch("httpx.AsyncClient.post")
+    response = mocker.Mock()
+    response.json.return_value = {"runId": "run_1"}
+    post.return_value = response
+    shim = _fresh("agenttrace_langchain")
+
+    client = shim.AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    handler = shim.AgentTraceCallbackHandler(
+        "session-1", client=client, phrases={"final_answer": "réponse"}, anonymizer=lambda v: v
+    )
+    handler.on_user_message("query")
+    handler.approval_required({"tool": "x"})
+    await handler.finish("completed", answer="report")
+    await handler.aclose()
+
+    bodies = [c.kwargs["json"] for c in post.call_args_list]
+    assert [b.get("type") for b in bodies[1:-1]] == ["handoff", "handoff", "final_answer"]
+    assert bodies[-2]["label"] == "réponse"
+    assert bodies[-1] == {"runId": "run_1", "endRun": "completed"}
