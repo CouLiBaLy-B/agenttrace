@@ -181,14 +181,24 @@ async def test_subagent_inner_calls_attributed_via_task_ns(handler, post):
 
 async def test_anonymizer_applied_to_every_payload(post):
     client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
-    h = AsyncAgentTraceCallbackHandler("run", client=client, anonymizer=lambda p: {"masked": True})
-    rid = uuid.uuid4()
+    h = AsyncAgentTraceCallbackHandler(
+        "run", client=client, anonymizer=lambda v: "<masked>" if isinstance(v, str) else {"masked": True}
+    )
+    rid, task_rid = uuid.uuid4(), uuid.uuid4()
     await h.on_tool_start({"name": "lookup"}, "", run_id=rid, inputs={"patient": "Jane Doe"})
     await h.on_tool_end("SSN 123", run_id=rid)
+    await h.on_tool_start(
+        {"name": "task"}, "", run_id=task_rid, inputs={"subagent_type": "researcher", "description": "Jane Doe"}
+    )
+    await h.on_tool_error(ValueError("Jane Doe not found"), run_id=task_rid)
     await h.aclose()
 
-    for ev in _events(post):
+    events = _events(post)
+    assert len(events) == 4
+    for ev in events:
         assert ev["payload"] == {"masked": True}
+        assert ev["label"] == "<masked>"
+    assert "Jane Doe" not in str(_bodies(post))
 
 
 async def test_tool_error_emits_error_event(handler, post):

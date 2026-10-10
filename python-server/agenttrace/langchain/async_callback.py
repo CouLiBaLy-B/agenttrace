@@ -16,7 +16,7 @@ Integration is minimal::
 
     handler = AsyncAgentTraceCallbackHandler(
         "chat run",                       # client= optional, see below
-        anonymizer=my_scrubber,           # optional; applied to every payload
+        anonymizer=my_scrubber,           # optional; every payload + label
     )
     handler.on_user_message(user_text)
     config = {"configurable": {"thread_id": tid}, "callbacks": [handler]}
@@ -33,7 +33,9 @@ call/result (with duration), sub-agent handoffs (the `task` tool and any
 agent or the emitting sub-agent node.
 
 Built on `AsyncAgentTraceRun`, so emission is non-blocking, never fatal, and
-payload-bounded, and the optional `anonymizer` is applied to every event.
+payload-bounded, and the optional `anonymizer` is applied to every event's
+payload (a dict) and label (a str) and to the run name; it fails closed
+(redacts) if it raises.
 
 It posts to a running `agenttrace ui` server. Pass ``client=`` (an
 `AsyncHttpEventClient`, e.g. wrapping your own pooled ``httpx.AsyncClient``)

@@ -141,30 +141,50 @@ async def test_keyed_request_sends_bearer_and_no_project(run, post):
     assert "project" not in _bodies(post)[0]
 
 
-async def test_anonymizer_applied_to_every_payload(post):
+async def test_anonymizer_applied_to_every_payload_label_and_run_name(post):
+    def scrub(value):
+        if isinstance(value, str):
+            return value.replace("Jane Doe", "<name>")
+        return {"masked": True}
+
     client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
-    run = AsyncAgentTraceRun("test run", client=client, anonymizer=lambda p: {"masked": True})
+    run = AsyncAgentTraceRun("chat with Jane Doe", client=client, anonymizer=scrub)
     run.on_user_message("Jane Doe, SSN 123")
+    run.on_stream_event("agent_start", "researcher", {"scope": "subagent", "label": "look up Jane Doe"})
     run.on_stream_event("final", "main", {"message": "Jane Doe is fine"})
     await run.aclose(timeout=2.0)
 
-    events = [b for b in _bodies(post) if "type" in b]
-    assert len(events) == 2
+    bodies = _bodies(post)
+    assert bodies[0]["name"] == "chat with <name>"
+    events = [b for b in bodies if "type" in b]
+    assert len(events) == 3
     assert all(e["payload"] == {"masked": True} for e in events)
+    assert events[0]["label"] == "<name>, SSN 123"
+    assert "Jane Doe" not in str(bodies)
 
 
-async def test_failing_anonymizer_is_never_fatal(post, caplog):
-    def broken(payload):
-        raise RuntimeError("scrubber down")
+async def test_failing_anonymizer_fails_closed_and_warns_once(post, caplog):
+    def broken(value):
+        raise RuntimeError("scrubber down for Jane Doe")
 
     client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
-    run = AsyncAgentTraceRun("test run", client=client, anonymizer=broken)
-    run.on_user_message("hello")
+    run = AsyncAgentTraceRun("run for Jane Doe", client=client, anonymizer=broken)
+    run.on_user_message("Jane Doe, SSN 123")
+    run.on_stream_event("final", "main", {"message": "Jane Doe is fine"})
+    queued = list(run._queue._queue)  # what was actually enqueued
     await run.aclose(timeout=2.0)
 
-    events = [b for b in _bodies(post) if "type" in b]
-    assert events[0]["payload"] == {"message": "hello"}  # passed through unmasked
-    assert any("anonymizer raised" in r.getMessage() for r in caplog.records)
+    assert "Jane Doe" not in str(queued)
+    bodies = _bodies(post)
+    assert "Jane Doe" not in str(bodies)
+    assert bodies[0]["name"] == "[redacted]"
+    events = [b for b in bodies if "type" in b]
+    assert len(events) == 2  # events kept so the diagram stays coherent
+    assert all(e["payload"] == {"redacted": "anonymizer failed"} for e in events)
+    assert all(e["label"] == "[redacted]" for e in events)
+    warnings = [r for r in caplog.records if "anonymizer" in r.getMessage()]
+    assert len(warnings) == 1
+    assert "Jane Doe" not in warnings[0].getMessage()
 
 
 # ----- keyless (`agenttrace ui --auth none`) -----

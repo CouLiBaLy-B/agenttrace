@@ -44,6 +44,11 @@ def _elapsed_ms(started: Optional[float]) -> Optional[int]:
     return int((time.monotonic() - started) * 1000) if started is not None else None
 
 
+# What a field becomes when the anonymizer raises (fail closed).
+REDACTED_PAYLOAD = {"redacted": "anonymizer failed"}
+REDACTED_TEXT = "[redacted]"
+
+
 # Diagram-label strings, overridable via `AsyncAgentTraceRun(phrases=...)` —
 # e.g. to localize them, or to match wording an app already shipped before
 # adopting this library. `{name}`/`{target}` are filled with `str.format`.
@@ -76,17 +81,20 @@ class AsyncAgentTraceRun:
         phrases: Optional[dict[str, str]] = None,
         anonymizer: Optional[Callable[[Any], Any]] = None,
     ):
-        self._name = truncate(name, 120)
+        # Set first: the run name can be user-derived, so it is anonymized too.
+        self._anonymizer = anonymizer
+        self._anonymizer_warned = False
+        self._name = truncate(self._anonymize(name, REDACTED_TEXT), 120)
         self._client = client
         self._orchestrator = orchestrator
         self._tool_server = tool_server
         self._phrases = {**DEFAULT_PHRASES, **(phrases or {})}
-        # Optional PII scrubber applied to every event payload right before it
-        # is queued (see `emit`). Lets an app (e.g. clinical data) pass one
-        # callable once instead of masking at every call site. Never fatal: a
-        # failing anonymizer logs a warning and the payload passes through, so
-        # tracing can't crash the run it's observing.
-        self._anonymizer = anonymizer
+        # Optional PII scrubber (see `emit`): called with each event's payload
+        # (a dict) and label (a str), and with the run name (a str). Lets an app
+        # (e.g. clinical data) pass one callable once instead of masking at every
+        # call site. Never fatal and fails CLOSED: if it raises, the value is
+        # replaced by a redaction marker (never sent unmasked) and one warning
+        # is logged per run.
         self._queue: "asyncio.Queue[Optional[dict]]" = asyncio.Queue()
         self._run_id: Optional[str] = None
         # No API key: rely on the server's `--auth none` local mode (a 401
@@ -200,27 +208,36 @@ class AsyncAgentTraceRun:
     ) -> None:
         if self._failed:
             return
+        # source/target are participant names (agent, tool, model, "User") and
+        # are deliberately NOT anonymized; every free-text field (label,
+        # payload) goes through the anonymizer. All events, including those
+        # built by on_user_message/on_stream_event/on_error, pass through here.
         event: dict[str, Any] = {"source": source, "target": target, "type": type}
         if label is not None:
-            event["label"] = label
+            event["label"] = self._anonymize(label, REDACTED_TEXT)
         if payload is not None:
-            event["payload"] = self._anonymize(payload)
+            event["payload"] = self._anonymize(payload, REDACTED_PAYLOAD)
         if duration_ms is not None:
             event["durationMs"] = duration_ms
         if status is not None:
             event["status"] = status
         self._queue.put_nowait(event)
 
-    def _anonymize(self, payload: Any) -> Any:
+    def _anonymize(self, value: Any, redacted: Any) -> Any:
         if self._anonymizer is None:
-            return payload
+            return value
         try:
-            return self._anonymizer(payload)
-        except Exception:  # noqa: BLE001 - tracing must never crash the run
-            logger.warning(
-                "AgentTrace anonymizer raised for run %r — payload sent unmasked", self._name
-            )
-            return payload
+            return self._anonymizer(value)
+        except Exception as exc:  # noqa: BLE001 - tracing must never crash the run
+            if not self._anonymizer_warned:
+                self._anonymizer_warned = True
+                # No value contents and no run name in the log: either may be PII.
+                logger.warning(
+                    "AgentTrace anonymizer raised %s — redacting the affected fields "
+                    "(further failures in this run are not logged)",
+                    type(exc).__name__,
+                )
+            return dict(redacted) if isinstance(redacted, dict) else redacted
 
     def end(self, status: str = "completed") -> None:
         if self._failed:
