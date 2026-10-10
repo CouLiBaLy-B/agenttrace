@@ -316,3 +316,67 @@ async def test_llm_input_and_output_anonymized_before_truncation(post):
     assert len(llm[0]["payload"]["input"]["messages"][0]["content"]) <= RESULT_LIMIT + 1
     assert len(llm[0]["payload"]["output_preview"]) <= 241
     assert len(llm[1]["payload"]["input"]["prompts"][0]) <= RESULT_LIMIT + 1
+
+
+async def test_only_exact_task_tool_is_a_handoff(handler, post):
+    plain, task = uuid.uuid4(), uuid.uuid4()
+    await handler.on_tool_start({"name": "create_task"}, "", run_id=plain, inputs={"name": "Call Jane Doe"})
+    await handler.on_tool_end("created", run_id=plain)
+    await handler.on_tool_start({"name": "task"}, "", run_id=task, inputs={"subagent_type": "regression-agent"})
+    await handler.on_tool_end("done", run_id=task)
+    await handler.aclose()
+
+    events = _events(post)
+    assert [(e["type"], e["target"]) for e in events[:2]] == [("tool_call", "create_task"), ("tool_result", "Orchestrator")]
+    assert events[2]["type"] == "handoff" and events[2]["target"] == "regression-agent"
+    assert events[3]["source"] == "regression-agent"
+
+
+async def test_handoff_target_is_anonymized_and_capped(post):
+    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    def scrub(v):
+        if isinstance(v, str):
+            return v.replace("Jane Doe", "<name>")
+        if isinstance(v, dict):
+            return {k: scrub(x) for k, x in v.items()}
+        return v
+
+    h = AsyncAgentTraceCallbackHandler("run", client=client, anonymizer=scrub)
+    pii, long_name = uuid.uuid4(), uuid.uuid4()
+    await h.on_tool_start({"name": "handoff_to"}, "", run_id=pii, inputs={"to": "Jane Doe"})
+    await h.on_tool_end("ok", run_id=pii)
+    await h.on_tool_start({"name": "task"}, "", run_id=long_name, inputs={"subagent_type": "a" * 200})
+    await h.on_tool_end("ok", run_id=long_name)
+    await h.aclose()
+
+    handoffs = [e for e in _events(post) if e["type"] == "handoff"]
+    assert handoffs[0]["target"] == "Sub-agent"
+    assert handoffs[1]["target"] == "a" * 60
+    assert "Jane Doe" not in str(_bodies(post))
+
+
+async def test_handoff_target_falls_back_when_anonymizer_fails(post):
+    def broken(value):
+        raise RuntimeError("down")
+
+    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    h = AsyncAgentTraceCallbackHandler("run", client=client, anonymizer=broken)
+    rid = uuid.uuid4()
+    await h.on_tool_start({"name": "task"}, "", run_id=rid, inputs={"subagent_type": "researcher"})
+    await h.aclose()
+
+    assert _events(post)[0]["target"] == "Sub-agent"
+
+
+async def test_error_messages_are_bounded(handler, post):
+    from agenttrace.tracking.run import PAYLOAD_LIMIT
+
+    llm, tool = uuid.uuid4(), uuid.uuid4()
+    await handler.on_chat_model_start({}, [[FakeMessage("human", "x")]], run_id=llm)
+    await handler.on_llm_error(ValueError("m" * 5000), run_id=llm)
+    await handler.on_tool_start({"name": "flaky"}, "", run_id=tool, inputs={})
+    await handler.on_tool_error(ValueError("t" * 5000), run_id=tool)
+    await handler.aclose()
+
+    errors = [e for e in _events(post) if e["type"] == "error"]
+    assert [len(e["payload"]["message"]) for e in errors] == [PAYLOAD_LIMIT + 1, PAYLOAD_LIMIT + 1]

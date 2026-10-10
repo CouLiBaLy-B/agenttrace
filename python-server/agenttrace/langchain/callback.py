@@ -25,7 +25,7 @@ from ..tracking import fluent
 from ..tracking._uri import get_tracking_uri
 from ..tracking.run import ANSWER_LIMIT, LABEL_LIMIT, RESULT_LIMIT, ActiveRun, compact, truncate
 from ..tracking.stores import store_for_uri
-from .middleware import HANDOFF_MARKERS
+from .projection import HANDOFF_MARKERS
 from .projection import extract_handoff_target as _extract_handoff_target
 from .projection import result_content as _result_content
 from .projection import token_usage as _token_usage

@@ -41,6 +41,7 @@ from ..tracking.http import DEFAULT_URL
 from ..tracking.run import ANSWER_LIMIT, LABEL_LIMIT, RESULT_LIMIT, ActiveRun, compact, truncate
 from ..tracking.stores import TrackingStore, store_for_uri
 from ..tracking.stores.rest import RestStore
+from .projection import HANDOFF_MARKERS
 from .projection import content_to_text as _content_to_text  # noqa: F401 - re-exported
 from .projection import extract_handoff_target as _extract_handoff_target
 from .projection import last_model_message as _last_model_message
@@ -52,7 +53,6 @@ from .projection import token_usage as _token_usage
 
 logger = logging.getLogger(__name__)
 
-HANDOFF_MARKERS = ("handoff", "delegate")
 
 
 class AgentTraceMiddleware(AgentMiddleware):

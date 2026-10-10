@@ -57,12 +57,14 @@ from langchain_core.callbacks import AsyncCallbackHandler
 
 from ..tracking._uri import events_url, get_tracking_uri, is_http_uri
 from ..tracking.async_http import AsyncHttpEventClient
-from ..tracking.async_run import AsyncAgentTraceRun, unbounded, text_bound
+from ..tracking.async_run import AsyncAgentTraceRun, text_bound, unbounded
+from ..tracking.run import PAYLOAD_LIMIT
 from .projection import (
-    HANDOFF_MARKERS,
+    SUBAGENT_NAME_LIMIT,
     bound_input,
     emitting_agent,
     extract_handoff_target,
+    is_handoff_tool,
     messages_preview,
     response_preview,
     token_usage,
@@ -222,7 +224,7 @@ class AsyncAgentTraceCallbackHandler(AsyncCallbackHandler):
             label="llm failed",
             payload={"error": type(error).__name__, "message": str(error)},
             status="error",
-            payload_bounds={"error": unbounded, "message": unbounded},
+            payload_bounds={"error": unbounded, "message": text_bound(PAYLOAD_LIMIT)},
         )
 
     # ----- tool calls (deepagents tools + sub-agent handoffs) -----
@@ -232,10 +234,10 @@ class AsyncAgentTraceCallbackHandler(AsyncCallbackHandler):
         name = self._tool_name(serialized, kwargs)
         node = self._attribution(metadata)
         args = inputs if inputs is not None else input_str
-        is_handoff = any(marker in name.lower() for marker in HANDOFF_MARKERS)
+        is_handoff = is_handoff_tool(name)
         self._tools[run_id] = {"name": name, "node": node, "handoff": is_handoff}
         if is_handoff:
-            target = extract_handoff_target(inputs) or "Sub-agent"
+            target = self._handoff_target(inputs)
             self._tools[run_id]["target"] = target
             # The sub-agent runs under this `task` call's checkpoint_ns; record
             # it so the sub-agent's inner LLM/tool calls (same ns) attribute to
@@ -288,10 +290,24 @@ class AsyncAgentTraceCallbackHandler(AsyncCallbackHandler):
             label=f"{name} failed",
             payload={"error": type(error).__name__, "message": str(error)},
             status="error",
-            payload_bounds={"error": unbounded, "message": unbounded},
+            payload_bounds={"error": unbounded, "message": text_bound(PAYLOAD_LIMIT)},
         )
 
     # ----- helpers -----
+    def _handoff_target(self, inputs: Any) -> str:
+        """Sub-agent name from the delegation args (`subagent_type` first).
+        It is user/LLM-derived and becomes a participant name (never
+        anonymized as such), so it goes through the anonymizer here: if the
+        anonymizer changes it, fails, or there is none to read, it's
+        "Sub-agent". Capped to SUBAGENT_NAME_LIMIT chars."""
+        raw = extract_handoff_target(inputs)
+        if not raw:
+            return "Sub-agent"
+        raw = str(raw)
+        if self._run.anonymize_text(raw, "Sub-agent") != raw:  # full value, then cap
+            return "Sub-agent"
+        return raw[:SUBAGENT_NAME_LIMIT]
+
     def _attribution(self, metadata: Any) -> str:
         """Emitter of a call: ``"main"`` or a named sub-agent. First matches the
         call's ``checkpoint_ns`` against sub-agent ns recorded at `task` time

@@ -148,6 +148,24 @@ def test_wrap_model_call_captures_llm_input_and_output(middleware, post):
     assert payload["output_preview"] == "It's sunny in Paris."
 
 
+def test_wrap_model_call_flattens_list_content_output(middleware, post):
+    blocks = [{"type": "text", "text": "Hello "}, {"type": "text", "text": "world"}]
+    middleware.wrap_model_call(FakeModelRequest("gpt-4o-mini"), lambda req: FakeToolMessage(blocks))
+
+    middleware._run.close(timeout=2.0)
+    events = [b for b in _bodies(post) if b.get("runId") == "run_1" and "type" in b]
+    assert events[0]["payload"]["output_preview"] == "Hello world"
+
+
+def test_wrap_tool_call_handoff_prefers_subagent_type(middleware, post):
+    request = FakeToolRequest("delegate_work", {"subagent_type": "researcher", "to": "other"})
+    middleware.wrap_tool_call(request, lambda req: FakeToolMessage("ok"))
+
+    middleware._run.close(timeout=2.0)
+    handoff = next(b for b in _bodies(post) if b.get("type") == "handoff")
+    assert handoff["target"] == "researcher"
+
+
 def test_wrap_model_call_unwraps_real_model_response(middleware, post):
     """Regression test: a real langchain wrap_model_call handler returns a
     ModelResponse (`.result: list[BaseMessage]`), not a bare message — verified

@@ -15,8 +15,18 @@ from typing import Any, Optional
 from ..tracking.run import LABEL_LIMIT, RESULT_LIMIT, compact, truncate
 
 # Tool-name substrings that mark a delegation to a sub-agent rather than a
-# plain tool call (deepagents' `task`, or any `handoff_to_*`/`delegate_*`).
-HANDOFF_MARKERS = ("handoff", "delegate", "task")
+# plain tool call (any `handoff_to_*`/`delegate_*`).
+HANDOFF_MARKERS = ("handoff", "delegate")
+# deepagents' delegation tool — matched EXACTLY: a substring match on "task"
+# would turn user tools like `create_task`/`list_tasks` into handoffs.
+TASK_TOOL = "task"
+# Longest sub-agent name taken from tool args (it's user/LLM-derived).
+SUBAGENT_NAME_LIMIT = 60
+
+
+def is_handoff_tool(name: str) -> bool:
+    lowered = name.lower()
+    return lowered == TASK_TOOL or any(marker in lowered for marker in HANDOFF_MARKERS)
 
 
 def model_name(request: Any) -> str:
