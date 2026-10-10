@@ -29,6 +29,7 @@ any app-specific tool-naming convention.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import time
 from typing import Any, Callable, Optional
@@ -44,9 +45,23 @@ def _elapsed_ms(started: Optional[float]) -> Optional[int]:
     return int((time.monotonic() - started) * 1000) if started is not None else None
 
 
+def json_safe(value: Any) -> Any:
+    """A JSON-safe copy of `value` WITHOUT truncation (non-JSON leaves become
+    `str()`), so an anonymizer sees every bit of text before it is bounded."""
+    try:
+        return json.loads(json.dumps(value, ensure_ascii=False, default=str))
+    except (TypeError, ValueError):  # e.g. circular references
+        return str(value)
+
+
 def text_bound(limit: int) -> Callable[[Any], str]:
     """A bound for a free-text field: `str()` it, then truncate to `limit`."""
     return lambda value: truncate(str(value), limit)
+
+
+def optional_text_bound(limit: int) -> Callable[[Any], Optional[str]]:
+    """Like `text_bound`, but keeps `None` as `None`."""
+    return lambda value: None if value is None else truncate(str(value), limit)
 
 
 def unbounded(value: Any) -> Any:
@@ -115,7 +130,7 @@ class AsyncAgentTraceRun:
         # Set first: the run name can be user-derived, so it is anonymized too.
         self._anonymizer = anonymizer
         self._anonymizer_warned = False
-        self._name = truncate(self._anonymize(name, REDACTED_TEXT), 120)
+        self._name = truncate(self.anonymize_text(name, REDACTED_TEXT), 120)
         self._client = client
         self._orchestrator = orchestrator
         self._tool_server = tool_server
@@ -211,7 +226,7 @@ class AsyncAgentTraceRun:
                 label=self._phrases[label_key].format(name=source),
                 payload={"status": data.get("status"), "error": data.get("error")},
                 duration_ms=_elapsed_ms(started), status="error" if failed else "ok",
-                payload_bounds={"status": unbounded, "error": unbounded},
+                payload_bounds={"status": unbounded, "error": optional_text_bound(PAYLOAD_LIMIT)},
             )
         elif kind == "approval_required":
             self.emit(
@@ -265,16 +280,27 @@ class AsyncAgentTraceRun:
         # built by on_user_message/on_stream_event/on_error, pass through here.
         event: dict[str, Any] = {"source": source, "target": target, "type": type}
         if label is not None:
-            masked = self._anonymize(label, REDACTED_TEXT)
+            masked = self.anonymize_text(label, REDACTED_TEXT)
             event["label"] = label_bound(masked) if label_bound is not None else masked
         if payload is not None:
-            masked = self._anonymize(payload, REDACTED_PAYLOAD)
+            # JSON-safe (untruncated) first: non-JSON objects (dataclasses,
+            # LangGraph Interrupts, ...) become strings the anonymizer can
+            # see, instead of being stringified unmasked later by `compact`.
+            masked = self._anonymize(json_safe(payload), REDACTED_PAYLOAD)
             event["payload"] = _bound_payload(masked, payload_bounds)
         if duration_ms is not None:
             event["durationMs"] = duration_ms
         if status is not None:
             event["status"] = status
         self._queue.put_nowait(event)
+
+    def anonymize_text(self, value: Any, redacted: str) -> str:
+        """Anonymize a free-text value (label, run name, sub-agent name) as a
+        str. Fails closed to `redacted` if the anonymizer raises or returns a
+        non-str."""
+        text = value if isinstance(value, str) else str(json_safe(value))
+        masked = self._anonymize(text, redacted)
+        return masked if isinstance(masked, str) else redacted
 
     def _anonymize(self, value: Any, redacted: Any) -> Any:
         if self._anonymizer is None:

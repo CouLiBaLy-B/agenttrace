@@ -256,6 +256,57 @@ async def test_without_anonymizer_payloads_are_still_bounded(run, post):
     assert events[1]["label"] == "t(" + "a" * 60 + "…)"
 
 
+# ----- non-JSON objects are made JSON-safe before the anonymizer runs -----
+
+
+async def test_non_json_objects_are_anonymized_not_stringified_unmasked(post):
+    from dataclasses import dataclass
+
+    anonymizer = pytest.importorskip("langsmith.anonymizer")
+    scrub = anonymizer.create_anonymizer([{"pattern": r"Jane Doe", "replace": "<name>"}])
+
+    @dataclass
+    class Patient:
+        name: str
+
+    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    run = AsyncAgentTraceRun("test run", client=client, anonymizer=scrub)
+    run.on_stream_event("approval_required", "main", {"action_requests": [Patient("Jane Doe")]})
+    run.on_stream_event("tool_call", "main", {"id": "1", "name": "lookup", "args": {"who": Patient("Jane Doe")}})
+    run.on_stream_event("tool_call", "main", {"id": "2", "name": "lookup", "args": Patient("Jane Doe")})
+    await run.aclose(timeout=2.0)
+
+    bodies = _bodies(post)
+    assert len([b for b in bodies if "type" in b]) == 3
+    assert "Jane Doe" not in str(bodies)
+    assert "<name>" in str(bodies)
+
+
+async def test_non_str_anonymizer_result_for_text_fails_closed(post):
+    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    run = AsyncAgentTraceRun(
+        "Jane Doe run", client=client, anonymizer=lambda v: 42 if isinstance(v, str) else v
+    )
+    run.on_user_message("Jane Doe")
+    await run.aclose(timeout=2.0)
+
+    bodies = _bodies(post)
+    assert bodies[0]["name"] == "[redacted]"
+    assert bodies[1]["label"] == "[redacted]"
+
+
+async def test_subagent_error_message_is_bounded(run, post):
+    from agenttrace.tracking.run import PAYLOAD_LIMIT
+
+    run.on_stream_event("agent_end", "sub", {"scope": "subagent", "status": "failed", "error": "e" * 5000})
+    run.on_stream_event("agent_end", "sub", {"scope": "subagent", "status": "completed"})
+    await run.aclose(timeout=2.0)
+
+    events = [b for b in _bodies(post) if "type" in b]
+    assert events[0]["payload"]["error"] == "e" * PAYLOAD_LIMIT + "…"
+    assert events[1]["payload"]["error"] is None
+
+
 # ----- keyless (`agenttrace ui --auth none`) -----
 
 
