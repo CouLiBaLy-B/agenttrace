@@ -22,17 +22,22 @@ from conftest import (
 
 VIEWPORT = {"width": 1440, "height": 900}
 
-# Every value <html data-theme> takes, the first one included (the boot script
-# sets it in <head>, before first paint). Init scripts run before the document
-# has an element, so the observer watches the whole document.
+# Every value <html data-theme> takes from first paint on. The boot script sets
+# it in <head>; once <body> exists the page can paint, so the value at that
+# moment is noted, as "<unset>" if there is none (a missing or broken boot
+# script), and so is every later change (a removal is "<unset>" too). Init
+# scripts run before the document has an element, so the observer watches the
+# whole document.
+UNSET_THEME = "<unset>"
 RECORD_THEMES = """
 window.__themes = []
-const note = (v) => { if (v && window.__themes[window.__themes.length - 1] !== v) window.__themes.push(v) }
+const note = (v) => { v = v || '<unset>'; if (window.__themes[window.__themes.length - 1] !== v) window.__themes.push(v) }
 const root = () => document.documentElement
-if (root()) note(root().getAttribute('data-theme'))
+let painted = false
 new MutationObserver((records) => {
-  for (const r of records) if (r.target === root()) note(root().getAttribute('data-theme'))
-}).observe(document, { attributes: true, attributeFilter: ['data-theme'], subtree: true })
+  for (const r of records) if (r.type === 'attributes' && r.target === root()) note(root().getAttribute('data-theme'))
+  if (!painted && document.body) { painted = true; note(root().getAttribute('data-theme')) }
+}).observe(document, { attributes: true, attributeFilter: ['data-theme'], childList: true, subtree: true })
 """
 
 # Every data-arrival value seen on an element (the reduced-motion fade lasts
@@ -84,6 +89,25 @@ def test_theme_switch_persists_without_flash(page: Page, local_server):
     expect(page.get_by_role("heading", name="Dashboard")).to_be_visible(timeout=15_000)
     assert page.evaluate("window.__themes") == ["phosphore"]
     assert _theme(page) == "phosphore"
+
+
+def test_no_flash_recorder_catches_a_missing_boot_script(page: Page, local_server):
+    """Guards the test above: without the boot script the first painted value is unset."""
+    base, _ = local_server
+    boot = re.compile(r"<script[^>]*>\(function\(\)\{var p=null;.*?</script>", re.S)
+
+    def strip_boot_script(route):
+        response = route.fetch()
+        html, n = boot.subn("", response.text(), count=1)
+        assert n == 1, "boot script not found in the page"
+        route.fulfill(response=response, body=html)
+
+    page.route(re.compile(r"^" + re.escape(base) + r"/?$"), strip_boot_script)
+    page.add_init_script(RECORD_THEMES)
+    page.goto(base)
+    expect(page.get_by_role("heading", name="Dashboard")).to_be_visible(timeout=15_000)
+    themes = page.evaluate("window.__themes")
+    assert themes[0] == UNSET_THEME and len(themes) == 2, themes
 
 
 @pytest.mark.parametrize(("scheme", "expected"), [("dark", "cyanotype"), ("light", "studio")])
@@ -170,7 +194,7 @@ def test_many_participants_scrolls(page: Page, local_server):
     assert problems == []
 
 
-def test_large_run_opens_quickly(page: Page, local_server):
+def test_large_run_opens_quickly(page: Page, local_server, record_property):
     base, db_url = local_server
     client = AgentTraceClient(db_url)
     run_id = client.create_run("e2e large run", project="Code Review Bot")
@@ -185,6 +209,8 @@ def test_large_run_opens_quickly(page: Page, local_server):
     arrow(diagram, "step 0").click(timeout=3_000)
     expect(_inspector_title(page)).to_have_text("step 0", timeout=3_000)
     elapsed = time.monotonic() - start
+    print(f"opening a 1 000-event run took {elapsed:.2f} s")
+    record_property("large_run_open_s", round(elapsed, 3))
     assert elapsed < 3.0, f"opening a 1 000-event run took {elapsed:.2f} s"
 
     drawn = diagram.locator("[data-event-id]").count()
@@ -224,24 +250,31 @@ def test_capture_screenshots(new_context, local_server, password_server):
     out = screenshot_dir()
     for theme in THEMES:
         context = new_context(reduced_motion="reduce")
-        context.add_init_script(theme_init_script(theme))
-        page = context.new_page()
-        shots = {
-            "dashboard": lambda p: (
-                p.goto(base),
-                p.locator("section[aria-labelledby='run-feed-title']").get_by_role("button").first.wait_for(timeout=15_000),
-            ),
-            "run": lambda p: open_run(p, base).locator("[data-event-id]").first.click(),
-            "signin": lambda p: (
-                p.goto(signin_base),
-                p.get_by_role("tab", name="Create account").wait_for(timeout=15_000),
-            ),
-        }
-        for name, prepare in shots.items():
-            try:
-                prepare(page)
-                _settle(page)
-            except Exception as exc:  # never fail on content
-                print(f"screenshot {name}-{theme}: {exc}")
-            page.screenshot(path=str(out / f"{name}-{theme}.png"))
-        context.close()
+        try:
+            context.add_init_script(theme_init_script(theme))
+            page = context.new_page()
+            shots = {
+                "dashboard": lambda p: (
+                    p.goto(base),
+                    p.locator("section[aria-labelledby='run-feed-title']").get_by_role("button").first.wait_for(timeout=15_000),
+                ),
+                "run": lambda p: open_run(p, base).locator("[data-event-id]").first.click(),
+                "signin": lambda p: (
+                    p.goto(signin_base),
+                    p.get_by_role("tab", name="Create account").wait_for(timeout=15_000),
+                ),
+            }
+            for name, prepare in shots.items():
+                try:
+                    prepare(page)
+                    _settle(page)
+                except Exception as exc:  # never fail on content
+                    print(f"screenshot {name}-{theme}: {exc}")
+                try:
+                    page.screenshot(path=str(out / f"{name}-{theme}.png"))
+                except Exception as exc:  # nor on the capture itself
+                    print(f"screenshot {name}-{theme} not saved: {exc}")
+        except Exception as exc:  # e.g. the page could not be opened at all
+            print(f"screenshots for {theme} skipped: {exc}")
+        finally:
+            context.close()
