@@ -18,6 +18,8 @@ from typing import Any, Optional
 
 import requests
 
+from ._uri import events_url
+
 from ..store.events import VALID_EVENT_TYPES
 
 DEFAULT_URL = "http://localhost:3000/api/events"
@@ -39,7 +41,8 @@ class HttpEventClient:
         api_key: Optional[str] = None,
         timeout: float = 10.0,
     ):
-        self.url = url or os.getenv("AGENTTRACE_URL", DEFAULT_URL)
+        # Base server URL or the full /api/events URL — both accepted.
+        self.url = events_url(url or os.getenv("AGENTTRACE_URL", DEFAULT_URL))
         self.api_key = api_key or os.getenv("AGENTTRACE_KEY")
         self.timeout = timeout
 
