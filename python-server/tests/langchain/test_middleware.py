@@ -8,9 +8,17 @@ class FakeToolRequest:
         self.tool_call = {"name": name, "args": args}
 
 
+class FakeMessage:
+    def __init__(self, role, content):
+        self.type = role
+        self.content = content
+
+
 class FakeModelRequest:
-    def __init__(self, model_name):
+    def __init__(self, model_name, messages=None, system_message=None):
         self.model = type("Model", (), {"model": model_name})()
+        self.messages = messages or []
+        self.system_message = system_message
 
 
 class FakeToolMessage:
@@ -120,6 +128,24 @@ def test_wrap_model_call_emits_llm_call(middleware, post):
     events = [b for b in _bodies(post) if b.get("runId") == "run_1" and "type" in b]
     assert events[0]["type"] == "llm_call"
     assert events[0]["target"] == "gpt-4o-mini"
+
+
+def test_wrap_model_call_captures_llm_input_and_output(middleware, post):
+    request = FakeModelRequest(
+        "gpt-4o-mini",
+        messages=[FakeMessage("human", "What's the weather in Paris?")],
+        system_message=FakeMessage("system", "You are a helpful assistant."),
+    )
+    handler = lambda req: FakeToolMessage("It's sunny in Paris.")
+
+    middleware.wrap_model_call(request, handler)
+
+    middleware._run.close(timeout=2.0)
+    events = [b for b in _bodies(post) if b.get("runId") == "run_1" and "type" in b]
+    payload = events[0]["payload"]
+    assert payload["input"]["system"] == "You are a helpful assistant."
+    assert payload["input"]["messages"] == [{"role": "human", "content": "What's the weather in Paris?"}]
+    assert payload["output_preview"] == "It's sunny in Paris."
 
 
 def test_wrap_model_call_unwraps_real_model_response(middleware, post):
