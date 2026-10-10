@@ -65,3 +65,65 @@ def test_recent_bounds_and_route_order(local_client):
     assert local_client.get("/api/runs/recent?limit=51").status_code == 422
     # /recent must not be captured by GET /api/runs/{run_id}
     assert "runs" in local_client.get("/api/runs/recent").json()
+
+
+def _count_queries(client, url):
+    from sqlalchemy import event
+
+    from agenttrace.server.db import engine
+
+    statements = []
+
+    def before(conn, cursor, statement, *args):
+        statements.append(statement)
+
+    event.listen(engine, "before_cursor_execute", before)
+    try:
+        body = client.get(url).json()
+    finally:
+        event.remove(engine, "before_cursor_execute", before)
+    return body, len(statements)
+
+
+def test_recent_query_count_does_not_grow_with_runs(local_client):
+    one = f"q1-{uuid.uuid4().hex[:6]}"
+    _, pid_one = make_run(one, "only", events=[("a", "b", "llm_call")])
+    many = f"q6-{uuid.uuid4().hex[:6]}"
+    for i in range(6):
+        _, pid_many = make_run(many, f"r{i}", hours_ago=i * 0.1, events=[("a", "b", "llm_call")] * (i + 1))
+    _, few = _count_queries(local_client, f"/api/runs/recent?projectId={pid_one}")
+    body, lots = _count_queries(local_client, f"/api/runs/recent?projectId={pid_many}")
+    assert lots == few
+    # each run still gets its own counts and shape (first 12 events, per run)
+    assert [r["eventCount"] for r in body["runs"]] == [1, 2, 3, 4, 5, 6]
+    assert [len(r["shape"]["events"]) for r in body["runs"]] == [1, 2, 3, 4, 5, 6]
+
+
+def test_recent_breaks_start_time_ties_by_id_desc(local_client):
+    p = f"tie-{uuid.uuid4().hex[:6]}"
+    url = os.environ["DATABASE_URL"]
+    start = datetime.now(timezone.utc) - timedelta(minutes=5)
+    with store_db.get_sessionmaker(url)() as db:
+        user = local.get_or_create_local_user(db)
+        project = local.get_or_create_project(db, user, p)
+        runs = [models.Run(project_id=project.id, name=f"t{i}", status="completed", started_at=start) for i in range(3)]
+        db.add_all(runs)
+        db.commit()
+        ids, pid = sorted((r.id for r in runs), reverse=True), project.id
+    got = [r["id"] for r in local_client.get(f"/api/runs/recent?projectId={pid}").json()["runs"]]
+    assert got == ids
+
+
+def test_other_users_project_is_invisible_in_password_mode(monkeypatch):
+    monkeypatch.delenv("AGENTTRACE_AUTH", raising=False)
+    with TestClient(app) as a, TestClient(app) as b:
+        for c in (a, b):
+            r = c.post("/api/auth/signup", json={"email": f"{uuid.uuid4().hex}@example.com", "password": "secret123", "name": "U"})
+            assert r.status_code == 201, r.text
+        created = a.post("/api/projects", json={"name": "A's project"}).json()
+        pid = created["project"]["id"]
+        headers = {"Authorization": f"Bearer {created['apiKey']}"}
+        a.post("/api/events", json={"runId": None, "name": "secret run"}, headers=headers)
+        assert len(a.get(f"/api/runs/recent?projectId={pid}").json()["runs"]) == 1
+        assert b.get(f"/api/runs/recent?projectId={pid}").json() == {"runs": []}
+        assert b.get(f"/api/timeline?projectId={pid}").status_code == 404
