@@ -17,6 +17,10 @@ on:
     branches: [main, master]
   pull_request:
 
+# Read-only token: CI runs on every pull request and never writes to the repo.
+permissions:
+  contents: read
+
 # Cancel in-flight runs for the same ref when a new commit is pushed.
 concurrency:
   group: ci-${{ github.ref }}
