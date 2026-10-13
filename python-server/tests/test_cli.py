@@ -43,11 +43,27 @@ def test_ui_auth_defaults(fake_uvicorn, monkeypatch, args, expected):
     assert len(fake_uvicorn) == 1
 
 
-def test_ui_warns_on_public_host_without_auth(fake_uvicorn):
+def test_ui_warns_on_public_host_without_auth(fake_uvicorn, monkeypatch):
+    monkeypatch.delenv("AGENTTRACE_ALLOWED_HOSTS", raising=False)
     result = CliRunner().invoke(cli.main, ["ui", "--host", "0.0.0.0", "--auth", "none"])
     assert result.exit_code == 0
     assert "WARNING" in result.output
-    assert "AGENTTRACE_ALLOWED_HOSTS" in result.output
+    assert "set AGENTTRACE_ALLOWED_HOSTS=<server-address>" in result.output
+
+
+def test_ui_auth_none_warning_names_the_exact_allowed_hosts_value(fake_uvicorn, monkeypatch):
+    monkeypatch.delenv("AGENTTRACE_ALLOWED_HOSTS", raising=False)
+    result = CliRunner().invoke(cli.main, ["ui", "--host", "192.168.1.10", "--auth", "none"])
+    assert result.exit_code == 0, result.output
+    assert "to open it as 192.168.1.10, set AGENTTRACE_ALLOWED_HOSTS=192.168.1.10" in result.output
+
+
+def test_ui_auth_none_warning_shows_the_allowed_hosts_already_set(fake_uvicorn, monkeypatch):
+    monkeypatch.setenv("AGENTTRACE_ALLOWED_HOSTS", "traces.example.com")
+    result = CliRunner().invoke(cli.main, ["ui", "--host", "0.0.0.0", "--auth", "none"])
+    assert result.exit_code == 0, result.output
+    assert "accepted besides loopback: AGENTTRACE_ALLOWED_HOSTS=traces.example.com" in result.output
+    assert "<server-address>, set" not in result.output
 
 
 def test_db_init_works_without_server_extra(monkeypatch, tmp_path):

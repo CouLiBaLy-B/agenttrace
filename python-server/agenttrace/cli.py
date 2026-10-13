@@ -108,6 +108,17 @@ def _sqlite_file(url: str) -> Optional[Path]:
     return Path(database).resolve()
 
 
+def _auth_none_warning(host: str) -> str:
+    """`--auth none` on a non-loopback address: say who can reach it, and the
+    exact AGENTTRACE_ALLOWED_HOSTS value that lets the Host guard accept it."""
+    warning = f"[AgentTrace] WARNING: auth none on {host} — anyone who can reach this port can read and write traces."
+    allowed = os.getenv("AGENTTRACE_ALLOWED_HOSTS", "").strip()
+    if allowed:
+        return f"{warning} Host names accepted besides loopback: AGENTTRACE_ALLOWED_HOSTS={allowed}"
+    name = "<server-address>" if host in WILDCARD_HOSTS else host
+    return f"{warning} Only loopback Host names are accepted: to open it as {name}, set AGENTTRACE_ALLOWED_HOSTS={name}"
+
+
 def _print_banner(host: str, port: int, auth: str, database_url: str) -> None:
     """Startup banner, airflow-style. Plain text off a terminal (click strips
     the ANSI codes) or when NO_COLOR is set."""
@@ -182,10 +193,7 @@ def ui(host: str, port: int, database_url: str | None, auth: str | None) -> None
     if auth is None:
         auth = "none" if host in LOOPBACK_HOSTS else "password"
     elif auth == "none" and host not in LOOPBACK_HOSTS:
-        notices.append(
-            f"[AgentTrace] WARNING: auth none on {host} — anyone who can reach this port can read and write traces. "
-            "Only loopback Host names are accepted unless AGENTTRACE_ALLOWED_HOSTS lists the public hostname(s)."
-        )
+        notices.append(_auth_none_warning(host))
     os.environ["AGENTTRACE_AUTH"] = auth
     if auth == "password" and not os.getenv("AGENTTRACE_SECRET"):
         notices.append(
