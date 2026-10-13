@@ -22,6 +22,12 @@ on:
 permissions:
   contents: read
 
+# One run per ref at a time: deploys queue up and are never cancelled
+# mid-push; a newer pull-request build replaces an older one.
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build:
     # Pull requests, and manual runs on another branch: build only.
