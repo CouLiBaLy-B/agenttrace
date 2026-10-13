@@ -187,24 +187,23 @@ export function EmptyFeed() {
   )
 }
 
-/** No runs in one project: how to get its first run. */
-function EmptyProjectFeed({ projectId, onStartRun }: { projectId: string; onStartRun?: () => void }) {
+/** No runs in one project yet. Runs come from the agent, not from the
+ * dashboard, so this points to the project's Integration page. */
+function EmptyProjectFeed({ projectId }: { projectId: string }) {
   const { go } = useNav()
   return (
     <div className="rounded-[var(--radius-panel)] border border-dashed border-[var(--line-strong)] px-6 py-10 text-center">
       <p className="mx-auto max-w-md text-sm text-[var(--ink-2)]">
-        No runs in this project yet. Start a run, or send events with this project's API key.
+        No runs yet. Send events from your agent — see{" "}
+        <button
+          type="button"
+          onClick={() => go("integration", { projectId })}
+          className="rounded-[var(--radius-control)] font-medium text-[var(--action)] underline underline-offset-2 hover:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+        >
+          Integration
+        </button>
+        .
       </p>
-      <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-        {onStartRun && (
-          <Button size="sm" onClick={onStartRun}>
-            Start a run
-          </Button>
-        )}
-        <Button size="sm" variant="outline" onClick={() => go("integration", { projectId })}>
-          Manage API keys
-        </Button>
-      </div>
     </div>
   )
 }
@@ -212,16 +211,7 @@ function EmptyProjectFeed({ projectId, onStartRun }: { projectId: string; onStar
 const GRID = "grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
 
 /** The most recent runs as mini sequence diagrams, the first running one live. */
-export function RunFeed({
-  projectId,
-  limit = 12,
-  onStartRun,
-}: {
-  projectId?: string
-  limit?: number
-  /** With `projectId`: the empty state's "Start a run" action. */
-  onStartRun?: () => void
-}) {
+export function RunFeed({ projectId, limit = 12 }: { projectId?: string; limit?: number }) {
   const { go } = useNav()
   const query = new URLSearchParams({ limit: String(limit) })
   if (projectId) query.set("projectId", projectId)
@@ -257,7 +247,7 @@ export function RunFeed({
       ) : isError ? (
         <LoadError what="recent runs" onRetry={refetch} />
       ) : runs.length === 0 ? (
-        projectId ? <EmptyProjectFeed projectId={projectId} onStartRun={onStartRun} /> : <EmptyFeed />
+        projectId ? <EmptyProjectFeed projectId={projectId} /> : <EmptyFeed />
       ) : (
         <>
           {live && <LiveTile key={live.id} run={live} onOpen={() => open(live)} />}

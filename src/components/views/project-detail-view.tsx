@@ -2,7 +2,7 @@
 
 import { LoadError } from "@/components/load-error"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { api, formatDuration, formatRelative } from "@/lib/api"
 import { useNav } from "@/lib/store"
 import { RUN_STATUS, type RecentRun, type RunStatus } from "@/lib/types"
@@ -10,18 +10,9 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog"
 import { Chronogram } from "@/components/dashboard/chronogram"
 import { RunFeed } from "@/components/dashboard/run-feed"
-import { toast } from "sonner"
-import { ArrowLeft, ChevronRight, Plus, Search } from "lucide-react"
+import { ArrowLeft, ChevronRight, Search } from "lucide-react"
 
 interface Run {
   id: string
@@ -96,9 +87,6 @@ export function ProjectDetailView() {
 
 function ProjectDetailBody({ projectId }: { projectId: string }) {
   const { go } = useNav()
-  const qc = useQueryClient()
-  const [createOpen, setCreateOpen] = useState(false)
-  const [runName, setRunName] = useState("")
   const [hours, setHours] = useState<number>(24)
 
   const { data, isLoading, isError, refetch } = useQuery<{ project: ProjectDetail }>({
@@ -108,21 +96,6 @@ function ProjectDetailBody({ projectId }: { projectId: string }) {
     refetchInterval: (q) => (q.state.data?.project.runs.some((r) => r.status === "running") ? POLL_MS : false),
   })
   useNewRunWatch(projectId)
-
-  const createRunMut = useMutation({
-    mutationFn: (name: string) =>
-      api<{ run: Run }>(`/api/projects/${projectId}/runs`, { method: "POST", json: { name } }),
-    onSuccess: (data) => {
-      for (const key of [["project", projectId], ["timeline", projectId], ["runs-recent"], ["stats"]]) {
-        qc.invalidateQueries({ queryKey: key })
-      }
-      toast.success("Run started, listening for events")
-      setCreateOpen(false)
-      setRunName("")
-      go("run", { runId: data.run.id })
-    },
-    onError: (e) => toast.error(`Couldn't start the run: ${(e as Error).message}`),
-  })
 
   const project = data?.project
   const runCount = project?.runs.length ?? 0
@@ -169,13 +142,10 @@ function ProjectDetailBody({ projectId }: { projectId: string }) {
               </button>
             </p>
           </div>
-          <Button size="sm" onClick={() => setCreateOpen(true)} className="gap-1.5">
-            <Plus className="h-4 w-4" />
-            Start a run
-          </Button>
         </header>
       )}
 
+      {/* Runs come from the agent (the SDK or POST /api/events), never from this page. */}
       {!isError && (
         <>
           <Chronogram
@@ -183,42 +153,10 @@ function ProjectDetailBody({ projectId }: { projectId: string }) {
             hours={hours}
             controls={<WindowToggle hours={hours} onChange={setHours} />}
           />
-          <RunFeed projectId={projectId} limit={FEED_LIMIT} onStartRun={() => setCreateOpen(true)} />
+          <RunFeed projectId={projectId} limit={FEED_LIMIT} />
           {project && project.runs.length > 0 && <AllRuns projectId={projectId} runs={project.runs} />}
         </>
       )}
-
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Start a run</DialogTitle>
-            <DialogDescription>
-              This creates a run in {project?.name ?? "this project"} and opens its live view. Events you send with
-              the project's API key appear there as they arrive.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2 py-2">
-            <Input
-              value={runName}
-              onChange={(e) => setRunName(e.target.value)}
-              placeholder="Run name (e.g. refund order #4821)"
-              aria-label="Run name"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && runName.trim()) createRunMut.mutate(runName.trim())
-              }}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setCreateOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={() => createRunMut.mutate(runName.trim() || "Untitled run")} disabled={createRunMut.isPending}>
-              {createRunMut.isPending ? "Starting…" : "Start run"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
