@@ -19,6 +19,15 @@ on:
       - "agenttrace-langchain-v*"
   workflow_dispatch: {}
 
+# Read-only by default; only the publish job gets the OIDC token.
+permissions:
+  contents: read
+
+# One run per tag at a time; never cancel a run that may be uploading.
+concurrency:
+  group: publish-agenttrace-langchain-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest

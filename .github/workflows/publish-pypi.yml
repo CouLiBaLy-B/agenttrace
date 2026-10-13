@@ -15,6 +15,16 @@ on:
       - "v*"
   workflow_dispatch: {}
 
+# Read-only by default; only the publish job gets the OIDC token.
+permissions:
+  contents: read
+
+# One run per tag at a time (a tag push and a Release of that tag queue up);
+# never cancel a run that may be uploading.
+concurrency:
+  group: publish-pypi-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     # A release of the shim's agenttrace-langchain-v* tag is not this package.
