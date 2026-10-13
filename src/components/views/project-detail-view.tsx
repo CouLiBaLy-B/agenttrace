@@ -6,13 +6,24 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { api, formatDuration, formatRelative } from "@/lib/api"
 import { useNav } from "@/lib/store"
 import { RUN_STATUS, type RecentRun, type RunStatus } from "@/lib/types"
+import {
+  DEFAULT_RUN_SORT,
+  RUN_SORT_KEYS,
+  RUN_SORTS,
+  describeRunSort,
+  runDurationMs,
+  sortRuns,
+  type RunSortKey,
+  type SortDirection,
+} from "@/lib/run-sort"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Chronogram } from "@/components/dashboard/chronogram"
 import { RunFeed } from "@/components/dashboard/run-feed"
-import { ArrowLeft, ChevronRight, Search } from "lucide-react"
+import { ArrowDownWideNarrow, ArrowLeft, ArrowUpNarrowWide, ChevronRight, Search } from "lucide-react"
 
 interface Run {
   id: string
@@ -194,22 +205,29 @@ function WindowToggle({ hours, onChange }: { hours: number; onChange: (hours: nu
 }
 
 function runDuration(r: Run): string {
-  if (!r.endedAt) return r.status === "running" ? "running" : "—"
-  return formatDuration(new Date(r.endedAt).getTime() - new Date(r.startedAt).getTime())
+  const ms = runDurationMs(r)
+  if (ms !== null) return formatDuration(ms)
+  return r.status === "running" ? "running" : "—"
 }
 
-/** Every run of the project, newest first, behind a disclosure: the feed and
- * the chronogram only reach the latest 24 runs and the last 7 days. */
+/** Every run of the project behind a disclosure (the feed and the chronogram
+ * only reach the latest 24 runs and the last 7 days), newest first unless
+ * sorted otherwise. */
 function AllRuns({ projectId, runs }: { projectId: string; runs: Run[] }) {
   const { go } = useNav()
   const [open, setOpen] = useState(false)
   const [filter, setFilter] = useState("")
   const [shown, setShown] = useState(PAGE)
-  const sorted = useMemo(() => [...runs].sort((a, b) => b.startedAt.localeCompare(a.startedAt)), [runs])
+  const [sortKey, setSortKey] = useState<RunSortKey>(DEFAULT_RUN_SORT.key)
+  const [direction, setDirection] = useState<SortDirection>(DEFAULT_RUN_SORT.direction)
+  const sorted = useMemo(() => sortRuns(runs, sortKey, direction), [runs, sortKey, direction])
   const needle = filter.trim().toLowerCase()
   const matching = needle ? sorted.filter((r) => r.name.toLowerCase().includes(needle)) : sorted
   const visible = matching.slice(0, shown)
   const panelId = "all-runs-panel"
+  const sortLabelId = "all-runs-sort-label"
+  const sort = RUN_SORTS[sortKey]
+  const DirectionIcon = direction === "desc" ? ArrowDownWideNarrow : ArrowUpNarrowWide
 
   return (
     <section aria-labelledby="all-runs-title" className="space-y-3">
@@ -231,18 +249,51 @@ function AllRuns({ projectId, runs }: { projectId: string; runs: Run[] }) {
       </h2>
       {open && (
         <div id={panelId} className="space-y-3">
-          <div className="relative max-w-xs">
-            <Search aria-hidden="true" className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ink-2)]" />
-            <Input
-              placeholder="Filter runs by name"
-              aria-label="Filter runs by name"
-              value={filter}
-              onChange={(e) => {
-                setFilter(e.target.value)
-                setShown(PAGE)
-              }}
-              className="h-9 pl-9"
-            />
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="relative w-full sm:w-80">
+              <Search aria-hidden="true" className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ink-2)]" />
+              <Input
+                placeholder="Filter runs by name"
+                aria-label="Filter runs by name"
+                value={filter}
+                onChange={(e) => {
+                  setFilter(e.target.value)
+                  setShown(PAGE)
+                }}
+                className="h-9 pl-9"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span id={sortLabelId} className="text-[12px] text-[var(--ink-2)]">
+                Sort by
+              </span>
+              <Select value={sortKey} onValueChange={(v) => setSortKey(v as RunSortKey)}>
+                <SelectTrigger aria-labelledby={sortLabelId} className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RUN_SORT_KEYS.map((key) => (
+                    <SelectItem key={key} value={key}>
+                      {RUN_SORTS[key].label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {/* Says the current order; pressing it reverses the order. */}
+              <Button
+                variant="outline"
+                title="Reverse the order"
+                onClick={() => setDirection((d) => (d === "desc" ? "asc" : "desc"))}
+                className="gap-1.5 px-3 font-normal"
+              >
+                <DirectionIcon aria-hidden="true" className="size-4 text-[var(--ink-2)]" />
+                {sort[direction]}
+              </Button>
+            </div>
+            {/* The direction button's new label is not read out on its own. */}
+            <p role="status" className="sr-only">
+              {describeRunSort(sortKey, direction)}
+            </p>
           </div>
           {matching.length === 0 ? (
             <p className="text-[13px] text-[var(--ink-2)]">No runs match "{filter.trim()}".</p>
