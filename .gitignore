@@ -67,3 +67,6 @@ python-server/agenttrace/server/static/
 
 # e2e theme screenshots (uploaded by CI)
 python-server/tests_e2e/artifacts/
+
+# MkDocs build output (mkdocs build)
+/site/

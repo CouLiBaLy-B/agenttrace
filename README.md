@@ -4,6 +4,8 @@
 
 Watch signals move through your agents in real time: one vertical lifeline per participant (User, Orchestrator, LLM, each Tool, each Sub-agent), each event rendering as an animated arrow in a UML-inspired sequence diagram.
 
+**Documentation:** [coulibaly-b.github.io/agenttrace](https://coulibaly-b.github.io/agenttrace/)
+
 ![Run view in the Phosphore theme](docs/screenshots/run-phosphore.png)
 
 ## Themes

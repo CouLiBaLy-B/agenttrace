@@ -47,6 +47,7 @@ asyncio_mode = "auto"
 
 [project.urls]
 Homepage = "https://github.com/CouLiBaLy-B/agenttrace"
+Documentation = "https://coulibaly-b.github.io/agenttrace/"
 Repository = "https://github.com/CouLiBaLy-B/agenttrace"
 Issues = "https://github.com/CouLiBaLy-B/agenttrace/issues"
 
