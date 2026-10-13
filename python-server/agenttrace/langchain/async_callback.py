@@ -282,10 +282,13 @@ class AsyncAgentTraceCallbackHandler(AsyncCallbackHandler):
                 {"scope": "subagent", "status": "completed"},
             )
         else:
+            # The tool's content as text (a ToolMessage would otherwise be sent
+            # as its repr, "content='...' name=... tool_call_id=..."), full
+            # length: the run anonymizes it before truncating it.
             self._run.on_stream_event(
                 "tool_result",
                 info.get("node", "main"),
-                {"id": str(run_id), "name": info.get("name", "tool"), "result": output},
+                {"id": str(run_id), "name": info.get("name", "tool"), "result": response_preview(output)},
             )
 
     async def on_tool_error(self, error, *, run_id: UUID, **kwargs) -> None:

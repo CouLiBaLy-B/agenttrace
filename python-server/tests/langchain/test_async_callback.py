@@ -113,6 +113,43 @@ async def test_tool_call_and_result_pair_with_duration(handler, post):
     assert "durationMs" in events[1]
 
 
+async def test_tool_result_payload_is_the_tool_messages_content(handler, post):
+    from langchain_core.messages import ToolMessage
+
+    for content in ("Order #4521 shipped", [{"type": "text", "text": "Order #4521 "}, {"type": "text", "text": "shipped"}]):
+        rid = uuid.uuid4()
+        await handler.on_tool_start({"name": "find_order"}, "", run_id=rid, inputs={"email": "x"})
+        await handler.on_tool_end(ToolMessage(content=content, name="find_order", tool_call_id="call_2"), run_id=rid)
+    await handler.aclose()
+
+    results = [e["payload"]["result"] for e in _events(post) if e["type"] == "tool_result"]
+    assert results == ["Order #4521 shipped", "Order #4521 shipped"]
+
+
+async def test_tool_result_anonymized_before_truncation(post):
+    from langchain_core.messages import ToolMessage
+
+    from agenttrace.tracking.run import RESULT_LIMIT
+
+    def scrub(value):  # payloads arrive as dicts, labels and the run name as strings
+        if isinstance(value, dict):
+            return {key: scrub(item) for key, item in value.items()}
+        return value.replace("jane@x.com", "<email>") if isinstance(value, str) else value
+
+    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    handler = AsyncAgentTraceCallbackHandler("run", client=client, anonymizer=scrub)
+    # The address straddles the truncation limit: truncating first would leak "jane@x".
+    content = "x" * (RESULT_LIMIT - 6) + " jane@x.com and more"
+    rid = uuid.uuid4()
+    await handler.on_tool_start({"name": "lookup"}, "", run_id=rid, inputs={})
+    await handler.on_tool_end(ToolMessage(content=content, tool_call_id="c"), run_id=rid)
+    await handler.aclose()
+
+    result = next(e for e in _events(post) if e["type"] == "tool_result")["payload"]["result"]
+    assert "jane" not in result
+    assert result.startswith("x" * (RESULT_LIMIT - 6) + " <emai")
+
+
 async def test_task_tool_emits_handoff_not_tool_call(handler, post):
     rid = uuid.uuid4()
     await handler.on_tool_start(
