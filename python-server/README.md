@@ -175,33 +175,79 @@ bun run build:ui
 pytest python-server/tests_e2e
 ```
 
-## Publishing to PyPI
+## Publishing
 
-Packaging is ready and verified (`python -m build` + `twine check dist/*`
-both pass; the built wheel installs and runs standalone in a clean venv).
-`.github/workflows/publish-pypi.yml` builds and publishes on every GitHub
-Release, using **PyPI Trusted Publishing (OIDC)** — no API token stored as a
-GitHub secret. What's left requires your PyPI account, so it can't be done
-from here:
+Two PyPI projects are released from this repo, each by pushing a tag. Both
+workflows use **PyPI Trusted Publishing (OIDC)**: no API token is stored in
+GitHub.
 
-1. Create a PyPI account (https://pypi.org/account/register/) if you don't
-   have one, and enable 2FA (PyPI requires it).
-2. Since `deepagents-trace` doesn't exist on PyPI yet, register it as a
-   **pending publisher** (Publishing → Trusted publishers →
-   "Add a pending publisher" at https://pypi.org/manage/account/publishing/):
-   - PyPI project name: `deepagents-trace`
+| PyPI project | Source | Workflow | Tag | GitHub environment |
+| --- | --- | --- | --- | --- |
+| `deepagents-trace` | `python-server/` | `publish-pypi.yml` | `v<version>` | `pypi` |
+| `agenttrace-langchain` (deprecated shim) | `integrations/agenttrace-langchain/` | `publish-agenttrace-langchain.yml` | `agenttrace-langchain-v<version>` | `pypi-agenttrace-langchain` |
+
+A run fails if the tag doesn't match the package's version (`pyproject.toml`,
+and `agenttrace/__init__.py` for deepagents-trace). `publish-pypi.yml` builds
+the UI before the wheel and checks that the wheel ships it
+(`scripts/check_wheel.py`). It also runs for a published GitHub Release whose
+tag starts with `v`, and skips files already on PyPI, so a tag push followed
+by a Release of the same tag publishes once.
+`publish-agenttrace-langchain.yml` installs the built wheel in a clean venv,
+with its dependencies from PyPI, and imports `agenttrace_langchain` before
+publishing.
+
+### Release order
+
+`agenttrace-langchain` 0.3.0 depends on `deepagents-trace[langchain]>=0.2.0`,
+so deepagents-trace is released first. Tag the commit you release (after
+merging to `main`):
+
+1. deepagents-trace 0.2.0 (the version is already 0.2.0 in both files):
+
+   ```bash
+   git tag v0.2.0 && git push origin v0.2.0
+   ```
+
+   Wait for the run to finish and for https://pypi.org/project/deepagents-trace/0.2.0/
+   to exist.
+
+2. Then the shim:
+
+   ```bash
+   git tag agenttrace-langchain-v0.3.0 && git push origin agenttrace-langchain-v0.3.0
+   ```
+
+   If deepagents-trace 0.2.0 isn't on PyPI yet, the wheel check can't install
+   the dependency, so the run fails before publishing anything. Re-run it once
+   step 1 is done.
+
+For later releases, bump the version, commit, then tag. Some 0.1.x releases
+were tagged `python-server-v*`; that pattern no longer publishes.
+
+### One-time setup
+
+Trusted publishing needs a publisher registered on PyPI and a matching GitHub
+environment. The existing releases (deepagents-trace 0.1.x,
+agenttrace-langchain 0.1.0 to 0.2.2) were published by these two workflows, so
+both are in place for this repository; you only need this for a fork or
+another PyPI account. For the shim:
+
+1. On pypi.org, open the `agenttrace-langchain` project, then Manage →
+   Publishing, and add a GitHub publisher:
    - Owner: `CouLiBaLy-B`, Repository: `agenttrace`
-   - Workflow filename: `publish-pypi.yml`
-   - Environment name: `pypi`
-3. In the GitHub repo settings, create an environment named `pypi` (Settings
-   → Environments) — optionally with a required reviewer, so publishing needs
-   manual approval.
-4. Bump `version` in `pyproject.toml`, commit, then create a GitHub Release
-   (tag `v0.1.0`) — the workflow builds and publishes automatically. First
-   publish finalizes the pending publisher into a real one.
-5. (Optional but recommended) do a dry run against TestPyPI first
-   (https://test.pypi.org) with the same trusted-publisher flow before the
-   real release.
+   - Workflow filename: `publish-agenttrace-langchain.yml`
+   - Environment name: `pypi-agenttrace-langchain`
+
+   If the project doesn't exist on PyPI yet, add the same values as a pending
+   publisher (with the project name) at
+   https://pypi.org/manage/account/publishing/; the first publish creates it.
+2. In the GitHub repository, Settings → Environments, create
+   `pypi-agenttrace-langchain`. It is separate from deepagents-trace's `pypi`
+   environment, so the two packages' publish permissions stay independent.
+   Optionally add a required reviewer, so each publish waits for approval.
+
+deepagents-trace is set up the same way, with the workflow `publish-pypi.yml`
+and the environment `pypi`.
 
 ## Known gaps
 
