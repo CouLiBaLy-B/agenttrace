@@ -1,8 +1,9 @@
 "use client"
 
-import { memo, useRef } from "react"
+import { memo, useMemo, useRef } from "react"
 import { AlertTriangle, ArrowRight } from "lucide-react"
-import { eventPaint, detectParticipantKind, type Participant, type TraceEvent } from "@/lib/types"
+import { eventPaint, type Participant, type TraceEvent } from "@/lib/types"
+import { kindLookup, type ParticipantKind } from "@/lib/participant-kinds"
 import { formatDuration } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { PARTICIPANT_ICON, KIND_COLOR } from "./participants"
@@ -12,6 +13,7 @@ import { useFollowEnd } from "./follow"
 
 interface Props {
   events: TraceEvent[]
+  /** The run's participants, typed from all its events (not just the listed ones). */
   participants: Participant[]
   selectedId: string | null
   onSelect: (id: string) => void
@@ -22,13 +24,21 @@ interface Props {
 }
 
 /** Phones: the run as a vertical list of event cards. */
-export function StackedTimeline({ events, selectedId, onSelect, follow = false, revealKey = 0 }: Props) {
+export function StackedTimeline({ events, participants, selectedId, onSelect, follow = false, revealKey = 0 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   useFollowEnd(scrollRef, follow, events.length, revealKey)
+  const kindOf = useMemo(() => kindLookup(participants), [participants])
   return (
     <div ref={scrollRef} className="at-canvas at-scroll h-full space-y-2 overflow-y-auto p-3">
       {events.map((ev) => (
-        <EventCard key={ev.id} event={ev} selected={ev.id === selectedId} onSelect={onSelect} />
+        <EventCard
+          key={ev.id}
+          event={ev}
+          srcKind={kindOf(ev.source)}
+          tgtKind={kindOf(ev.target)}
+          selected={ev.id === selectedId}
+          onSelect={onSelect}
+        />
       ))}
     </div>
   )
@@ -36,16 +46,18 @@ export function StackedTimeline({ events, selectedId, onSelect, follow = false, 
 
 const EventCard = memo(function EventCard({
   event: ev,
+  srcKind,
+  tgtKind,
   selected,
   onSelect,
 }: {
   event: TraceEvent
+  srcKind: ParticipantKind
+  tgtKind: ParticipantKind
   selected: boolean
   onSelect: (id: string) => void
 }) {
   const paint = eventPaint(ev.type, ev.status === "error")
-  const srcKind = detectParticipantKind(ev.source)
-  const tgtKind = detectParticipantKind(ev.target)
   const SrcIcon = PARTICIPANT_ICON[srcKind]
   const TgtIcon = PARTICIPANT_ICON[tgtKind]
   return (

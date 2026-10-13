@@ -6,7 +6,7 @@ import { useElementWidth, useMediaQuery } from "@/lib/hooks"
 import { useTheme } from "@/lib/theme"
 import type { ThemeId } from "@/lib/theme-core"
 import { LAYOUT } from "@/components/sequence-diagram/geometry"
-import { extractParticipants } from "@/components/sequence-diagram/participants"
+import { extractParticipants } from "@/lib/participant-kinds"
 import { ThemedDiagram } from "@/components/sequence-diagram/themed-diagram"
 import { REFUND_SCENARIO, scenarioEvents } from "./refund-scenario"
 

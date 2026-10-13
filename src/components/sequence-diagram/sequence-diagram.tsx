@@ -5,7 +5,7 @@ import { subscribeRun } from "@/lib/live"
 import { api } from "@/lib/api"
 import { filterEvents } from "@/lib/run-filters"
 import { EVENT_COLORS, type EventType, type TraceEvent } from "@/lib/types"
-import { extractParticipants } from "./participants"
+import { extractParticipants } from "@/lib/participant-kinds"
 import { ThemedDiagram } from "./themed-diagram"
 import { StackedTimeline } from "./stacked-timeline"
 import { EventDetailPanel } from "./event-detail-panel"
@@ -355,6 +355,7 @@ export function SequenceDiagram({
           event={selectedEvent}
           index={selectedIndex}
           total={events.length}
+          participants={participants}
           onClose={clearSelection}
           returnFocus={focusCanvas}
           variant={isWide ? "panel" : isDesktop ? "overlay" : "sheet"}

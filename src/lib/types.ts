@@ -48,6 +48,7 @@ export interface RecentRun {
 export interface Participant {
   id: string
   name: string
+  /** From how the run's events use the name (src/lib/participant-kinds.ts). */
   kind: "user" | "orchestrator" | "llm" | "tool" | "subagent"
   icon: string
 }
@@ -80,16 +81,6 @@ const UNKNOWN_EVENT = { color: "var(--ink-3)", text: "var(--ink-2)" }
 export function eventPaint(type: string, isError: boolean): { color: string; text: string; label: string } {
   const meta = EVENT_COLORS[type as EventType] ?? { ...UNKNOWN_EVENT, label: type }
   return isError ? { ...meta, color: EVENT_COLORS.error.color, text: EVENT_COLORS.error.text } : meta
-}
-
-// Detect participant kind from a name/id
-export function detectParticipantKind(name: string): Participant["kind"] {
-  const n = name.toLowerCase()
-  if (n === "user" || n.includes("user")) return "user"
-  if (n.includes("orchestrator") || n.includes("agent") || n.includes("main")) return "orchestrator"
-  if (n === "llm" || n.includes("llm") || n.includes("gpt") || n.includes("claude") || n.includes("model")) return "llm"
-  if (n.includes("sub-agent") || n.includes("subagent") || n.includes("research") || n.includes("assistant")) return "subagent"
-  return "tool"
 }
 
 export const PARTICIPANT_ICONS: Record<Participant["kind"], string> = {

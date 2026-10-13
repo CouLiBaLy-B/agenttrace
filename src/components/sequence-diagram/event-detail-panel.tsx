@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect, useRef, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { toast } from "sonner"
 import { ArrowRight, Check, Copy, PanelRightClose, PanelRightOpen, X } from "lucide-react"
-import { eventPaint, detectParticipantKind, type TraceEvent } from "@/lib/types"
+import { eventPaint, type Participant, type TraceEvent } from "@/lib/types"
+import { kindLookup, type ParticipantKind } from "@/lib/participant-kinds"
 import { formatDuration } from "@/lib/api"
 import { useMediaQuery } from "@/lib/hooks"
 import { useLayout, DETAIL_SIZE } from "@/lib/store"
@@ -21,6 +22,8 @@ interface Props {
   /** The event's index in the run (all events, filters ignored) and the run's size: "6 / 8". */
   index: number
   total: number
+  /** The run's participants, typed from all its events: the source and target icons. */
+  participants: Participant[]
   onClose: () => void
   /** Overlay only: where focus goes when the overlay closes itself (the diagram canvas). */
   returnFocus?: () => void
@@ -40,11 +43,12 @@ const ICON_BUTTON = cn(
   FOCUS
 )
 
-export function EventDetailPanel({ event, index, total, onClose, returnFocus, variant }: Props) {
+export function EventDetailPanel({ event, index, total, participants, onClose, returnFocus, variant }: Props) {
   const { detailCollapsed, detailWidth, toggleDetail, setDetailWidth } = useLayout()
   const [dragging, setDragging] = useState(false)
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)")
-  const content = event ? <EventBody event={event} index={index} total={total} /> : <EmptyDetail />
+  const kindOf = useMemo(() => kindLookup(participants), [participants])
+  const content = event ? <EventBody event={event} index={index} total={total} kindOf={kindOf} /> : <EmptyDetail />
 
   if (variant === "sheet") {
     return (
@@ -166,10 +170,20 @@ function EmptyDetail() {
   )
 }
 
-function EventBody({ event, index, total }: { event: TraceEvent; index: number; total: number }) {
+function EventBody({
+  event,
+  index,
+  total,
+  kindOf,
+}: {
+  event: TraceEvent
+  index: number
+  total: number
+  kindOf: (name: string) => ParticipantKind
+}) {
   const paint = eventPaint(event.type, event.status === "error")
-  const srcKind = detectParticipantKind(event.source)
-  const tgtKind = detectParticipantKind(event.target)
+  const srcKind = kindOf(event.source)
+  const tgtKind = kindOf(event.target)
   const SrcIcon = PARTICIPANT_ICON[srcKind]
   const TgtIcon = PARTICIPANT_ICON[tgtKind]
   const status = event.status === "error" ? "Error" : event.status ? event.status[0].toUpperCase() + event.status.slice(1) : "—"
