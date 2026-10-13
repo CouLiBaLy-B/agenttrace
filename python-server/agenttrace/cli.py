@@ -193,7 +193,7 @@ def demo(database_url: str | None) -> None:
     """Load three demo projects for the local (no-auth) user.
 
     No-op if that user already has projects. In --auth password mode, signed-in
-    users load demo data from Settings -> "Reload demo projects" instead.
+    users load demo data from Settings -> Demo data -> "Load demo projects" instead.
     """
     _require_server_extra()
     from .server.demo import seed_demo
