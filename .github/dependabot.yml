@@ -1,0 +1,9 @@
+# Keeps the GitHub Actions in .github/workflows up to date: third-party actions
+# are pinned to a commit SHA (with the version in a comment), which Dependabot
+# bumps together.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
