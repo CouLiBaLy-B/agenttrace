@@ -226,6 +226,8 @@ function AllRuns({ projectId, runs }: { projectId: string; runs: Run[] }) {
   const visible = matching.slice(0, shown)
   const panelId = "all-runs-panel"
   const sortLabelId = "all-runs-sort-label"
+  const sortTriggerId = "all-runs-sort"
+  const sortTrigger = useRef<HTMLButtonElement>(null)
   const sort = RUN_SORTS[sortKey]
   const DirectionIcon = direction === "desc" ? ArrowDownWideNarrow : ArrowUpNarrowWide
 
@@ -264,11 +266,21 @@ function AllRuns({ projectId, runs }: { projectId: string; runs: Run[] }) {
               />
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <span id={sortLabelId} className="shrink-0 whitespace-nowrap text-[12px] text-[var(--ink-2)]">
+              <label
+                id={sortLabelId}
+                htmlFor={sortTriggerId}
+                // As with a native select: a click focuses the control. Radix
+                // would also open the list on a click that skipped its pointerdown.
+                onClick={(e) => {
+                  e.preventDefault()
+                  sortTrigger.current?.focus()
+                }}
+                className="shrink-0 whitespace-nowrap text-[12px] text-[var(--ink-2)]"
+              >
                 Sort by
-              </span>
+              </label>
               <Select value={sortKey} onValueChange={(v) => setSortKey(v as RunSortKey)}>
-                <SelectTrigger aria-labelledby={sortLabelId} className="w-32">
+                <SelectTrigger ref={sortTrigger} id={sortTriggerId} aria-labelledby={sortLabelId} className="w-32">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

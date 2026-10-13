@@ -97,10 +97,13 @@ def test_project_runs_sort_by_keyboard_and_no_start_button(page: Page, local_ser
     page.get_by_role("button", name="All runs").click()
     first_row = page.locator("#all-runs-panel li").first
     expect(first_row).to_contain_text("#7788")  # the demo's newest run
-    # open the sort list from the keyboard, type-ahead to Events, pick it
+    # "Sort by" is the trigger's label: a click on it focuses the trigger, the list stays closed
     sort = page.get_by_role("combobox", name="Sort by")
     expect(sort).to_have_text("Date")
-    sort.focus()
+    page.locator("label[for='all-runs-sort']").click()
+    expect(sort).to_be_focused()
+    expect(page.get_by_role("listbox")).to_have_count(0)
+    # open the sort list from the keyboard, type-ahead to Events, pick it
     page.keyboard.press("Enter")
     events = page.get_by_role("option", name="Events")
     expect(events).to_be_visible()
