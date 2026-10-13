@@ -26,10 +26,12 @@ The tracking API follows MLflow's, so most names carry over.
 - `start_run()` returns the run, which is a context manager: leaving the block
   ends it `completed`, or `failed` if an exception escaped. `end_run(status)`
   ends the current run.
-- The fluent API doesn't block and doesn't raise (except a `ValueError` for an
-  unknown event type): each run writes from its own background thread, and a
-  storage error turns tracing off for that run. An exit hook ends and flushes
-  the runs still open, so short scripts don't lose their last events.
+- `log_event()` and `@agenttrace.trace` don't block and don't raise (except a
+  `ValueError` for an unknown event type): each run writes from its own
+  background thread, and a storage error turns tracing off for that run.
+  Ending a run, with `end_run()` or by leaving the `start_run()` block, waits
+  for its writes, at most 10 seconds. An exit hook ends and flushes the runs
+  still open, so short scripts don't lose their last events.
 
 ## Tracking URIs
 

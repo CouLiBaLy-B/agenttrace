@@ -119,7 +119,9 @@ running event loop.
 "Agent" is `Orchestrator` or the sub-agent that made the call. deepagents runs
 a sub-agent behind the `task` tool, and LangGraph runs the sub-agent's own
 calls under the `task` call's namespace: the handler recognises that namespace,
-on every request of a cached agent, and nested sub-agents too. The model's
+on every request of a cached agent. When a sub-agent hands off in turn, the
+nested sub-agent's calls go to its own lifeline, but its hand-off and return
+arrows are drawn from and to the Orchestrator. The model's
 lifeline is named after the model (`ls_model_name`, else the model id the
 chat model was built with); a call that names no model reuses the last name
 seen, so one model doesn't split into two lifelines.

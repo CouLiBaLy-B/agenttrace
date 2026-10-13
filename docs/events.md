@@ -68,18 +68,19 @@ The answer is `201 {"runId": "<run id>", "event": {...}}`, where the event has
 
 `"failed"` ends the run `failed`; any other value ends it `completed`. The
 answer is `200 {"runId": "<run id>", "closed": true, "status": "completed"}`. A
-body with `endRun` only ends the run, whatever else it holds. A run that is
-never ended stays `running`.
+body with a non-empty `endRun` only ends the run, whatever else it holds; an
+empty, `false` or `null` `endRun` is ignored, and the body is read as an event.
+A run that is never ended stays `running`.
 
 ## Event types
 
 | `type` | Usual arrow | Payload sent by the SDK |
 | --- | --- | --- |
-| `llm_call` | agent → model | `input` (system prompt and messages), `output_preview`, `tokens` |
-| `tool_call` | agent → tool | `args` |
-| `tool_result` | tool → agent | `result` |
-| `handoff` | User → Orchestrator, or Orchestrator → sub-agent | `message`, or `task` |
-| `error` | tool or model → agent | `error` (the exception's class), `message` |
+| `llm_call` | agent → model | `output_preview`, `tokens`; the middleware and the async handler also send `input` (system prompt and messages), autolog doesn't |
+| `tool_call` | agent → tool | `args`; `@agenttrace.trace` adds `kwargs`, and the async handler `server` (with `tool_server=`) |
+| `tool_result` | tool → agent | `result` (and `server`); a sub-agent returning, in the async handler: `status` |
+| `handoff` | User → Orchestrator, Orchestrator → sub-agent, or Orchestrator → User | the user's `message`; a hand-off's `task`; an approval request's `actionRequests` (status `pending`) |
+| `error` | tool or model → agent | `error` (the exception's class) and `message`; a run-level failure (`on_error()`) sends the message alone, as `error`; a failed sub-agent, `status` and `error` |
 | `final_answer` | Orchestrator → User | `answer` |
 
 ## With curl
