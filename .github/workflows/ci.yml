@@ -2,7 +2,7 @@
 # Runs on pushes to main/master and on every pull request, whatever its base
 # (stacked pull requests target feature branches):
 #   1. ui      — lint, typecheck, unit tests (Vitest), static export (uploaded as the `ui-bundle` artifact)
-#   2. python  — pytest (server + SDK + shim), then a wheel check that the UI ships
+#   2. python  — pytest (server + SDK + shim), the example notebooks, then a wheel check that the UI ships
 #   3. e2e     — Playwright drives the bundled dashboard served by `agenttrace ui`
 #                (theme screenshots uploaded as the `theme-screenshots` artifact)
 #   4. docker  — build the single image and smoke test it against Postgres
@@ -132,6 +132,14 @@ jobs:
         run: |
           .venv/bin/pytest python-server/tests -q
           .venv/bin/pytest integrations/agenttrace-langchain/tests -q
+
+      # Offline (scripted models, temp SQLite): a failing cell fails the job.
+      - name: Example notebooks run
+        run: |
+          uv pip install --python .venv nbconvert ipykernel
+          .venv/bin/jupyter nbconvert --to notebook --execute \
+            --ExecutePreprocessor.kernel_name=python3 --ExecutePreprocessor.timeout=300 \
+            --output-dir "$RUNNER_TEMP/notebooks" python-server/examples/notebooks/*.ipynb
 
       - name: Wheel ships the UI
         run: |
