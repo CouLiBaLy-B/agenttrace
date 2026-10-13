@@ -1,6 +1,7 @@
 import re
 import time
 
+import requests
 from playwright.sync_api import Page, Route, WebSocket, WebSocketRoute, expect
 
 from agenttrace import AgentTraceClient
@@ -83,6 +84,52 @@ def test_polling_fallback_when_websocket_is_blocked(page: Page, local_server):
     client.end_run(run_id, status="completed")
     expect(page.locator("header").get_by_text("Completed", exact=True)).to_be_visible(timeout=8_000)
     expect(page.get_by_text(re.compile(r"^(Listening|Connecting…|Reconnecting…)$"))).to_have_count(0)
+
+
+def test_project_runs_sort_by_keyboard_and_no_start_button(page: Page, local_server):
+    base, _ = local_server
+    page.goto(base)
+    page.get_by_text("Customer Support Agent", exact=True).first.click()
+    expect(page.get_by_role("heading", name="Customer Support Agent")).to_be_visible(timeout=15_000)
+    # runs come from the agent: the page offers no way to start one
+    expect(page.get_by_role("button", name=re.compile("start a run", re.I))).to_have_count(0)
+
+    page.get_by_role("button", name="All runs").click()
+    first_row = page.locator("#all-runs-panel li").first
+    expect(first_row).to_contain_text("#7788")  # the demo's newest run
+    # open the sort list from the keyboard, type-ahead to Events, pick it
+    sort = page.get_by_role("combobox", name="Sort by")
+    expect(sort).to_have_text("Date")
+    sort.focus()
+    page.keyboard.press("Enter")
+    events = page.get_by_role("option", name="Events")
+    expect(events).to_be_visible()
+    page.keyboard.press("e")
+    expect(events).to_have_attribute("data-highlighted", "")
+    page.keyboard.press("Enter")
+    expect(sort).to_have_text("Events")
+    expect(first_row).to_contain_text("#5102")  # 10 events, the most
+    # the direction button follows; it says the order and reverses it
+    page.keyboard.press("Tab")
+    expect(page.get_by_role("button", name="Most first")).to_be_focused()
+    page.keyboard.press("Enter")
+    expect(page.get_by_role("button", name="Fewest first")).to_be_focused()
+    expect(first_row).to_contain_text("#7788")  # 6 events, the fewest
+    expect(page.locator("#all-runs-panel [role=status]")).to_have_text("Sorted by events, fewest first")
+
+
+def test_empty_project_points_to_integration(page: Page, local_server):
+    base, _ = local_server
+    requests.post(f"{base}/api/projects", json={"name": "Empty project"}, timeout=5).raise_for_status()
+    page.goto(base)
+    page.get_by_text("Empty project", exact=True).first.click(timeout=15_000)
+    expect(page.get_by_role("heading", name="Empty project")).to_be_visible(timeout=10_000)
+    feed = page.locator("section[aria-labelledby='run-feed-title']")
+    expect(feed).to_contain_text("No runs yet. Send events from your agent — see Integration.")
+    expect(page.get_by_role("button", name=re.compile("start a run", re.I))).to_have_count(0)
+    feed.get_by_role("button", name="Integration").click()
+    expect(page.get_by_role("heading", name="Integration")).to_be_visible(timeout=10_000)
+    expect(page.get_by_role("combobox", name="Project")).to_have_text("Empty project")
 
 
 def test_password_mode_signup_and_sign_out(page: Page, password_server):
