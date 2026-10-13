@@ -41,7 +41,7 @@ agenttrace ui            # open http://127.0.0.1:3000
 `agenttrace demo [--database-url URL]` seeds three sample projects (Customer
 Support Agent, Research Assistant, Code Review Bot) for the local (no-auth)
 user that `agenttrace ui` uses on loopback. In password mode, signed-in users
-load them from Settings → Demo data → "Reload demo projects". `agenttrace ui [--host H]
+load them from Settings → Demo data → "Load demo projects". `agenttrace ui [--host H]
 [--port P] [--auth none|password] [--database-url URL]` serves the dashboard on
 `http://127.0.0.1:3000` by default; auth is `none` on loopback (no login) and
 `password` on any other host. For the MLflow-style local flow
@@ -86,7 +86,7 @@ with the container; without `AGENTTRACE_SECRET` a random secret is used and
 sign-ins reset on every restart.
 
 The image runs in password mode, so sign up in the browser and load sample
-projects from Settings → Demo data → "Reload demo projects".
+projects from Settings → Demo data → "Load demo projects".
 `agenttrace demo` only seeds the local (no-auth) user and has no visible
 effect on a password-mode server.
 
