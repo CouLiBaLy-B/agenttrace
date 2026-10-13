@@ -85,9 +85,31 @@ describe("classifyParticipants", () => {
     expect(k).toEqual({ "Support bot": "orchestrator", "zai.glm-5": "llm", lookup_order: "tool", User: "user" })
   })
 
+  it("the receiver of a result or an error is the calling agent, whatever its name", () => {
+    // By name alone both would be tools.
+    expect(detectParticipantKind("Support bot")).toBe("tool")
+    expect(kinds([ev("zai.glm-5", "Support bot", "error")])["Support bot"]).toBe("orchestrator")
+    expect(kinds([ev("web_search", "planner", "tool_result")]).planner).toBe("orchestrator")
+  })
+
+  it("a sub-agent calling its own tool stays a sub-agent", () => {
+    // auditor receives its tool's result and error, but it was delegated to.
+    const k = kinds([
+      ev("Orchestrator", "auditor", "handoff"),
+      ev("auditor", "scope_db", "tool_call"),
+      ev("scope_db", "auditor", "tool_result"),
+      ev("scope_db", "auditor", "error"),
+      ev("auditor", "Orchestrator", "tool_result"),
+    ])
+    expect(k).toEqual({ Orchestrator: "orchestrator", auditor: "subagent", scope_db: "tool" })
+  })
+
+  it("the user receiving an error stays the user", () => {
+    expect(kinds([ev("Support bot", "zai.glm-5", "llm_call"), ev("Support bot", "User", "error")]).User).toBe("user")
+  })
+
   it("falls back to the name when the events say nothing", () => {
-    // Receivers of a result or an answer only.
-    expect(kinds([ev("web_search", "main", "tool_result")]).main).toBe("orchestrator")
+    // Receivers of an answer only.
     expect(kinds([ev("planner", "research_assistant", "final_answer")]).research_assistant).toBe("subagent")
     expect(kinds([ev("planner", "inbox", "final_answer")]).inbox).toBe("tool")
   })

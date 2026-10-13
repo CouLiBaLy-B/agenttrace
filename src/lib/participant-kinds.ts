@@ -23,6 +23,8 @@ interface Usage {
 
 /** Sending one of these makes a participant an agent: it calls models and tools, delegates, answers. */
 const AGENT_SENDS = ["llm_call", "tool_call", "handoff", "final_answer"]
+/** So does receiving one: the results and errors of what it called come back to it. */
+const AGENT_RECEIVES = ["tool_result", "error"]
 
 const isUser = (name: string) => name.toLowerCase() === "user"
 
@@ -48,9 +50,13 @@ function kindFromUsage(name: string, u: Usage): ParticipantKind {
   // What the events say, strongest signal first.
   if (u.receives.has("llm_call")) return "llm"
   if (u.fromUser) return "orchestrator"
-  if (u.delegated) return "subagent" // even though it reports back with a tool_result
+  // A sub-agent, even though it reports back with a tool_result and gets its own tools' results.
+  if (u.delegated) return "subagent"
   if (u.receives.has("tool_call") || u.sends.has("tool_result")) return "tool"
-  if (AGENT_SENDS.some((type) => u.sends.has(type))) return "orchestrator" // a renamed orchestrator
+  // Any other agent: a renamed orchestrator (the user, typed above, also receives errors).
+  if (AGENT_SENDS.some((type) => u.sends.has(type)) || AGENT_RECEIVES.some((type) => u.receives.has(type))) {
+    return "orchestrator"
+  }
   // An error comes from a tool, or from a model whose first call failed (the
   // SDK draws that as model → agent): only the name tells those two apart.
   if (u.sends.has("error")) return detectParticipantKind(name) === "llm" ? "llm" : "tool"
@@ -61,9 +67,11 @@ function kindFromUsage(name: string, u: Usage): ParticipantKind {
  * Each participant's kind, from how the events use its name: the target of an
  * `llm_call` is a model; the agent the user hands off to is the orchestrator,
  * any other handoff target a sub-agent; the target of a `tool_call` or the
- * source of a `tool_result` or `error` is a tool. "User" and names holding
- * "orchestrator" are typed by name; the name heuristic is the last resort.
- * Keyed by name, in first-seen order (each event's source, then its target).
+ * source of a `tool_result` or `error` is a tool; whoever else calls, delegates,
+ * answers or receives a `tool_result` or `error` is an agent, the orchestrator.
+ * "User" and names holding "orchestrator" are typed by name; the name heuristic
+ * is the last resort. Keyed by name, in first-seen order (each event's source,
+ * then its target).
  */
 export function classifyParticipants(events: Iterable<EventLink>): Map<string, ParticipantKind> {
   const usages = new Map<string, Usage>()
