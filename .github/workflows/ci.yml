@@ -1,5 +1,6 @@
 # AgentTrace — CI
-# Runs on every push and pull request:
+# Runs on pushes to main/master and on every pull request, whatever its base
+# (stacked pull requests target feature branches):
 #   1. ui      — lint, typecheck, unit tests (Vitest), static export (uploaded as the `ui-bundle` artifact)
 #   2. python  — pytest (server + SDK + shim), then a wheel check that the UI ships
 #   3. e2e     — Playwright drives the bundled dashboard served by `agenttrace ui`
@@ -15,7 +16,6 @@ on:
   push:
     branches: [main, master]
   pull_request:
-    branches: [main, master]
 
 # Cancel in-flight runs for the same ref when a new commit is pushed.
 concurrency:
