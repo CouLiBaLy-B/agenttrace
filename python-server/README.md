@@ -57,6 +57,11 @@ with agenttrace.start_run("triage"):
 def web_search(query: str) -> str: ...
 ```
 
+Runnable notebooks, offline (scripted models, a temporary SQLite file):
+[`examples/notebooks/`](https://github.com/CouLiBaLy-B/agenttrace/tree/main/python-server/examples/notebooks)
+covers autolog, the middleware and the fluent API, then the per-request async
+handler below.
+
 ### Async servers (cached agent, one handler per request)
 
 A server that compiles the agent once can't bake a per-run middleware into
