@@ -109,7 +109,9 @@ def test_project_runs_sort_by_keyboard_and_no_start_button(page: Page, local_ser
     page.keyboard.press("Enter")
     expect(sort).to_have_text("Events")
     expect(first_row).to_contain_text("#5102")  # 10 events, the most
-    # the direction button follows; it says the order and reverses it
+    # the closing list hands focus back to its trigger (a moment later)...
+    expect(sort).to_be_focused()
+    # ...and the direction button follows; it says the order and reverses it
     page.keyboard.press("Tab")
     expect(page.get_by_role("button", name="Most first")).to_be_focused()
     page.keyboard.press("Enter")
