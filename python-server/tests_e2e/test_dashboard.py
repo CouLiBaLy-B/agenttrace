@@ -120,6 +120,47 @@ def test_project_runs_sort_by_keyboard_and_no_start_button(page: Page, local_ser
     expect(page.locator("#all-runs-panel [role=status]")).to_have_text("Sorted by events, fewest first")
 
 
+# Sideways overflow of <main> (the page's scroll container), which toolbar
+# controls stick out of it, and how many lines the "Sort by" label takes.
+TOOLBAR_LAYOUT = """() => {
+  const main = document.querySelector('main')
+  const left = main.getBoundingClientRect().left
+  const panel = document.getElementById('all-runs-panel')
+  const label = document.getElementById('all-runs-sort-label')
+  const parts = {
+    filter: panel.querySelector('input'),
+    label,
+    sort: panel.querySelector('[data-slot=select-trigger]'),
+    direction: panel.querySelector("button[title='Reverse the order']"),
+  }
+  const clipped = Object.keys(parts).filter((k) => {
+    const r = parts[k].getBoundingClientRect()
+    return r.left < left - 0.5 || r.right > left + main.clientWidth + 0.5
+  })
+  const lines = Math.round(label.getBoundingClientRect().height / parseFloat(getComputedStyle(label).lineHeight))
+  return { overflow: main.scrollWidth - main.clientWidth, clipped, lines }
+}"""
+
+
+def test_project_toolbar_reflows_on_a_phone(page: Page, local_server):
+    """WCAG 1.4.10: from 320 px wide, with the longest order label, the project
+    page doesn't scroll sideways and the sort controls stay whole."""
+    base, _ = local_server
+    page.set_viewport_size({"width": 320, "height": 800})
+    page.goto(base)
+    page.get_by_role("button", name="Customer Support Agent", exact=True).first.click(timeout=15_000)
+    expect(page.get_by_role("heading", name="Customer Support Agent")).to_be_visible(timeout=10_000)
+    page.get_by_role("button", name="All runs").click()
+    page.get_by_role("combobox", name="Sort by").click()
+    page.get_by_role("option", name="Status").click()
+    page.get_by_role("button", name="Running first").click()
+    expect(page.get_by_role("button", name="Completed first")).to_be_visible()
+    for width in (320, 360, 390):
+        page.set_viewport_size({"width": width, "height": 800})
+        layout = page.evaluate(TOOLBAR_LAYOUT)
+        assert layout == {"overflow": 0, "clipped": [], "lines": 1}, (width, layout)
+
+
 def test_empty_project_points_to_integration(page: Page, local_server):
     base, _ = local_server
     requests.post(f"{base}/api/projects", json={"name": "Empty project"}, timeout=5).raise_for_status()

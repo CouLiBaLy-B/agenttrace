@@ -263,8 +263,8 @@ function AllRuns({ projectId, runs }: { projectId: string; runs: Run[] }) {
                 className="h-9 pl-9"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <span id={sortLabelId} className="text-[12px] text-[var(--ink-2)]">
+            <div className="flex flex-wrap items-center gap-2">
+              <span id={sortLabelId} className="shrink-0 whitespace-nowrap text-[12px] text-[var(--ink-2)]">
                 Sort by
               </span>
               <Select value={sortKey} onValueChange={(v) => setSortKey(v as RunSortKey)}>
@@ -279,7 +279,8 @@ function AllRuns({ projectId, runs }: { projectId: string; runs: Run[] }) {
                   ))}
                 </SelectContent>
               </Select>
-              {/* Says the current order; pressing it reverses the order. */}
+              {/* Says the current order; pressing it reverses the order. Phones
+                  show the icon alone, the order staying its accessible name. */}
               <Button
                 variant="outline"
                 title="Reverse the order"
@@ -287,7 +288,7 @@ function AllRuns({ projectId, runs }: { projectId: string; runs: Run[] }) {
                 className="gap-1.5 px-3 font-normal"
               >
                 <DirectionIcon aria-hidden="true" className="size-4 text-[var(--ink-2)]" />
-                {sort[direction]}
+                <span className="max-sm:sr-only">{sort[direction]}</span>
               </Button>
             </div>
             {/* The direction button's new label is not read out on its own. */}
