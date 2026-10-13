@@ -29,18 +29,33 @@ _LOGO = r"""
       /____/
 """
 
-# scheme://user:PASSWORD@host — the password runs to the LAST "@", so a
-# password with an unencoded "@" or "/" is still masked whole (a stray "@"
-# later in the URL can over-mask, never under-mask).
-_URL_PASSWORD = re.compile(r"^(?P<head>[A-Za-z][A-Za-z0-9+.\-]*://[^:/?#@]*):.*@")
+# Fallback for URLs SQLAlchemy can't parse cleanly: from the first ":" after
+# the scheme to the LAST "@" (a stray "@" later in the URL can over-mask,
+# never under-mask).
+_URL_PASSWORD = re.compile(r"^(?P<head>\s*[A-Za-z][\w+.\-]*://[^:]*):.*@")
 # libpq-style query parameters: ?password=..., &sslpassword=...
 _QUERY_PASSWORD = re.compile(r"(?i)(?P<key>[?&][^=&#]*(?:password|passwd|pwd)=)[^&#]*")
 
 
 def mask_db_url(url: str) -> str:
     """`url` with its password replaced by `***` (the `user:password@` part
-    and any password query parameter), safe to print."""
-    masked = _URL_PASSWORD.sub(r"\g<head>:***@", url, count=1)
+    and any password query parameter), safe to print.
+
+    The password is the one SQLAlchemy will use, when its parse accounts for
+    the whole user:password part; otherwise (an unencoded "@" in the
+    password, an unparseable URL...) everything that may be one is masked.
+    A URL without a password is printed as is."""
+    from sqlalchemy.engine import make_url
+    from sqlalchemy.exc import ArgumentError
+
+    try:
+        parsed = make_url(url.strip())
+    except (ArgumentError, ValueError):  # ValueError: e.g. a port that isn't a number
+        parsed = None
+    if parsed is not None and parsed.password is not None and "@" not in (parsed.host or ""):
+        masked = parsed.render_as_string(hide_password=True)
+    else:
+        masked = _URL_PASSWORD.sub(r"\g<head>:***@", url, count=1)
     return _QUERY_PASSWORD.sub(r"\g<key>***", masked)
 
 

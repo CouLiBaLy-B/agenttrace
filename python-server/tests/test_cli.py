@@ -152,8 +152,26 @@ def test_ui_banner_masks_a_password_from_database_url_env(fake_uvicorn, monkeypa
     "url, masked",
     [
         ("postgresql://user:secret@host/db", "postgresql://user:***@host/db"),
+        ("postgresql+psycopg://agent:secret@db:5432/traces", "postgresql+psycopg://agent:***@db:5432/traces"),
+        # Azure-style user@server: the user name holds an "@"
+        (
+            "postgresql://me@corp.com:secret@db.example.com:5432/app",
+            "postgresql://me%40corp.com:***@db.example.com:5432/app",
+        ),
+        # "_" in the dialect or driver name
+        (
+            "oracle+cx_oracle://scott:secret@dbhost:1521/?service_name=orcl",
+            "oracle+cx_oracle://scott:***@dbhost:1521/?service_name=orcl",
+        ),
+        ("db2+ibm_db://user:secret@host:50000/db", "db2+ibm_db://user:***@host:50000/db"),
+        ("  postgresql://user:secret@host/db", "postgresql://user:***@host/db"),
+        # unencoded "@", "/" or "?" in the password, a "/" in the user name, a
+        # garbled port, an unknown scheme: SQLAlchemy can't be trusted, mask wide
         ("postgresql://user:p@ss@host:5432/db", "postgresql://user:***@host:5432/db"),
         ("postgresql://user:a/b?c@host/db", "postgresql://user:***@host/db"),
+        ("postgresql://us/er:secret@host/db", "postgresql://us/er:***@host/db"),
+        ("postgresql://user:sec@ret:5432@host/db", "postgresql://user:***@host/db"),
+        ("my-db://user:secret@host/db", "my-db://user:***@host/db"),
         ("postgresql://:secret@host/db", "postgresql://:***@host/db"),
         (
             "postgresql://host/db?user=u&password=secret&sslmode=require",
@@ -167,6 +185,7 @@ def test_ui_banner_masks_a_password_from_database_url_env(fake_uvicorn, monkeypa
 )
 def test_mask_db_url(url, masked):
     assert cli.mask_db_url(url) == masked
+    assert "secret" not in cli.mask_db_url(url)
 
 
 def test_ui_banner_is_plain_text_off_a_terminal_or_with_no_color(fake_uvicorn):
