@@ -21,8 +21,9 @@ agenttrace ui [--host 127.0.0.1] [--port 3000] \
 
 It needs the `server` extra. It first prints a banner: the version, the
 dashboard URL (`localhost` when it listens on `0.0.0.0` or `::`), the auth
-mode, the database, with its password replaced by `***` (and the absolute path
-of a relative SQLite file), the `AGENTTRACE_TRACKING_URI` line for your agents
+mode, the database, with its credentials replaced by `***` (user and password
+together, `postgresql://***@db:5432/traces`, and any `password=` query parameter;
+the absolute path of a relative SQLite file), the `AGENTTRACE_TRACKING_URI` line for your agents
 (plus `AGENTTRACE_KEY` in password mode), and the docs URL. Then the server
 starts, and creates the tables that don't exist yet. The banner is plain text
 when the output isn't a terminal or when `NO_COLOR` is set, which also turns

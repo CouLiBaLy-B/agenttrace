@@ -151,7 +151,7 @@ def test_ui_banner_masks_the_database_password(fake_uvicorn):
     url = "postgresql+psycopg://agent:s3cr3t-pw@db.internal:5432/traces"
     result = CliRunner().invoke(cli.main, ["ui", "--database-url", url])
     assert result.exit_code == 0, result.output
-    assert _banner_row(result.output, "Database") == "postgresql+psycopg://agent:***@db.internal:5432/traces"
+    assert _banner_row(result.output, "Database") == "postgresql+psycopg://***@db.internal:5432/traces"
     assert "s3cr3t-pw" not in result.output
     assert os.environ["DATABASE_URL"] == url  # the server itself still gets the real URL
 
@@ -160,41 +160,50 @@ def test_ui_banner_masks_a_password_from_database_url_env(fake_uvicorn, monkeypa
     monkeypatch.setenv("DATABASE_URL", "postgresql://agent:from-env@db/traces")
     result = CliRunner().invoke(cli.main, ["ui"])
     assert result.exit_code == 0, result.output
-    assert _banner_row(result.output, "Database") == "postgresql://agent:***@db/traces"
+    assert _banner_row(result.output, "Database") == "postgresql://***@db/traces"
     assert "from-env" not in result.output
 
 
 @pytest.mark.parametrize(
     "url, masked",
     [
-        ("postgresql://user:secret@host/db", "postgresql://user:***@host/db"),
-        ("postgresql+psycopg://agent:secret@db:5432/traces", "postgresql+psycopg://agent:***@db:5432/traces"),
+        ("postgresql://user:secret@host/db", "postgresql://***@host/db"),
+        ("postgresql+psycopg://agent:secret@db:5432/traces", "postgresql+psycopg://***@db:5432/traces"),
+        ("mysql+pymysql://u:secret@h/db?charset=utf8", "mysql+pymysql://***@h/db?charset=utf8"),
+        ("postgresql://u:secret@[::1]:5432/db", "postgresql://***@[::1]:5432/db"),
         # Azure-style user@server: the user name holds an "@"
-        (
-            "postgresql://me@corp.com:secret@db.example.com:5432/app",
-            "postgresql://me%40corp.com:***@db.example.com:5432/app",
-        ),
+        ("postgresql://me@corp.com:secret@db.example.com:5432/app", "postgresql://***@db.example.com:5432/app"),
         # "_" in the dialect or driver name
         (
             "oracle+cx_oracle://scott:secret@dbhost:1521/?service_name=orcl",
-            "oracle+cx_oracle://scott:***@dbhost:1521/?service_name=orcl",
+            "oracle+cx_oracle://***@dbhost:1521/?service_name=orcl",
         ),
-        ("db2+ibm_db://user:secret@host:50000/db", "db2+ibm_db://user:***@host:50000/db"),
-        ("  postgresql://user:secret@host/db", "postgresql://user:***@host/db"),
-        # unencoded "@", "/" or "?" in the password, a "/" in the user name, a
-        # garbled port, an unknown scheme: SQLAlchemy can't be trusted, mask wide
-        ("postgresql://user:p@ss@host:5432/db", "postgresql://user:***@host:5432/db"),
-        ("postgresql://user:a/b?c@host/db", "postgresql://user:***@host/db"),
-        ("postgresql://us/er:secret@host/db", "postgresql://us/er:***@host/db"),
-        ("postgresql://user:sec@ret:5432@host/db", "postgresql://user:***@host/db"),
-        ("my-db://user:secret@host/db", "my-db://user:***@host/db"),
-        ("postgresql://:secret@host/db", "postgresql://:***@host/db"),
+        ("db2+ibm_db://user:secret@host:50000/db", "db2+ibm_db://***@host:50000/db"),
+        ("  postgresql://user:secret@host/db", "postgresql://***@host/db"),
+        # unencoded "@", "/", "?" or ":" in the password (SQLAlchemy would cut
+        # it in two), a "/" in the user name, an unknown scheme: all masked
+        ("postgresql://user:p@ss@host:5432/db", "postgresql://***@host:5432/db"),
+        ("postgresql://user:sec@ret/secret@host/db", "postgresql://***@host/db"),
+        ("postgresql://user:sec@ret?secret@host/db", "postgresql://***@host/db"),
+        ("postgresql://user:sec@ret:5432/secret@host/db", "postgresql://***@host/db"),
+        ("postgresql://user:a/b?c@host/db", "postgresql://***@host/db"),
+        ("postgresql://us/er:secret@host/db", "postgresql://***@host/db"),
+        ("postgresql://user:sec@ret:5432@host/db", "postgresql://***@host/db"),
+        ("my-db://user:secret@host/db", "my-db://***@host/db"),
+        ("postgresql://:secret@host/db", "postgresql://***@host/db"),
+        ("user:secret@host/db", "***@host/db"),
+        # password query parameters, "#" included in the value
         (
             "postgresql://host/db?user=u&password=secret&sslmode=require",
             "postgresql://host/db?user=u&password=***&sslmode=require",
         ),
+        ("postgresql://host/db?password=sec#secret2", "postgresql://host/db?password=***"),
         ("postgresql://u@host/db?sslpassword=secret", "postgresql://u@host/db?sslpassword=***"),
+        # SQLCipher URLs carry a passphrase
+        ("sqlite+pysqlcipher://:secret@/traces.db?cipher=aes-256-cfb", "sqlite+pysqlcipher://***@/traces.db?cipher=aes-256-cfb"),
+        # no password: printed as is
         ("postgresql://user@host:5432/db", "postgresql://user@host:5432/db"),
+        ("postgresql://host/db?x=a@b", "postgresql://host/db?x=a@b"),
         ("sqlite:///./agenttrace.db", "sqlite:///./agenttrace.db"),
         ("sqlite:////home/me/p@th/agenttrace.db", "sqlite:////home/me/p@th/agenttrace.db"),
     ],
@@ -228,5 +237,5 @@ def test_demo_masks_the_database_password(monkeypatch):
     monkeypatch.setattr(server_demo, "seed_demo", lambda db, user: 3)
     result = CliRunner().invoke(cli.main, ["demo", "--database-url", "postgresql://agent:s3cr3t@db/traces"])
     assert result.exit_code == 0, result.output
-    assert "postgresql://agent:***@db/traces" in result.output
+    assert "postgresql://***@db/traces" in result.output
     assert "s3cr3t" not in result.output

@@ -29,34 +29,36 @@ _LOGO = r"""
       /____/
 """
 
-# Fallback for URLs SQLAlchemy can't parse cleanly: from the first ":" after
-# the scheme to the LAST "@" (a stray "@" later in the URL can over-mask,
-# never under-mask).
-_URL_PASSWORD = re.compile(r"^(?P<head>\s*[A-Za-z][\w+.\-]*://[^:]*):.*@")
-# libpq-style query parameters: ?password=..., &sslpassword=...
-_QUERY_PASSWORD = re.compile(r"(?i)(?P<key>[?&][^=&#]*(?:password|passwd|pwd)=)[^&#]*")
+# Password query parameters (libpq style: ?password=..., &sslpassword=...).
+# The value runs to the next "&": SQLAlchemy keeps a "#" inside it.
+_QUERY_PASSWORD = re.compile(r"(?i)(?P<key>[?&][^=&]*(?:password|passwd|pwd)[^=&]*=)[^&]*")
+# SQLite URLs that never carry credentials (sqlite+pysqlcipher does: masked).
+_PLAIN_SQLITE = {"sqlite", "sqlite+pysqlite", "sqlite+aiosqlite"}
+
+
+def _mask_userinfo(text: str) -> str:
+    """Hide everything before the LAST "@" when it holds a ":" (user and
+    password together). A stray "@" later in the URL hides more than needed,
+    never less."""
+    userinfo, at, rest = text.rpartition("@")
+    return f"***@{rest}" if at and ":" in userinfo else text
 
 
 def mask_db_url(url: str) -> str:
-    """`url` with its password replaced by `***` (the `user:password@` part
-    and any password query parameter), safe to print.
+    """`url` safe to print: `user:password@` becomes `***@` and any password
+    query parameter `***`.
 
-    The password is the one SQLAlchemy will use, when its parse accounts for
-    the whole user:password part; otherwise (an unencoded "@" in the
-    password, an unparseable URL...) everything that may be one is masked.
-    A URL without a password is printed as is."""
-    from sqlalchemy.engine import make_url
-    from sqlalchemy.exc import ArgumentError
-
-    try:
-        parsed = make_url(url.strip())
-    except (ArgumentError, ValueError):  # ValueError: e.g. a port that isn't a number
-        parsed = None
-    if parsed is not None and parsed.password is not None and "@" not in (parsed.host or ""):
-        masked = parsed.render_as_string(hide_password=True)
-    else:
-        masked = _URL_PASSWORD.sub(r"\g<head>:***@", url, count=1)
-    return _QUERY_PASSWORD.sub(r"\g<key>***", masked)
+    Deliberately not parsed with SQLAlchemy: an unencoded "@" in a password
+    makes its parse cut the password in two, and its masked rendering then
+    prints the second half. Deliberately wide too: the user name is hidden
+    with the password. A URL without a password is printed as is."""
+    text = url.strip()
+    scheme, sep, rest = text.partition("://")
+    if not sep:
+        return _mask_userinfo(text)
+    if scheme.lower() in _PLAIN_SQLITE:
+        return text
+    return f"{scheme}://" + _QUERY_PASSWORD.sub(r"\g<key>***", _mask_userinfo(rest))
 
 
 def _require_server_extra() -> None:
