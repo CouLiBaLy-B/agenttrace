@@ -181,22 +181,30 @@ name read from hand-off arguments.
   anonymized.
 
 ```python
-import json
 import re
 
 EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+")
 
 
 def scrub(value):
+    """Mask e-mail addresses in a payload, a label or the run name."""
     if isinstance(value, str):
         return EMAIL.sub("<email>", value)
-    return json.loads(EMAIL.sub("<email>", json.dumps(value)))
+    if isinstance(value, dict):
+        return {key: scrub(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [scrub(item) for item in value]
+    return value
 
 
 handler = AsyncAgentTraceCallbackHandler(
     "chat", client=client, anonymizer=scrub
 )
 ```
+
+Walk the values rather than running a pattern over `json.dumps(...)`: in
+JSON text, a newline or an accented letter is an escape sequence, and a
+pattern that matches across it breaks the JSON.
 
 ### Labels and other options
 
