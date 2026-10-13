@@ -1,0 +1,66 @@
+name: Publish agenttrace-langchain to PyPI
+
+# The deprecated agenttrace-langchain shim (integrations/agenttrace-langchain),
+# a thin re-export over deepagents-trace[langchain].
+#
+# Trusted Publishing (OIDC) — no API token stored in GitHub secrets.
+# One-time setup on pypi.org (see python-server/README.md#publishing): a
+# trusted publisher for the `agenttrace-langchain` project with
+#   Owner: CouLiBaLy-B, Repository: agenttrace
+#   Workflow filename: publish-agenttrace-langchain.yml
+#   Environment name: pypi-agenttrace-langchain
+#
+# Release: push an `agenttrace-langchain-v<version>` tag (e.g.
+# agenttrace-langchain-v0.3.0) once the deepagents-trace version it requires
+# is on PyPI; the wheel check below installs that dependency from PyPI.
+on:
+  push:
+    tags:
+      - "agenttrace-langchain-v*"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: integrations/agenttrace-langchain
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Version matches the tag
+        run: |
+          version=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "$GITHUB_REF_NAME" != "agenttrace-langchain-v$version" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match version $version in integrations/agenttrace-langchain/pyproject.toml"
+            exit 1
+          fi
+      - run: python -m pip install build
+      - run: python -m build
+      - name: Wheel installs and imports agenttrace_langchain
+        # Outside the checkout, so `import` loads the installed wheel, not
+        # the source tree.
+        working-directory: ${{ runner.temp }}
+        run: |
+          python -m venv wheel-check
+          wheel-check/bin/pip install "$GITHUB_WORKSPACE"/integrations/agenttrace-langchain/dist/*.whl
+          wheel-check/bin/python -c "from agenttrace_langchain import AgentTraceCallbackHandler, AgentTraceMiddleware"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: integrations/agenttrace-langchain/dist/*
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi-agenttrace-langchain
+    permissions:
+      id-token: write  # required for OIDC trusted publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
