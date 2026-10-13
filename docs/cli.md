@@ -36,7 +36,9 @@ only accepts loopback names in the `Host` and `Origin` headers, a guard against
 DNS rebinding and cross-site requests; `AGENTTRACE_ALLOWED_HOSTS=name1,name2`
 adds names, for example behind a reverse proxy. On a host other than loopback,
 `agenttrace ui` warns that anyone who can reach the port can read and write
-traces.
+traces, and prints the `AGENTTRACE_ALLOWED_HOSTS` value to set (with
+`--host 192.168.1.10`: `AGENTTRACE_ALLOWED_HOSTS=192.168.1.10`), or the value
+already set.
 
 **`password`**: accounts (sign up in the browser) and `atr_...` project keys for
 sending events; the `/ws` live stream needs the session cookie. Set
