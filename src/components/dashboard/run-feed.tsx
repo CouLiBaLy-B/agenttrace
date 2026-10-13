@@ -9,10 +9,12 @@ import { useElementWidth } from "@/lib/hooks"
 import { useNav } from "@/lib/store"
 import { useTheme } from "@/lib/theme"
 import { eventPaint, RUN_STATUS, type RecentRun } from "@/lib/types"
+import { extractParticipants, shapeParticipants } from "@/lib/participant-kinds"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { LiveMiniDiagram, MiniDiagram, useLiveRunEvents } from "@/components/mini-diagram/mini-diagram"
+import { KIND_COLOR, PARTICIPANT_ICON } from "@/components/sequence-diagram/participants"
 
 const TILE_DIAGRAM_H = 88
 
@@ -89,11 +91,11 @@ function LiveTile({ run, onOpen }: { run: RecentRun; onOpen: () => void }) {
   const events = useLiveRunEvents(run.id, false) // the live diagram below keeps this query current
   const count = Math.max(run.eventCount, events?.length ?? 0)
   const height = Math.round(width / 2)
-  const participants = useMemo(() => {
-    const seen: string[] = []
-    for (const e of events ?? []) for (const p of [e.source, e.target]) if (!seen.includes(p)) seen.push(p)
-    return seen.length > 0 ? seen : run.shape.participants
-  }, [events, run.shape.participants])
+  // Typed from all the run's events once they are loaded, from the feed's shape until then.
+  const participants = useMemo(
+    () => (events?.length ? extractParticipants(events) : shapeParticipants(run.shape)),
+    [events, run.shape],
+  )
   const recent = (events ?? []).slice(-LIVE_RECENT)
   return (
     <button type="button" onClick={onOpen} aria-label={tileLabel(run)} className={cn(useTileClass(), "sm:flex sm:items-stretch")}>
@@ -117,8 +119,19 @@ function LiveTile({ run, onOpen }: { run: RecentRun; onOpen: () => void }) {
           </span>
         </span>
         {participants.length > 0 && (
-          <span className="block min-w-0 truncate font-mono text-[12px] text-[var(--ink-2)]" title={participants.join(", ")}>
-            {participants.join(" · ")}
+          <span
+            className="block min-w-0 truncate font-mono text-[12px] text-[var(--ink-2)]"
+            title={participants.map((p) => p.name).join(", ")}
+          >
+            {participants.map((p) => {
+              const Icon = PARTICIPANT_ICON[p.kind]
+              return (
+                <span key={p.id} className="mr-3 last:mr-0">
+                  <Icon aria-hidden className="mr-1 inline size-3 align-[-2px]" style={{ color: KIND_COLOR[p.kind] }} />
+                  {p.name}
+                </span>
+              )
+            })}
           </span>
         )}
         {recent.length > 0 && (
