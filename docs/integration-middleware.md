@@ -29,7 +29,7 @@ async hooks too.
 | `run_name` | `"deepagents run"` | the run's name |
 | `orchestrator` | `"Orchestrator"` | the name of the agent's lifeline |
 | `project` | the current project | the run's project, when no API key is used |
-| `url` | `None` | post to this ingestion URL (`https://host/api/events`) instead of the tracking URI |
+| `url` | `None` | post to this server instead of the tracking URI: its base URL (`https://traces.example.com`) or its `/api/events` URL |
 | `api_key` | `None` | the `atr_...` project key sent to that server |
 | `timeout` | `10.0` | HTTP timeout, in seconds |
 

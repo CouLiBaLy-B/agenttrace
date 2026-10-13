@@ -35,7 +35,7 @@ from typing import Any, Callable, Optional
 
 from langchain.agents.middleware import AgentMiddleware
 
-from ..tracking._uri import get_tracking_uri
+from ..tracking._uri import events_url, get_tracking_uri
 from ..tracking.fluent import get_project
 from ..tracking.http import DEFAULT_URL
 from ..tracking.run import ANSWER_LIMIT, LABEL_LIMIT, RESULT_LIMIT, ActiveRun, compact, truncate
@@ -74,10 +74,11 @@ class AgentTraceMiddleware(AgentMiddleware):
 
     def _make_store(self) -> TrackingStore:
         # Explicit url/api_key keep the pre-0.2 behaviour (HTTP to a server);
-        # otherwise follow the tracking URI like the rest of the SDK.
+        # otherwise follow the tracking URI like the rest of the SDK. Like the
+        # HTTP clients, `url` may be the server's base URL or `.../api/events`.
         if self._url or self._api_key:
             return RestStore(
-                self._url or os.getenv("AGENTTRACE_URL", DEFAULT_URL),
+                events_url(self._url or os.getenv("AGENTTRACE_URL", DEFAULT_URL)),
                 api_key=self._api_key or os.getenv("AGENTTRACE_KEY"),
                 timeout=self._timeout,
             )
