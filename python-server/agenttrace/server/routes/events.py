@@ -33,7 +33,10 @@ async def ingest(
     project: models.Project | None = Depends(ingest_project),
     db: Session = Depends(get_db),
 ):
-    body = await request.json()
+    try:
+        body = await request.json()
+    except ValueError:  # malformed or empty JSON, or bytes that aren't text
+        body = None
     if not isinstance(body, dict):
         raise HTTPException(status_code=400, detail={"error": "Invalid JSON body"})
     # Sync SQLAlchemy work off the event loop: a SQLite file locked by another

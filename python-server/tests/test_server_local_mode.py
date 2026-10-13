@@ -14,6 +14,17 @@ def local_client(monkeypatch):
         yield c
 
 
+@pytest.mark.parametrize(
+    "body",
+    [b"{not json", b"", b"   ", b"\xff\xfe\xfa", b"[1, 2]", b'"a run"', b"null", b"42"],
+    ids=["malformed", "empty", "blank", "not-text", "array", "string", "null", "number"],
+)
+def test_ingest_rejects_a_body_that_is_not_a_json_object(local_client, body):
+    resp = local_client.post("/api/events", content=body, headers={"Content-Type": "application/json"})
+    assert resp.status_code == 400
+    assert resp.json() == {"error": "Invalid JSON body"}
+
+
 def test_keyless_ingestion_creates_project_by_name(local_client):
     created = local_client.post("/api/events", json={"runId": None, "name": "r", "project": "support-bot"})
     assert created.status_code == 201
