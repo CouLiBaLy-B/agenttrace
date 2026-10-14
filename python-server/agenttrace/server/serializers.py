@@ -6,14 +6,20 @@ each route's shape is small and route-specific (mirrors how the original
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from . import models
 
 
 def _iso(dt: Optional[datetime]) -> Optional[str]:
-    return dt.isoformat() if dt else None
+    """SQLite hands back naive datetimes that are UTC: always emit an explicit
+    offset so browsers don't read them as local time."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.isoformat()
 
 
 def user_out(user: models.User) -> dict[str, Any]:
@@ -38,9 +44,11 @@ def project_out(project: models.Project, *, run_count: int | None = None, latest
     return data
 
 
-def project_detail_out(project: models.Project) -> dict[str, Any]:
+def project_detail_out(project: models.Project, event_counts: dict[str, int]) -> dict[str, Any]:
+    """`event_counts` maps run id to its number of events (from one grouped
+    count query, so the events themselves are never loaded)."""
     data = project_out(project)
-    data["runs"] = [run_out(r, event_count=len(r.events)) for r in project.runs]
+    data["runs"] = [run_out(r, event_count=event_counts.get(r.id, 0)) for r in project.runs]
     data["apiKeys"] = [
         {
             "id": k.id,
@@ -71,6 +79,7 @@ def run_out(run: models.Run, *, event_count: int | None = None) -> dict[str, Any
 
 def run_detail_out(run: models.Run) -> dict[str, Any]:
     data = run_out(run)
+    data["project"] = {"id": run.project.id, "name": run.project.name, "userId": run.project.user_id}
     data["events"] = [event_out(e) for e in run.events]
     return data
 

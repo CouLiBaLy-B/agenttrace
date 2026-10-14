@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from ... import __version__
 from .. import models
 from ..db import get_db
 from ..deps import auth_mode
@@ -91,10 +92,14 @@ def signout(response: Response):
 @router.get("/session")
 def session(request: Request, db: Session = Depends(get_db)):
     """Unlike `require_user`, this never raises — an anonymous caller just
-    gets `{"user": null}`, matching how a frontend checks session-on-load."""
-    if auth_mode() == "none":
-        return {"user": user_out(get_or_create_local_user(db))}
+    gets `{"user": null}`, matching how a frontend checks session-on-load.
+    Also returns `authMode` and `version` so the static UI can adapt (local
+    mode hides login)."""
+    mode = auth_mode()
+    base = {"authMode": mode, "version": __version__}
+    if mode == "none":
+        return {"user": user_out(get_or_create_local_user(db)), **base}
     token = request.cookies.get(SESSION_COOKIE_NAME)
     user_id = read_session_token(token) if token else None
     user = db.get(models.User, user_id) if user_id else None
-    return {"user": user_out(user) if user else None}
+    return {"user": user_out(user) if user else None, **base}

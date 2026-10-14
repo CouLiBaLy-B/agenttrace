@@ -4,15 +4,17 @@ and src/app/api/runs/[id]/events/route.ts."""
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
+from sqlalchemy import func
+from sqlalchemy.orm import Session, contains_eager
 
 from .. import models
 from ..db import get_db
 from ..deps import require_user
-from ..serializers import event_out, run_detail_out, run_out
+from ..serializers import _iso, event_out, run_detail_out, run_out
 
 project_runs_router = APIRouter(prefix="/api/projects/{project_id}/runs", tags=["runs"])
 runs_router = APIRouter(prefix="/api/runs", tags=["runs"])
@@ -66,6 +68,74 @@ def create_run(
     db.commit()
     db.refresh(run)
     return {"run": run_out(run, event_count=0)}
+
+
+SHAPE_EVENTS = 12
+
+
+def _shape(events: list[models.Event]) -> dict:
+    participants: list[str] = []
+    for ev in events:
+        for name in (ev.source, ev.target):
+            if name not in participants:
+                participants.append(name)
+    index = {name: i for i, name in enumerate(participants)}
+    return {
+        "participants": participants,
+        "events": [{"s": index[e.source], "t": index[e.target], "type": e.type, "status": e.status} for e in events],
+    }
+
+
+@runs_router.get("/recent")
+def recent_runs(
+    limit: int = Query(12, ge=1, le=50),
+    projectId: Optional[str] = None,
+    user: models.User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    q = (
+        db.query(models.Run)
+        .join(models.Project)
+        .filter(models.Project.user_id == user.id)
+        .options(contains_eager(models.Run.project))
+    )
+    if projectId:
+        q = q.filter(models.Run.project_id == projectId)
+    runs = q.order_by(models.Run.started_at.desc(), models.Run.id.desc()).limit(limit).all()
+    run_ids = [r.id for r in runs]  # at most `limit` (≤ 50) ids
+    counts: dict[str, int] = {}
+    first: dict[str, list[models.Event]] = {rid: [] for rid in run_ids}
+    if run_ids:
+        counts = dict(
+            db.query(models.Event.run_id, func.count(models.Event.id))
+            .filter(models.Event.run_id.in_(run_ids))
+            .group_by(models.Event.run_id)
+            .all()
+        )
+        # First SHAPE_EVENTS events of every run in one query (window functions: SQLite ≥ 3.25, Postgres).
+        position = (
+            func.row_number().over(partition_by=models.Event.run_id, order_by=models.Event.seq).label("position")
+        )
+        ranked = db.query(models.Event.id, position).filter(models.Event.run_id.in_(run_ids)).subquery()
+        heads = (
+            db.query(models.Event)
+            .join(ranked, models.Event.id == ranked.c.id)
+            .filter(ranked.c.position <= SHAPE_EVENTS)
+            .order_by(models.Event.run_id, models.Event.seq)
+            .all()
+        )
+        for ev in heads:
+            first[ev.run_id].append(ev)
+    out = []
+    for r in runs:
+        duration = int((r.ended_at - r.started_at).total_seconds() * 1000) if r.ended_at else None
+        out.append({
+            "id": r.id, "name": r.name, "status": r.status,
+            "startedAt": _iso(r.started_at), "endedAt": _iso(r.ended_at), "durationMs": duration,
+            "eventCount": counts.get(r.id, 0), "project": {"id": r.project.id, "name": r.project.name},
+            "shape": _shape(first[r.id]),
+        })
+    return {"runs": out}
 
 
 @runs_router.get("/{run_id}")

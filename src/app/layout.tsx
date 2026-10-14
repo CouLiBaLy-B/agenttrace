@@ -1,40 +1,37 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { Providers } from "@/components/providers";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import type { Metadata } from "next"
+import "@fontsource/instrument-sans/400.css"
+import "@fontsource/instrument-sans/600.css"
+import "@fontsource/martian-mono/400.css"
+import "@fontsource/martian-mono/500.css"
+import "@fontsource/b612/400.css"
+import "@fontsource/b612/700.css"
+import "@fontsource/b612-mono/400.css"
+import "@fontsource/bricolage-grotesque/500.css"
+import "@fontsource/bricolage-grotesque/700.css"
+import "@fontsource/dm-mono/400.css"
+import "@fontsource/dm-mono/500.css"
+import "./globals.css"
+import { Providers } from "@/components/providers"
+import { THEME_BOOT_SCRIPT } from "@/lib/theme-core"
 
 export const metadata: Metadata = {
   title: "AgentTrace — agent observability",
   description:
     "Watch autonomous and multi-agent systems run in real time. A live sequence diagram for AI engineers debugging agents.",
   keywords: ["agent observability", "tracing", "LLM", "sequence diagram", "AI agents"],
-  icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
-  },
-};
+  icons: { icon: "/logo.svg" },
+}
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground min-h-screen`}
-      >
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Sets data-theme from the stored preference / OS before first paint. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+      </head>
+      <body className="antialiased bg-background text-foreground min-h-dvh font-sans">
         <Providers>{children}</Providers>
       </body>
     </html>
-  );
+  )
 }

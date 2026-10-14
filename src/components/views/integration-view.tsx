@@ -3,11 +3,15 @@
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api, formatRelative } from "@/lib/api"
+import { useSession } from "@/lib/session"
+import { cn } from "@/lib/utils"
 import { useNav } from "@/lib/store"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
+import { LoadError } from "@/components/load-error"
+import { highlightLine, type TokenKind } from "@/lib/highlight"
 import {
   Select,
   SelectContent,
@@ -44,12 +48,18 @@ interface Project {
 
 export function IntegrationView() {
   const { projectId, go } = useNav()
+  const { authMode } = useSession()
+  const local = authMode === "none"
   const qc = useQueryClient()
   const [selectedProject, setSelectedProject] = useState<string | null>(projectId)
   const [revealedKey, setRevealedKey] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
-  const { data: projectsData } = useQuery<{ projects: Project[] }>({
+  const {
+    data: projectsData,
+    isError: projectsError,
+    refetch: refetchProjects,
+  } = useQuery<{ projects: Project[] }>({
     queryKey: ["projects"],
     queryFn: () => api("/api/projects"),
   })
@@ -58,10 +68,15 @@ export function IntegrationView() {
   // derive the effective project: explicit selection, or the first available
   const effectiveProject = selectedProject || projects[0]?.id || null
 
-  const { data: keysData, isLoading: keysLoading } = useQuery<{ keys: KeyRow[] }>({
+  const {
+    data: keysData,
+    isLoading: keysLoading,
+    isError: keysError,
+    refetch: refetchKeys,
+  } = useQuery<{ keys: KeyRow[] }>({
     queryKey: ["keys", effectiveProject],
     queryFn: () => api(`/api/keys?projectId=${effectiveProject}`),
-    enabled: !!effectiveProject,
+    enabled: !!effectiveProject && !local,
   })
 
   const createKeyMut = useMutation({
@@ -75,7 +90,7 @@ export function IntegrationView() {
       setRevealedKey(data.rawKey)
       toast.success("Key regenerated")
     },
-    onError: (e) => toast.error("Failed: " + (e as Error).message),
+    onError: (e) => toast.error("Couldn't create the key: " + (e as Error).message),
   })
 
   const deleteKeyMut = useMutation({
@@ -85,6 +100,7 @@ export function IntegrationView() {
       qc.invalidateQueries({ queryKey: ["keys", effectiveProject] })
       toast.success("Key revoked")
     },
+    onError: (e) => toast.error("Couldn't revoke the key: " + (e as Error).message),
   })
 
   const keys = keysData?.keys || []
@@ -99,20 +115,20 @@ export function IntegrationView() {
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
       <div>
-        <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-          {"// wire your agents in"}
-        </p>
-        <h1 className="text-2xl font-semibold mt-0.5">Integration</h1>
-        <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-          Stream events from your agent with a single HTTP endpoint. Use an API key to
-          authenticate — it's scoped per project, not per user session.
+        <h1 className="text-2xl font-semibold text-[var(--ink)]">Integration</h1>
+        <p className="text-sm text-[var(--ink-2)] mt-1 max-w-2xl">
+          {local
+            ? "Stream events from your agent to this server. Ingestion needs no key in local mode; runs are grouped by project name."
+            : "Stream events from your agent with a single HTTP endpoint. Use an API key to authenticate — it's scoped per project, not per user session."}
         </p>
       </div>
 
-      {projects.length === 0 ? (
+      {projectsError && !projectsData ? (
+        <LoadError what="your projects" onRetry={refetchProjects} />
+      ) : projects.length === 0 && !local ? (
         <Card className="p-10 text-center">
-          <Cable className="h-8 w-8 text-muted-foreground mx-auto" />
-          <p className="mt-3 text-sm text-muted-foreground">
+          <Cable className="h-8 w-8 text-[var(--ink-3)] mx-auto" />
+          <p className="mt-3 text-sm text-[var(--ink-2)]">
             Create a project first to get an API key and integration snippets.
           </p>
           <Button className="mt-4" onClick={() => go("projects")}>
@@ -124,12 +140,13 @@ export function IntegrationView() {
           {/* project selector */}
           <div className="flex flex-wrap items-end gap-3">
             <div className="space-y-1.5">
-              <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              <label id="integration-project" className="block text-xs font-medium text-[var(--ink-2)]">
                 Project
               </label>
-              <Select value={effectiveProject || undefined} onValueChange={setSelectedProject}>
-                <SelectTrigger className="w-64">
-                  <SelectValue placeholder="Select project" />
+              {/* Always controlled: "" (no project yet) shows the placeholder. */}
+              <Select value={effectiveProject ?? ""} onValueChange={setSelectedProject}>
+                <SelectTrigger className="w-64" aria-labelledby="integration-project">
+                  <SelectValue placeholder="Select a project" />
                 </SelectTrigger>
                 <SelectContent>
                   {projects.map((p) => (
@@ -140,18 +157,20 @@ export function IntegrationView() {
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={() => createKeyMut.mutate()} disabled={createKeyMut.isPending} className="gap-1.5">
-              <RefreshCw className={`h-4 w-4 ${createKeyMut.isPending ? "animate-spin" : ""}`} />
-              Regenerate key
-            </Button>
+            {!local && (
+              <Button onClick={() => createKeyMut.mutate()} disabled={createKeyMut.isPending} className="gap-1.5">
+                <RefreshCw className={`h-4 w-4 ${createKeyMut.isPending ? "animate-spin motion-reduce:animate-none" : ""}`} />
+                Regenerate key
+              </Button>
+            )}
           </div>
 
           {/* revealed key */}
-          {revealedKey && (
-            <Card className="p-4 border-amber-500/40 bg-amber-500/5">
+          {!local && revealedKey && (
+            <Card className="p-4 border-[var(--ev-handoff)] bg-[color-mix(in_oklab,var(--ev-handoff)_6%,var(--surface-1))]">
               <div className="flex items-center gap-2">
-                <KeyRound className="h-4 w-4 text-amber-400" />
-                <p className="text-sm font-medium">New API key — copy it now</p>
+                <KeyRound className="h-4 w-4 text-[var(--ev-handoff-text)]" />
+                <p className="text-sm font-medium">New API key: copy it now</p>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -165,72 +184,78 @@ export function IntegrationView() {
                   Dismiss
                 </Button>
               </div>
-              <code className="mt-2 block rounded-md bg-background/60 border border-border px-3 py-2 font-mono text-xs break-all">
+              <code className="mt-2 block rounded-[var(--radius-control)] bg-[var(--surface-0)] border border-[var(--line)] px-3 py-2 font-mono text-xs break-all">
                 {revealedKey}
               </code>
-              <p className="mt-2 text-[11px] text-amber-400/80">
+              <p className="mt-2 text-[11px] text-[var(--ev-handoff-text)]">
                 We only show the full key once. Store it somewhere safe.
               </p>
             </Card>
           )}
 
           {/* keys list */}
-          <div>
-            <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2">
-              API keys
-            </p>
-            {keysLoading ? (
-              <Skeleton className="h-16" />
-            ) : keys.length === 0 ? (
-              <Card className="p-6 text-center text-sm text-muted-foreground">
-                No keys yet. Generate one above.
-              </Card>
-            ) : (
-              <div className="space-y-1.5">
-                {keys.map((k) => (
-                  <Card key={k.id} className="px-4 py-3 flex items-center gap-3">
-                    <KeyRound className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <code className="font-mono text-sm">{k.prefix}…</code>
-                    <span className="text-xs text-muted-foreground hidden sm:inline">
-                      {k.label || "Default key"}
-                    </span>
-                    <span className="ml-auto font-mono text-[11px] text-muted-foreground">
-                      used {formatRelative(k.lastUsedAt)}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-red-400"
-                      onClick={() => deleteKeyMut.mutate(k.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
+          {!local && (
+            <div>
+              <h2 className="text-sm font-medium text-[var(--ink)] mb-2">API keys</h2>
+              {keysError && !keysData ? (
+                <LoadError what="the API keys" onRetry={refetchKeys} />
+              ) : keysLoading ? (
+                <Skeleton className="h-16" />
+              ) : keys.length === 0 ? (
+                <Card className="p-6 text-center text-sm text-[var(--ink-2)]">
+                  No keys yet. Generate one with Regenerate key above.
+                </Card>
+              ) : (
+                <div className="space-y-1.5">
+                  {keys.map((k) => (
+                    <Card key={k.id} className="px-4 py-3 flex flex-row items-center gap-3">
+                      <KeyRound className="h-4 w-4 text-[var(--ink-3)] shrink-0" />
+                      <code className="font-mono text-sm">{k.prefix}…</code>
+                      <span className="text-xs text-[var(--ink-2)] hidden sm:inline">
+                        {k.label || "Default key"}
+                      </span>
+                      <span className="ml-auto font-mono text-[11px] text-[var(--ink-2)]">
+                        used {formatRelative(k.lastUsedAt)}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-[var(--ink-2)] hover:text-[var(--danger)]"
+                        aria-label={`Revoke key ${k.prefix}`}
+                        onClick={() => deleteKeyMut.mutate(k.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* snippets */}
           <SnippetBlock
-            projectId={effectiveProject || ""}
+            local={local}
             projectName={currentProject?.name || "your-project"}
             apiKey={revealedKey || `atr_YOUR_API_KEY`}
           />
 
           {/* endpoint reference */}
-          <Card className="p-4">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-3">
-              endpoint reference
-            </p>
+          <Card className="p-4 gap-0">
+            <h2 className="text-sm font-medium text-[var(--ink)] mb-3">Endpoint reference</h2>
             <div className="space-y-2 font-mono text-xs">
-              <RefRow method="POST" path="/api/events" desc="Ingest an event (or create a run with runId: null)" />
-              <RefRow method="GET" path="/api/runs/:id" desc="Fetch a run with all its events" />
-              <RefRow method="PATCH" path="/api/runs/:id" desc="Update run status (completed / failed)" />
+              <RefRow method="POST" path="/api/events" desc="Create a run, append an event, or end a run" />
             </div>
-            <div className="mt-4 rounded-md border border-border bg-background/60 p-3 font-mono text-[11px] text-muted-foreground">
-              <p className="text-foreground/80">Event body:</p>
-              <pre className="mt-1.5 whitespace-pre-wrap">{`{
+            <p className="mt-4 mb-1.5 text-xs text-[var(--ink-2)]">Event body</p>
+            <CodeBlock code={EVENT_BODY} className="text-[11px]" />
+          </Card>
+        </>
+      )}
+    </div>
+  )
+}
+
+const EVENT_BODY = `{
   "runId": "run_abc123",       // omit/null to create a new run
   "source": "Orchestrator",
   "target": "web_search",
@@ -240,45 +265,76 @@ export function IntegrationView() {
   "durationMs": 720,
   "status": "ok",               // ok | error | pending
   "endRun": "completed"         // optional: "completed" | "failed" to close the run
-}`}</pre>
-            </div>
-          </Card>
-        </>
+}`
+
+const TOKEN_COLOR: Record<TokenKind, string | undefined> = {
+  plain: undefined,
+  comment: "text-[var(--ink-2)]",
+  string: "text-[var(--ev-result-text)]",
+  key: "text-[var(--ev-llm-text)]",
+}
+
+/** A code listing in the theme's data font, lightly highlighted. The text is
+ * the code exactly (copying a selection gives the original). */
+function CodeBlock({ code, className }: { code: string; className?: string }) {
+  return (
+    <pre
+      className={cn(
+        "at-scroll overflow-x-auto rounded-[var(--radius-control)] border border-[var(--line)] bg-[var(--surface-0)] p-4 font-mono text-[12px] leading-relaxed text-[var(--ink)]",
+        className
       )}
-    </div>
+    >
+      <code>
+        {code.split("\n").map((line, i) => (
+          <span key={i} className="block min-h-[1lh]">
+            {highlightLine(line).map((t, j) =>
+              TOKEN_COLOR[t.kind] ? (
+                <span key={j} className={TOKEN_COLOR[t.kind]}>
+                  {t.text}
+                </span>
+              ) : (
+                t.text
+              )
+            )}
+          </span>
+        ))}
+      </code>
+    </pre>
   )
 }
 
 function RefRow({ method, path, desc }: { method: string; path: string; desc: string }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="rounded bg-primary/15 text-primary px-1.5 py-0.5 text-[10px] font-bold w-12 text-center">
+      <span className="rounded-[var(--radius-control)] border border-[var(--action)] text-[var(--action)] px-1.5 py-0.5 text-[10px] font-medium w-12 text-center">
         {method}
       </span>
-      <code className="text-primary/90">{path}</code>
-      <span className="text-muted-foreground hidden sm:inline">— {desc}</span>
+      <code className="text-[var(--ink)]">{path}</code>
+      <span className="font-sans text-[var(--ink-2)] hidden sm:inline">{desc}</span>
     </div>
   )
 }
 
 function SnippetBlock({
-  projectId,
+  local,
   projectName,
   apiKey,
 }: {
-  projectId: string
+  local: boolean
   projectName: string
   apiKey: string
 }) {
-  const [lang, setLang] = useState<"python" | "typescript" | "deepagents">("python")
+  const [lang, setLang] = useState<"python" | "http" | "deepagents">("python")
   const [copied, setCopied] = useState(false)
 
+  const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"
+  const opts = { origin, projectName, apiKey, local }
   const snippet =
     lang === "python"
-      ? pythonSnippet(projectName, apiKey)
-      : lang === "typescript"
-      ? tsSnippet(projectName, apiKey)
-      : deepagentsSnippet(projectName, apiKey)
+      ? pythonSnippet(opts)
+      : lang === "http"
+      ? httpSnippet(opts)
+      : deepagentsSnippet(opts)
 
   const copy = () => {
     navigator.clipboard.writeText(snippet)
@@ -287,106 +343,88 @@ function SnippetBlock({
   }
 
   return (
-    <Card className="overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border bg-card/60">
-        <Terminal className="h-4 w-4 text-primary" />
-        <span className="text-sm font-medium">Instrument your agent</span>
-        <span className="font-mono text-[10px] text-muted-foreground hidden sm:inline">
-          · {projectName}
-        </span>
-        <Tabs value={lang} onValueChange={(v) => setLang(v as any)} className="ml-auto">
+    <Card className="overflow-hidden gap-0 p-0">
+      <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 border-b border-[var(--line)]">
+        <Terminal className="h-4 w-4 text-[var(--ink-2)]" />
+        <h2 className="text-sm font-medium">Instrument your agent</h2>
+        <span className="font-mono text-[11px] text-[var(--ink-2)] hidden sm:inline">· {projectName}</span>
+        <Tabs value={lang} onValueChange={(v) => setLang(v as typeof lang)} className="ml-auto">
           <TabsList className="h-7">
-            <TabsTrigger value="python" className="text-xs px-2.5 py-0.5">Python</TabsTrigger>
-            <TabsTrigger value="typescript" className="text-xs px-2.5 py-0.5">TypeScript</TabsTrigger>
+            <TabsTrigger value="python" className="text-xs px-2.5 py-0.5">Python SDK</TabsTrigger>
+            <TabsTrigger value="http" className="text-xs px-2.5 py-0.5">HTTP</TabsTrigger>
             <TabsTrigger value="deepagents" className="text-xs px-2.5 py-0.5">DeepAgents</TabsTrigger>
           </TabsList>
         </Tabs>
         <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs" onClick={copy}>
-          {copied ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? <Check className="h-3.5 w-3.5 text-[var(--action)]" /> : <Copy className="h-3.5 w-3.5" />}
           {copied ? "Copied" : "Copy"}
         </Button>
       </div>
       {lang === "deepagents" && (
-        <div className="px-4 py-2 border-b border-border bg-primary/5 text-[11px] text-muted-foreground">
-          Drop-in <code className="font-mono text-primary/80">BaseCallbackHandler</code> for{" "}
-          <code className="font-mono">langchain-deepagents</code> — tracks the orchestrator,
-          LLM calls, every tool call/result, sub-agent handoffs, and the final answer as a live
-          AgentTrace sequence diagram.
+        <div className="px-4 py-2 border-b border-[var(--line)] text-[12px] text-[var(--ink-2)]">
+          <code className="font-mono text-[var(--ink)]">agenttrace.langchain.autolog()</code> turns
+          every <code className="font-mono text-[var(--ink)]">agent.invoke()</code> into a run: LLM calls, tool
+          calls and results, handoffs and the final answer, drawn live as a sequence diagram.
         </div>
       )}
-      <div className="relative">
-        <pre className="at-graticule p-4 overflow-x-auto at-scroll text-[12px] leading-relaxed font-mono text-foreground/90 max-h-[520px]">
-          <code>{snippet}</code>
-        </pre>
+      <div className="p-3">
+        <CodeBlock code={snippet} className="max-h-[520px]" />
       </div>
     </Card>
   )
 }
 
-function pythonSnippet(project: string, apiKey: string) {
-  return `import requests, time, uuid
-
-# AgentTrace ingestion — ${project}
-AGENTTRACE_URL = "http://localhost:3000/api/events"  # use your deployment URL
-API_KEY = "${apiKey}"                                   # project-scoped key
-
-headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
-
-def emit(event: dict) -> dict:
-    r = requests.post(AGENTTRACE_URL, json=event, headers=headers)
-    r.raise_for_status()
-    return r.json()
-
-# 1. Start a run (runId=None → server creates one and returns it)
-run = emit({"runId": None, "name": "demo refund flow"})
-run_id = run["runId"]
-print("run started:", run_id)
-
-# 2. User message arrives → orchestrator
-emit({"runId": run_id, "source": "User", "target": "Orchestrator",
-      "type": "handoff", "label": "incoming message",
-      "payload": {"message": "please refund order #4821"}, "durationMs": 90})
-
-# 3. Orchestrator → LLM (classify intent)
-emit({"runId": run_id, "source": "Orchestrator", "target": "LLM",
-      "type": "llm_call", "label": "classify intent",
-      "payload": {"prompt": "...", "result": "refund_request", "tokens": 184},
-      "durationMs": 480})
-
-# 4. Orchestrator → tool call (lookup_order)
-emit({"runId": run_id, "source": "Orchestrator", "target": "lookup_order",
-      "type": "tool_call", "label": "lookup_order(#4821)",
-      "payload": {"args": {"orderId": "4821"}}, "durationMs": 310})
-
-# 5. tool result back to orchestrator
-emit({"runId": run_id, "source": "lookup_order", "target": "Orchestrator",
-      "type": "tool_result", "label": "order found",
-      "payload": {"orderId": "4821", "total": 89.99, "status": "shipped"},
-      "durationMs": 5})
-
-# 6. Final answer to the user
-emit({"runId": run_id, "source": "Orchestrator", "target": "User",
-      "type": "final_answer", "label": "refund issued",
-      "payload": {"answer": "A refund of $89.99 has been processed."},
-      "durationMs": 80})
-
-# 7. Close the run
-emit({"runId": run_id, "endRun": "completed"})
-print("run completed — open the live trace view to watch it replay")`
+interface SnippetOpts {
+  origin: string
+  projectName: string
+  apiKey: string
+  local: boolean
 }
 
-function tsSnippet(project: string, apiKey: string) {
-  return `// AgentTrace ingestion — ${project}
-const AGENTTRACE_URL = "http://localhost:3000/api/events"; // your deployment URL
-const API_KEY = "${apiKey}";                                // project-scoped key
+// Values interpolated into generated code become double-quoted string
+// literals via JSON.stringify — valid (and safely escaped) in Python and TS.
+const q = (value: string) => JSON.stringify(value)
+const oneLine = (value: string) => value.replace(/[\r\n\u2028\u2029]+/g, " ")
 
-async function emit(event: Record<string, unknown>) {
-  const res = await fetch(AGENTTRACE_URL, {
-    method: "POST",
-    headers: {
-      Authorization: \`Bearer \${API_KEY}\`,
+function pythonSnippet({ origin, projectName, apiKey, local }: SnippetOpts) {
+  if (local) {
+    return `# pip install deepagents-trace
+import agenttrace
+
+agenttrace.set_tracking_uri(${q(origin)})
+agenttrace.set_project(${q(projectName)})
+
+with agenttrace.start_run("my run"):
+    agenttrace.log_event(source="Orchestrator", target="LLM", type="llm_call", label="classify intent")`
+  }
+  return `# pip install deepagents-trace
+# export AGENTTRACE_TRACKING_URI=${q(origin)}
+# export AGENTTRACE_KEY=${q(apiKey)}        # project-scoped key
+import os
+os.environ.setdefault("AGENTTRACE_TRACKING_URI", ${q(origin)})
+os.environ.setdefault("AGENTTRACE_KEY", ${q(apiKey)})
+
+import agenttrace
+
+with agenttrace.start_run("my run"):
+    agenttrace.log_event(source="Orchestrator", target="LLM", type="llm_call", label="classify intent")`
+}
+
+function httpSnippet({ origin, projectName, apiKey, local }: SnippetOpts) {
+  const auth = local
+    ? `    headers: { "Content-Type": "application/json" },`
+    : `    headers: {
+      Authorization: ${q("Bearer " + apiKey)},
       "Content-Type": "application/json",
-    },
+    },`
+  const create = local
+    ? `{ runId: null, name: "demo refund flow", project: ${q(projectName)} }`
+    : `{ runId: null, name: "demo refund flow" }`
+  return `// AgentTrace ingestion — ${oneLine(projectName)}${local ? "" : "\n// Authorization: Bearer " + apiKey}
+async function emit(event: Record<string, unknown>) {
+  const res = await fetch(${q(origin + "/api/events")}, {
+    method: "POST",
+${auth}
     body: JSON.stringify(event),
   });
   if (!res.ok) throw new Error(\`ingest failed: \${res.status}\`);
@@ -394,120 +432,46 @@ async function emit(event: Record<string, unknown>) {
 }
 
 async function main() {
-  // 1. Start a run (runId omitted → server creates one)
-  const run = await emit({ runId: null, name: "demo refund flow" });
+  // 1. Start a run (runId null → server creates one)
+  const run = await emit(${create});
   const runId = run.runId;
-  console.log("run started:", runId);
 
-  // 2. User message → orchestrator
-  await emit({
-    runId, source: "User", target: "Orchestrator",
-    type: "handoff", label: "incoming message",
-    payload: { message: "please refund order #4821" }, durationMs: 90,
-  });
-
-  // 3. Orchestrator → LLM (classify intent)
+  // 2. Append events
   await emit({
     runId, source: "Orchestrator", target: "LLM",
     type: "llm_call", label: "classify intent",
-    payload: { prompt: "...", result: "refund_request", tokens: 184 },
-    durationMs: 480,
+    payload: { prompt: "...", result: "refund_request" }, durationMs: 480,
   });
-
-  // 4. Orchestrator → tool call
   await emit({
     runId, source: "Orchestrator", target: "lookup_order",
     type: "tool_call", label: "lookup_order(#4821)",
     payload: { args: { orderId: "4821" } }, durationMs: 310,
   });
 
-  // 5. tool result back
-  await emit({
-    runId, source: "lookup_order", target: "Orchestrator",
-    type: "tool_result", label: "order found",
-    payload: { orderId: "4821", total: 89.99, status: "shipped" },
-    durationMs: 5,
-  });
-
-  // 6. Final answer
-  await emit({
-    runId, source: "Orchestrator", target: "User",
-    type: "final_answer", label: "refund issued",
-    payload: { answer: "A refund of $89.99 has been processed." },
-    durationMs: 80,
-  });
-
-  // 7. Close the run
+  // 3. Close the run
   await emit({ runId, endRun: "completed" });
-  console.log("run completed — open the live trace view to watch it replay");
 }
 
 main().catch(console.error);`
 }
 
-function deepagentsSnippet(project: string, apiKey: string) {
-  return `# AgentTrace × LangChain DeepAgents — ${project}
-#
-# pip install -e integrations/agenttrace-langchain  (or: pip install agenttrace-langchain)
-# pip install langchain langchain-openai
-#
-# AgentTraceMiddleware is an AgentMiddleware (LangChain's 2026 middleware
-# system: before_agent / wrap_model_call / wrap_tool_call / after_agent) that
-# streams orchestrator ↔ LLM, tool_call/tool_result, handoffs and the final
-# answer to AgentTrace as a live sequence diagram. It works for
-# create_deep_agent / create_agent / any agent built on
-# langchain.agents.middleware.
+function deepagentsSnippet({ origin, projectName, apiKey, local }: SnippetOpts) {
+  if (local) {
+    return `# pip install 'deepagents-trace[langchain]'
+import agenttrace, agenttrace.langchain
 
+agenttrace.set_tracking_uri(${q(origin)})
+agenttrace.set_project(${q(projectName)})
+agenttrace.langchain.autolog()   # every agent.invoke() becomes a run`
+  }
+  return `# pip install 'deepagents-trace[langchain]'
+# export AGENTTRACE_TRACKING_URI=${q(origin)}
+# export AGENTTRACE_KEY=${q(apiKey)}        # project-scoped key
 import os
-os.environ.setdefault("AGENTTRACE_URL", "http://localhost:3000/api/events")
-os.environ.setdefault("AGENTTRACE_KEY", "${apiKey}")   # project-scoped key
+os.environ.setdefault("AGENTTRACE_TRACKING_URI", ${q(origin)})
+os.environ.setdefault("AGENTTRACE_KEY", ${q(apiKey)})
 
-from agenttrace_langchain import AgentTraceMiddleware
+import agenttrace.langchain
 
-
-def main():
-    from langchain_openai import ChatOpenAI
-    from langchain_core.tools import tool
-    # deepagents provides create_deep_agent (planner + executor + sub-agents)
-    try:
-        from deepagents import create_deep_agent
-    except ImportError:
-        print("pip install deepagents  (or your internal deepagents package)")
-        return
-
-    @tool
-    def web_search(query: str) -> str:
-        """Search the web and return the top results as text."""
-        return f"[stub] top results for: {query}"
-
-    @tool
-    def fetch_page(url: str) -> str:
-        """Fetch and return the text content of a web page."""
-        return f"[stub] content of {url}"
-
-    model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-
-    # create_deep_agent wires up a planner, an executor with tools, and
-    # optional sub-agents. One middleware instance = one AgentTrace run.
-    agent = create_deep_agent(
-        model=model,
-        tools=[web_search, fetch_page],
-        system_prompt=(
-            "You are a research assistant. Use web_search + fetch_page to "
-            "answer the user's question, then synthesize a cited summary."
-        ),
-        middleware=[AgentTraceMiddleware(run_name="research — state of Rust web frameworks")],
-    )
-
-    result = agent.invoke(
-        {"messages": [{"role": "user", "content": "What's the state of Rust web frameworks in 2025?"}]},
-    )
-
-    print("answer:", result["messages"][-1].content)
-    print("trace:  open the run in AgentTrace to replay it frame by frame")
-
-
-if __name__ == "__main__":
-    main()`
+agenttrace.langchain.autolog()   # every agent.invoke() becomes a run`
 }
-

@@ -37,6 +37,18 @@ def test_events_written_directly_to_db_are_streamed():
         store.end_run(run_id, "completed")
         update = ws.receive_json()
         assert update["type"] == "run:update" and update["patch"]["status"] == "completed"
+        assert update["patch"]["endedAt"].endswith("+00:00")
+
+
+def test_run_state_emits_utc_offset_for_naive_datetimes():
+    from datetime import datetime
+
+    from agenttrace.server import models
+    from agenttrace.server.realtime import _run_state
+
+    run = models.Run(status="completed", ended_at=datetime(2026, 10, 1, 12, 0, 0))
+    assert _run_state(run) == ("completed", "2026-10-01T12:00:00+00:00")
+    assert _run_state(models.Run(status="running", ended_at=None)) == ("running", None)
 
 
 def test_poll_once_ignores_runs_without_subscribers():

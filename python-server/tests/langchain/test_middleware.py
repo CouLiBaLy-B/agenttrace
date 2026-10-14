@@ -55,6 +55,16 @@ def _bodies(post):
     return [call.kwargs["json"] for call in post.call_args_list]
 
 
+@pytest.mark.parametrize("url", ["http://localhost:3000", "http://localhost:3000/", "http://localhost:3000/api/events"])
+def test_url_may_be_the_server_base_url(post, url):
+    middleware = AgentTraceMiddleware(run_name="r", url=url, api_key="atr_test")
+    middleware.before_agent({"messages": []}, runtime=None)
+    middleware.wrap_tool_call(FakeToolRequest("noop", {}), lambda req: FakeToolMessage("ok"))
+    middleware._run.close(timeout=2.0)
+
+    assert {call.args[0] for call in post.call_args_list} == {"http://localhost:3000/api/events"}
+
+
 def test_before_agent_creates_the_run_object_without_a_network_call_yet(middleware, post):
     middleware.before_agent({"messages": []}, runtime=None)
     middleware._run.close(timeout=2.0)

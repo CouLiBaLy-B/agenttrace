@@ -72,6 +72,20 @@ from .projection import (
 
 logger = logging.getLogger(__name__)
 
+# LangGraph's namespace separator: a graph run inside a task of another graph
+# gets the namespace "<parent task ns>|<own node>:<task id>".
+NS_SEP = "|"
+
+
+def _namespace(metadata: Any) -> str:
+    """The LangGraph namespace a callback ran in. `langgraph_checkpoint_ns` is
+    set for every task. `checkpoint_ns` can be stale: some langgraph releases
+    (seen with 1.1.10 to 1.2.2) write it into a compiled sub-agent's own config
+    metadata the first time the sub-agent runs inside a tool, so a cached
+    sub-agent reports that first request's namespace on every later request."""
+    md = metadata or {}
+    return md.get("langgraph_checkpoint_ns") or md.get("checkpoint_ns") or ""
+
 
 def _llm_output_message(response: Any) -> Any:
     """The generated message from an `LLMResult` — `generations[0][0].message`
@@ -128,11 +142,12 @@ class AsyncAgentTraceCallbackHandler(AsyncCallbackHandler):
         # real name ("zai.glm-5") with a fallback and the diagram sprouts two
         # LLM lanes for one model.
         self._model_name: Optional[str] = None
-        # checkpoint_ns → sub-agent name. deepagents runs a delegated sub-agent
-        # under the `task` tool's ns; the sub-agent's own LLM/tool calls carry
-        # that same ns, but `langgraph_node` stays structural ("model"/"tools")
-        # and never names the sub-agent. Recording the ns at the `task` call is
-        # the only way to attribute those inner calls to the right sub-agent.
+        # namespace (see `_namespace`) → sub-agent name. deepagents runs a
+        # delegated sub-agent under the `task` tool's ns; the sub-agent's own
+        # LLM/tool calls run under that ns, but `langgraph_node` stays
+        # structural ("model"/"tools") and never names the sub-agent. Recording
+        # the ns at the `task` call is the only way to attribute those inner
+        # calls to the right sub-agent.
         self._subagent_ns: dict[str, str] = {}
 
     @property
@@ -239,10 +254,11 @@ class AsyncAgentTraceCallbackHandler(AsyncCallbackHandler):
         if is_handoff:
             target = self._handoff_target(inputs)
             self._tools[run_id]["target"] = target
-            # The sub-agent runs under this `task` call's checkpoint_ns; record
-            # it so the sub-agent's inner LLM/tool calls (same ns) attribute to
-            # `target` rather than collapsing to the orchestrator.
-            ns = (metadata or {}).get("checkpoint_ns")
+            # The sub-agent runs under this `task` call's namespace; record it
+            # so the sub-agent's inner LLM/tool calls (same ns, or nested under
+            # it) attribute to `target` rather than collapsing to the
+            # orchestrator.
+            ns = _namespace(metadata)
             if ns:
                 self._subagent_ns[ns] = target
             # agent_start records the sub-agent start (for duration) and emits
@@ -266,10 +282,13 @@ class AsyncAgentTraceCallbackHandler(AsyncCallbackHandler):
                 {"scope": "subagent", "status": "completed"},
             )
         else:
+            # The tool's content as text (a ToolMessage would otherwise be sent
+            # as its repr, "content='...' name=... tool_call_id=..."), full
+            # length: the run anonymizes it before truncating it.
             self._run.on_stream_event(
                 "tool_result",
                 info.get("node", "main"),
-                {"id": str(run_id), "name": info.get("name", "tool"), "result": output},
+                {"id": str(run_id), "name": info.get("name", "tool"), "result": response_preview(output)},
             )
 
     async def on_tool_error(self, error, *, run_id: UUID, **kwargs) -> None:
@@ -310,14 +329,14 @@ class AsyncAgentTraceCallbackHandler(AsyncCallbackHandler):
 
     def _attribution(self, metadata: Any) -> str:
         """Emitter of a call: ``"main"`` or a named sub-agent. First matches the
-        call's ``checkpoint_ns`` against sub-agent ns recorded at `task` time
-        (deepagents' only reliable sub-agent signal), then falls back to the
+        call's namespace against the sub-agent namespaces recorded at `task`
+        time (deepagents' only reliable sub-agent signal; the innermost one
+        wins for nested sub-agents), then falls back to the
         structural-node-aware `emitting_agent`."""
-        ns = (metadata or {}).get("checkpoint_ns") or ""
-        if ns:
-            for sub_ns, name in self._subagent_ns.items():
-                if ns == sub_ns or ns.startswith(sub_ns):
-                    return name
+        ns = _namespace(metadata)
+        matches = [sub_ns for sub_ns in self._subagent_ns if ns == sub_ns or ns.startswith(sub_ns + NS_SEP)]
+        if matches:
+            return self._subagent_ns[max(matches, key=len)]
         return emitting_agent(metadata)
 
     @staticmethod

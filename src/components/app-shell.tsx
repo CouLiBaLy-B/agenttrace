@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useNav, useLayout, NAV_SIZE } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import { Sidebar, MobileTopBar } from "@/components/layout/sidebar"
 import { ResizeHandle } from "@/components/layout/resize-handle"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
 import { DashboardView } from "@/components/views/dashboard-view"
 import { ProjectsView } from "@/components/views/projects-view"
 import { ProjectDetailView } from "@/components/views/project-detail-view"
@@ -21,24 +21,57 @@ export function AppShell() {
   const { navCollapsed, navWidth, toggleNav, setNavWidth } = useLayout()
   const [dragging, setDragging] = useState(false)
 
+  // Run focus: the run view collapses the sidebar to its rail, leaving the
+  // diagram room. Expanding it there lasts until the reader leaves the view;
+  // the saved preference (navCollapsed) is left alone unless they expand a
+  // sidebar they had collapsed everywhere.
+  const runFocus = view === "run"
+  const [runNavExpanded, setRunNavExpanded] = useState(false)
+  const [wasRunFocus, setWasRunFocus] = useState(runFocus)
+  if (wasRunFocus !== runFocus) {
+    setWasRunFocus(runFocus)
+    if (!runFocus) setRunNavExpanded(false)
+  }
+  const collapsed = navCollapsed || (runFocus && !runNavExpanded)
+  const toggleSidebar = () => {
+    if (!runFocus) return toggleNav()
+    if (!collapsed) return setRunNavExpanded(false)
+    setRunNavExpanded(true)
+    if (navCollapsed) toggleNav()
+  }
+
+  // A new view moves focus to <main> (unless focus is already inside it), so
+  // keyboard scrolling works right after a nav click. Programmatic focus on a
+  // container, so no focus ring.
+  const mainRef = useRef<HTMLElement>(null)
+  const shownView = useRef(view)
+  useEffect(() => {
+    if (shownView.current === view) return
+    shownView.current = view
+    const main = mainRef.current
+    if (main && !main.contains(document.activeElement)) main.focus({ preventScroll: true })
+  }, [view])
+
   // Persisted layout is rehydrated after mount to avoid SSR hydration mismatch.
   useEffect(() => {
     useLayout.persist.rehydrate()
   }, [])
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    // Bounded to the viewport: <main> scrolls inside it, so the sidebar (with
+    // the theme switcher and account) and the footer never leave the screen.
+    <div className="h-screen supports-[height:100dvh]:h-dvh overflow-hidden flex flex-col bg-background">
       <div className="flex flex-1 min-h-0">
         {/* Desktop sidebar — retractable (icon rail) + resizable */}
         <aside
           className={cn(
             "relative hidden lg:flex shrink-0 border-r border-sidebar-border",
-            dragging ? "" : "transition-[width] duration-200 ease-out"
+            dragging ? "" : "transition-[width] duration-200 ease-out motion-reduce:transition-none"
           )}
-          style={{ width: navCollapsed ? NAV_SIZE.rail : navWidth }}
+          style={{ width: collapsed ? NAV_SIZE.rail : navWidth }}
         >
-          <Sidebar collapsed={navCollapsed} onToggle={toggleNav} />
-          {!navCollapsed && (
+          <Sidebar collapsed={collapsed} onToggle={toggleSidebar} />
+          {!collapsed && (
             <ResizeHandle
               width={navWidth}
               setWidth={setNavWidth}
@@ -52,6 +85,8 @@ export function AppShell() {
         {/* Mobile sidebar drawer */}
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetContent side="left" className="w-72 p-0">
+            <SheetTitle className="sr-only">Navigation</SheetTitle>
+            <SheetDescription className="sr-only">Go to a page, or change the theme.</SheetDescription>
             <Sidebar onNavigate={() => setSidebarOpen(false)} />
           </SheetContent>
         </Sheet>
@@ -64,6 +99,7 @@ export function AppShell() {
               variant="ghost"
               size="icon"
               className="h-9 w-9"
+              aria-label="Open navigation"
               onClick={() => setSidebarOpen(true)}
             >
               <Menu className="h-5 w-5" />
@@ -71,7 +107,7 @@ export function AppShell() {
             <MobileTopBar />
           </div>
 
-          <main className="flex-1 min-h-0 overflow-y-auto at-scroll">
+          <main ref={mainRef} tabIndex={-1} className="flex-1 min-h-0 overflow-y-auto at-scroll outline-none">
             {view === "dashboard" && <DashboardView />}
             {view === "projects" && <ProjectsView />}
             {view === "project" && <ProjectDetailView />}

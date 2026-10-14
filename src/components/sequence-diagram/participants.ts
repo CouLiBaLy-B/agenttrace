@@ -1,5 +1,8 @@
-import { TraceEvent, Participant, detectParticipantKind } from "@/lib/types"
+import type { Participant } from "@/lib/types"
 import { User, Cpu, BrainCircuit, Wrench, Bot, type LucideIcon } from "lucide-react"
+
+// A participant's kind comes from how the run's events use it
+// (extractParticipants / shapeParticipants in src/lib/participant-kinds.ts).
 
 export const PARTICIPANT_ICON: Record<Participant["kind"], LucideIcon> = {
   user: User,
@@ -9,25 +12,12 @@ export const PARTICIPANT_ICON: Record<Participant["kind"], LucideIcon> = {
   subagent: Bot,
 }
 
-// Extract participants from an event stream, in first-seen order.
-export function extractParticipants(events: TraceEvent[]): Participant[] {
-  const seen = new Map<string, Participant>()
-  for (const ev of events) {
-    for (const name of [ev.source, ev.target]) {
-      if (!seen.has(name)) {
-        const kind = detectParticipantKind(name)
-        seen.set(name, { id: name, name, kind, icon: kind })
-      }
-    }
-  }
-  return Array.from(seen.values())
-}
-
-// Color per participant kind (for lifeline tints / icons)
+// Color per participant kind (for lifeline tints / icons). CSS variables from
+// the active theme — build translucent variants with color-mix, not a hex alpha.
 export const KIND_COLOR: Record<Participant["kind"], string> = {
-  user: "#f472b6",
-  orchestrator: "#34d399",
-  llm: "#22d3ee",
-  tool: "#a78bfa",
-  subagent: "#fbbf24",
+  user: "var(--kind-user)",
+  orchestrator: "var(--kind-orchestrator)",
+  llm: "var(--kind-llm)",
+  tool: "var(--kind-tool)",
+  subagent: "var(--kind-subagent)",
 }

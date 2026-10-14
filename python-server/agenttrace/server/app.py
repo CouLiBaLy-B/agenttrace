@@ -1,9 +1,8 @@
 """FastAPI application factory.
 
-Mounts the REST API (1:1 contract with the Next.js backend's `src/app/api/*`
-routes) and a `/ws` WebSocket replacing the Socket.IO mini-service. Serving
-the actual frontend bundle is Phase 2 (frontend decoupling, not done yet) —
-for now `/` serves a minimal placeholder page confirming the API is up.
+Mounts the REST API and a `/ws` WebSocket, then serves the bundled static UI
+(`agenttrace/server/static`, override with `AGENTTRACE_STATIC_DIR`) or, when
+the bundle is absent, a minimal placeholder page.
 """
 
 from __future__ import annotations
@@ -12,27 +11,31 @@ import asyncio
 import contextlib
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from starlette.types import Scope
 
 from .db import init_db
 from .deps import auth_mode
 from .local_guard import LocalGuardMiddleware
 from .realtime import manager
 from .security import SESSION_COOKIE_NAME, read_session_token
-from .routes import auth, events, keys, projects, runs, stats
+from .routes import auth, events, keys, projects, runs, seed, stats, timeline
+
+DEFAULT_STATIC_DIR = Path(__file__).parent / "static"
 
 PLACEHOLDER_HTML = """<!doctype html>
 <html><head><title>AgentTrace</title></head>
 <body style="font-family: system-ui; padding: 2rem;">
 <h1>AgentTrace API is running</h1>
-<p>The Python backend (FastAPI) is up. The web dashboard bundle isn't wired in
-yet — that's Phase 2 of the Python migration (frontend decoupled from
-Next.js, served here as a static bundle).</p>
-<p>Try the API directly, e.g. <code>GET /api/stats</code> (requires a session
-cookie) or <code>POST /api/events</code> (requires a project API key).</p>
+<p>The web dashboard bundle isn't included in this install. Build it from a
+source checkout with <code>bun install &amp;&amp; bun run build:ui</code>, or
+install a released wheel (<code>pip install 'deepagents-trace[server]'</code>).
+The API is available under <code>/api/*</code>.</p>
 </body></html>"""
 
 
@@ -66,6 +69,21 @@ def _same_origin_or_allowed(websocket: WebSocket) -> bool:
     return origin_host in {h.strip().lower() for h in extra.split(",") if h.strip()}
 
 
+class UIStaticFiles(StaticFiles):
+    """Static bundle with cache headers safe across upgrades: content-hashed
+    `_next/static/*` chunks are immutable, everything else (the HTML pages,
+    which reference those chunks by name) is revalidated on every load so a
+    `pip install -U` never leaves a cached page pointing at removed chunks."""
+
+    async def get_response(self, path: str, scope: Scope):
+        response = await super().get_response(path, scope)
+        if path.replace(os.sep, "/").startswith("_next/static/"):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        else:
+            response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 def create_app() -> FastAPI:
     app = FastAPI(title="AgentTrace", lifespan=_lifespan)
 
@@ -83,10 +101,8 @@ def create_app() -> FastAPI:
     app.include_router(events.router)
     app.include_router(keys.router)
     app.include_router(stats.router)
-
-    @app.get("/", response_class=HTMLResponse)
-    async def index():
-        return PLACEHOLDER_HTML
+    app.include_router(seed.router)
+    app.include_router(timeline.router)
 
     @app.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket):
@@ -118,6 +134,19 @@ def create_app() -> FastAPI:
             pass
         finally:
             manager.disconnect(websocket)
+
+    @app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"], include_in_schema=False)
+    async def api_not_found(path: str):
+        return JSONResponse(status_code=404, content={"error": "Not found"})
+
+    static_dir = Path(os.getenv("AGENTTRACE_STATIC_DIR") or DEFAULT_STATIC_DIR)
+    if (static_dir / "index.html").is_file():
+        app.mount("/", UIStaticFiles(directory=static_dir, html=True), name="ui")
+    else:
+
+        @app.get("/", response_class=HTMLResponse, include_in_schema=False)
+        async def index():
+            return PLACEHOLDER_HTML
 
     return app
 

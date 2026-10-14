@@ -1,5 +1,8 @@
 import importlib.util
+import os
+import re
 
+import pytest
 from click.testing import CliRunner
 
 from agenttrace import cli
@@ -15,19 +18,17 @@ def test_ui_without_server_extra_exits_with_install_hint(monkeypatch):
     assert "pip install 'deepagents-trace[server]'" in result.output
 
 
-import os
-
-import pytest
-
-
 @pytest.fixture
 def fake_uvicorn(monkeypatch):
     import uvicorn
 
     calls = []
     monkeypatch.setattr(uvicorn, "run", lambda *a, **k: calls.append((a, k)))
-    monkeypatch.setenv("AGENTTRACE_AUTH", "password")  # registers restore; ui() sets os.environ directly
+    # ui() sets these in os.environ directly: register their restore first.
+    monkeypatch.setenv("AGENTTRACE_AUTH", "password")
     monkeypatch.delenv("AGENTTRACE_AUTH")
+    monkeypatch.setenv("DATABASE_URL", os.environ["DATABASE_URL"])
+    monkeypatch.delenv("NO_COLOR", raising=False)
     return calls
 
 
@@ -42,11 +43,27 @@ def test_ui_auth_defaults(fake_uvicorn, monkeypatch, args, expected):
     assert len(fake_uvicorn) == 1
 
 
-def test_ui_warns_on_public_host_without_auth(fake_uvicorn):
+def test_ui_warns_on_public_host_without_auth(fake_uvicorn, monkeypatch):
+    monkeypatch.delenv("AGENTTRACE_ALLOWED_HOSTS", raising=False)
     result = CliRunner().invoke(cli.main, ["ui", "--host", "0.0.0.0", "--auth", "none"])
     assert result.exit_code == 0
     assert "WARNING" in result.output
-    assert "AGENTTRACE_ALLOWED_HOSTS" in result.output
+    assert "set AGENTTRACE_ALLOWED_HOSTS=<server-address>" in result.output
+
+
+def test_ui_auth_none_warning_names_the_exact_allowed_hosts_value(fake_uvicorn, monkeypatch):
+    monkeypatch.delenv("AGENTTRACE_ALLOWED_HOSTS", raising=False)
+    result = CliRunner().invoke(cli.main, ["ui", "--host", "192.168.1.10", "--auth", "none"])
+    assert result.exit_code == 0, result.output
+    assert "to open it as 192.168.1.10, set AGENTTRACE_ALLOWED_HOSTS=192.168.1.10" in result.output
+
+
+def test_ui_auth_none_warning_shows_the_allowed_hosts_already_set(fake_uvicorn, monkeypatch):
+    monkeypatch.setenv("AGENTTRACE_ALLOWED_HOSTS", "traces.example.com")
+    result = CliRunner().invoke(cli.main, ["ui", "--host", "0.0.0.0", "--auth", "none"])
+    assert result.exit_code == 0, result.output
+    assert "accepted besides loopback: AGENTTRACE_ALLOWED_HOSTS=traces.example.com" in result.output
+    assert "<server-address>, set" not in result.output
 
 
 def test_db_init_works_without_server_extra(monkeypatch, tmp_path):
@@ -67,3 +84,172 @@ def test_db_init_works_without_server_extra(monkeypatch, tmp_path):
     from agenttrace.store.db import get_engine
 
     assert "runs" in inspect(get_engine(url)).get_table_names()
+
+
+def test_ui_honours_agenttrace_auth_env_on_localhost(fake_uvicorn, monkeypatch):
+    monkeypatch.setenv("AGENTTRACE_AUTH", "password")
+    result = CliRunner().invoke(cli.main, ["ui"])
+    assert result.exit_code == 0, result.output
+    assert os.environ["AGENTTRACE_AUTH"] == "password"
+    assert re.search(r"^  Auth +password ", result.output, re.MULTILINE)
+
+
+def test_ui_auth_flag_overrides_env(fake_uvicorn, monkeypatch):
+    monkeypatch.setenv("AGENTTRACE_AUTH", "password")
+    result = CliRunner().invoke(cli.main, ["ui", "--auth", "none"])
+    assert result.exit_code == 0, result.output
+    assert os.environ["AGENTTRACE_AUTH"] == "none"
+
+
+def test_ui_warns_on_public_host_with_env_auth_none(fake_uvicorn, monkeypatch):
+    monkeypatch.setenv("AGENTTRACE_AUTH", "none")
+    result = CliRunner().invoke(cli.main, ["ui", "--host", "0.0.0.0"])
+    assert result.exit_code == 0, result.output
+    assert os.environ["AGENTTRACE_AUTH"] == "none"
+    assert "WARNING" in result.output
+
+
+def _banner_row(output, label):
+    match = re.search(rf"^  {label} +(.+)$", output, re.MULTILINE)
+    assert match, output
+    return match.group(1)
+
+
+def test_ui_banner_shows_version_url_auth_database_and_tracking_hint(fake_uvicorn):
+    from importlib.metadata import version
+
+    result = CliRunner().invoke(cli.main, ["ui", "--port", "3210", "--database-url", "sqlite:////srv/at/banner.db"])
+    assert result.exit_code == 0, result.output
+    assert f"AgentTrace {version('deepagents-trace')}" in result.output
+    assert _banner_row(result.output, "Dashboard") == "http://127.0.0.1:3210"
+    assert _banner_row(result.output, "Auth").startswith("none ")
+    assert _banner_row(result.output, "Database") == "sqlite:////srv/at/banner.db"
+    assert _banner_row(result.output, "Tracking") == "AGENTTRACE_TRACKING_URI=http://127.0.0.1:3210"
+    assert _banner_row(result.output, "Docs") == cli.DOCS_URL
+    assert fake_uvicorn[0][1]["port"] == 3210
+
+
+def test_ui_banner_resolves_a_relative_sqlite_file(fake_uvicorn, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    result = CliRunner().invoke(cli.main, ["ui", "--database-url", "sqlite:///./agenttrace.db"])
+    assert result.exit_code == 0, result.output
+    expected = f"sqlite:///./agenttrace.db  ({(tmp_path / 'agenttrace.db').resolve()})"
+    assert _banner_row(result.output, "Database") == expected
+
+
+def test_ui_banner_on_all_interfaces_in_password_mode(fake_uvicorn):
+    result = CliRunner().invoke(cli.main, ["ui", "--host", "0.0.0.0", "--port", "8080"])
+    assert result.exit_code == 0, result.output
+    # A browser can't open 0.0.0.0; remote agents need this machine's address.
+    assert _banner_row(result.output, "Dashboard") == "http://localhost:8080"
+    assert _banner_row(result.output, "Auth").startswith("password ")
+    assert _banner_row(result.output, "Tracking") == "AGENTTRACE_TRACKING_URI=http://<server-address>:8080"
+    assert "AGENTTRACE_KEY=atr_" in result.output
+
+
+def test_ui_banner_masks_the_database_password(fake_uvicorn):
+    url = "postgresql+psycopg://agent:s3cr3t-pw@db.internal:5432/traces"
+    result = CliRunner().invoke(cli.main, ["ui", "--database-url", url])
+    assert result.exit_code == 0, result.output
+    assert _banner_row(result.output, "Database") == "postgresql+psycopg://***@db.internal:5432/traces"
+    assert "s3cr3t-pw" not in result.output
+    assert os.environ["DATABASE_URL"] == url  # the server itself still gets the real URL
+
+
+def test_ui_banner_masks_a_password_from_database_url_env(fake_uvicorn, monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", "postgresql://agent:from-env@db/traces")
+    result = CliRunner().invoke(cli.main, ["ui"])
+    assert result.exit_code == 0, result.output
+    assert _banner_row(result.output, "Database") == "postgresql://***@db/traces"
+    assert "from-env" not in result.output
+
+
+@pytest.mark.parametrize(
+    "url, masked",
+    [
+        ("postgresql://user:secret@host/db", "postgresql://***@host/db"),
+        ("postgresql+psycopg://agent:secret@db:5432/traces", "postgresql+psycopg://***@db:5432/traces"),
+        ("mysql+pymysql://u:secret@h/db?charset=utf8", "mysql+pymysql://***@h/db?charset=utf8"),
+        ("postgresql://u:secret@[::1]:5432/db", "postgresql://***@[::1]:5432/db"),
+        # Azure-style user@server: the user name holds an "@"
+        ("postgresql://me@corp.com:secret@db.example.com:5432/app", "postgresql://***@db.example.com:5432/app"),
+        # "_" in the dialect or driver name
+        (
+            "oracle+cx_oracle://scott:secret@dbhost:1521/?service_name=orcl",
+            "oracle+cx_oracle://***@dbhost:1521/?service_name=orcl",
+        ),
+        ("db2+ibm_db://user:secret@host:50000/db", "db2+ibm_db://***@host:50000/db"),
+        ("  postgresql://user:secret@host/db", "postgresql://***@host/db"),
+        # unencoded "@", "/", "?" or ":" in the password (SQLAlchemy would cut
+        # it in two), a "/" in the user name, an unknown scheme: all masked
+        ("postgresql://user:p@ss@host:5432/db", "postgresql://***@host:5432/db"),
+        ("postgresql://user:sec@ret/secret@host/db", "postgresql://***@host/db"),
+        ("postgresql://user:sec@ret?secret@host/db", "postgresql://***@host/db"),
+        ("postgresql://user:sec@ret:5432/secret@host/db", "postgresql://***@host/db"),
+        ("postgresql://user:a/b?c@host/db", "postgresql://***@host/db"),
+        ("postgresql://us/er:secret@host/db", "postgresql://***@host/db"),
+        ("postgresql://user:sec@ret:5432@host/db", "postgresql://***@host/db"),
+        ("my-db://user:secret@host/db", "my-db://***@host/db"),
+        ("postgresql://:secret@host/db", "postgresql://***@host/db"),
+        ("user:secret@host/db", "***@host/db"),
+        # password query parameters, "#" included in the value
+        (
+            "postgresql://host/db?user=u&password=secret&sslmode=require",
+            "postgresql://host/db?user=u&password=***&sslmode=require",
+        ),
+        ("postgresql://host/db?password=sec#secret2", "postgresql://host/db?password=***"),
+        ("postgresql://u@host/db?sslpassword=secret", "postgresql://u@host/db?sslpassword=***"),
+        # other drivers' credential parameters, keyword DSNs, ODBC connect strings
+        ("sqlite+libsql://db.turso.io/?authToken=secret", "sqlite+libsql://db.turso.io/?authToken=***"),
+        ("duckdb:///md:my_db?motherduck_token=secret", "duckdb:///md:my_db?motherduck_token=***"),
+        ("bigquery://proj?credentials_base64=secret", "bigquery://proj?credentials_base64=***"),
+        ("host=db user=u password=secret dbname=x", "host=db user=u password=*** dbname=x"),
+        ("host=db user=u password='sec secret' dbname=x", "host=db user=u password=*** dbname=x"),
+        (
+            "mssql+pyodbc:///?odbc_connect=DRIVER={ODBC};SERVER=h;PWD=secret;",
+            "mssql+pyodbc:///?odbc_connect=DRIVER={ODBC};SERVER=h;PWD=***;",
+        ),
+        (
+            "mssql+pyodbc:///?odbc_connect=DRIVER%3D%7BODBC%7D%3BSERVER%3Dh%3BPWD%3Dsecret%3B",
+            "mssql+pyodbc:///?odbc_connect=DRIVER%3D%7BODBC%7D%3BSERVER%3Dh%3BPWD%3D***",
+        ),
+        # SQLCipher URLs carry a passphrase
+        ("sqlite+pysqlcipher://:secret@/traces.db?cipher=aes-256-cfb", "sqlite+pysqlcipher://***@/traces.db?cipher=aes-256-cfb"),
+        # no password: printed as is
+        ("postgresql://user@host:5432/db", "postgresql://user@host:5432/db"),
+        ("postgresql://host/db?x=a@b", "postgresql://host/db?x=a@b"),
+        ("sqlite:///./agenttrace.db", "sqlite:///./agenttrace.db"),
+        ("sqlite:////home/me/p@th/agenttrace.db", "sqlite:////home/me/p@th/agenttrace.db"),
+    ],
+)
+def test_mask_db_url(url, masked):
+    assert cli.mask_db_url(url) == masked
+    assert "secret" not in cli.mask_db_url(url)
+
+
+def test_ui_banner_is_plain_text_off_a_terminal_or_with_no_color(fake_uvicorn):
+    plain = CliRunner().invoke(cli.main, ["ui"])  # CliRunner's stdout is not a terminal
+    assert plain.exit_code == 0, plain.output
+    assert "\x1b[" not in plain.output
+    colored = CliRunner().invoke(cli.main, ["ui"], color=True)  # as if it were one
+    assert "\x1b[" in colored.output
+    no_color = CliRunner().invoke(cli.main, ["ui"], color=True, env={"NO_COLOR": "1"})
+    assert "\x1b[" not in no_color.output
+    assert fake_uvicorn[-1][1]["use_colors"] is False  # uvicorn's own log lines too
+
+
+def test_demo_masks_the_database_password(monkeypatch):
+    import contextlib
+
+    from agenttrace.server import demo as server_demo
+    from agenttrace.store import db as store_db
+    from agenttrace.store import local
+
+    monkeypatch.setattr(store_db, "init_db", lambda url: None)
+    monkeypatch.setattr(store_db, "get_sessionmaker", lambda url: contextlib.nullcontext)
+    monkeypatch.setattr(local, "get_or_create_local_user", lambda db: None)
+    monkeypatch.setattr(server_demo, "seed_demo", lambda db, user: 3)
+    result = CliRunner().invoke(cli.main, ["demo", "--database-url", "postgresql://agent:s3cr3t@db/traces"])
+    assert result.exit_code == 0, result.output
+    assert "postgresql://***@db/traces" in result.output
+    assert "s3cr3t" not in result.output

@@ -63,7 +63,9 @@ agent.invoke({"messages": [{"role": "user", "content": "..."}]})
 
 Works the same with `await agent.ainvoke(...)` — the middleware's async hooks
 fire automatically. See [`examples/`](examples) for full sync and async
-runnable projects.
+runnable projects, and the offline notebooks in
+[`python-server/examples/notebooks/`](https://github.com/CouLiBaLy-B/agenttrace/tree/main/python-server/examples/notebooks)
+(written for the new `agenttrace.langchain` imports).
 
 Configure the target instance and project API key (from the AgentTrace
 Integration tab, prefixed `atr_`) via environment variables, or pass them

@@ -57,5 +57,16 @@ server.log
 /src/generated/
 .venv/
 
-# Playwright screenshots written by the e2e suite
+# bundled UI
+python-server/agenttrace/server/static/
+
+# Brainstorm mockups / SDD workspaces (superpowers)
+.superpowers/
+# Playwright MCP scratch output
+.playwright-mcp/
+
+# e2e theme screenshots (uploaded by CI)
 python-server/tests_e2e/artifacts/
+
+# MkDocs build output (mkdocs build)
+/site/

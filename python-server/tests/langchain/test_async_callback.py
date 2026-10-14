@@ -113,6 +113,43 @@ async def test_tool_call_and_result_pair_with_duration(handler, post):
     assert "durationMs" in events[1]
 
 
+async def test_tool_result_payload_is_the_tool_messages_content(handler, post):
+    from langchain_core.messages import ToolMessage
+
+    for content in ("Order #4521 shipped", [{"type": "text", "text": "Order #4521 "}, {"type": "text", "text": "shipped"}]):
+        rid = uuid.uuid4()
+        await handler.on_tool_start({"name": "find_order"}, "", run_id=rid, inputs={"email": "x"})
+        await handler.on_tool_end(ToolMessage(content=content, name="find_order", tool_call_id="call_2"), run_id=rid)
+    await handler.aclose()
+
+    results = [e["payload"]["result"] for e in _events(post) if e["type"] == "tool_result"]
+    assert results == ["Order #4521 shipped", "Order #4521 shipped"]
+
+
+async def test_tool_result_anonymized_before_truncation(post):
+    from langchain_core.messages import ToolMessage
+
+    from agenttrace.tracking.run import RESULT_LIMIT
+
+    def scrub(value):  # payloads arrive as dicts, labels and the run name as strings
+        if isinstance(value, dict):
+            return {key: scrub(item) for key, item in value.items()}
+        return value.replace("jane@x.com", "<email>") if isinstance(value, str) else value
+
+    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    handler = AsyncAgentTraceCallbackHandler("run", client=client, anonymizer=scrub)
+    # The address straddles the truncation limit: truncating first would leak "jane@x".
+    content = "x" * (RESULT_LIMIT - 6) + " jane@x.com and more"
+    rid = uuid.uuid4()
+    await handler.on_tool_start({"name": "lookup"}, "", run_id=rid, inputs={})
+    await handler.on_tool_end(ToolMessage(content=content, tool_call_id="c"), run_id=rid)
+    await handler.aclose()
+
+    result = next(e for e in _events(post) if e["type"] == "tool_result")["payload"]["result"]
+    assert "jane" not in result
+    assert result.startswith("x" * (RESULT_LIMIT - 6) + " <emai")
+
+
 async def test_task_tool_emits_handoff_not_tool_call(handler, post):
     rid = uuid.uuid4()
     await handler.on_tool_start(
@@ -380,3 +417,107 @@ async def test_error_messages_are_bounded(handler, post):
 
     errors = [e for e in _events(post) if e["type"] == "error"]
     assert [len(e["payload"]["message"]) for e in errors] == [PAYLOAD_LIMIT + 1, PAYLOAD_LIMIT + 1]
+
+
+async def test_subagent_attribution_prefers_the_per_task_namespace(handler, post):
+    """`checkpoint_ns` can be stale (some langgraph releases keep the first
+    request's value in a cached sub-agent's config); the per-task
+    `langgraph_checkpoint_ns` decides."""
+    task_rid, llm_rid = uuid.uuid4(), uuid.uuid4()
+    await handler.on_tool_start(
+        {"name": "task"}, "", run_id=task_rid,
+        metadata={"checkpoint_ns": "tools:new", "langgraph_checkpoint_ns": "tools:new"},
+        inputs={"subagent_type": "researcher", "description": "dig"},
+    )
+    await handler.on_chat_model_start(
+        {}, [[FakeMessage("human", "x")]], run_id=llm_rid,
+        metadata={"langgraph_node": "model", "checkpoint_ns": "tools:old", "langgraph_checkpoint_ns": "tools:new|model:1"},
+    )
+    await handler.on_llm_end(FakeLLMResult(FakeAIMessage("y")), run_id=llm_rid)
+    await handler.on_tool_end("done", run_id=task_rid)
+    await handler.aclose()
+
+    inner = next(e for e in _events(post) if e["type"] == "llm_call")
+    assert inner["source"] == "researcher"
+
+
+async def test_nested_subagent_calls_go_to_the_innermost_subagent(handler, post):
+    outer, inner, llm_rid = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    await handler.on_tool_start(
+        {"name": "task"}, "", run_id=outer, metadata={"langgraph_checkpoint_ns": "tools:a"},
+        inputs={"subagent_type": "researcher", "description": "dig"},
+    )
+    await handler.on_tool_start(
+        {"name": "task"}, "", run_id=inner, metadata={"langgraph_checkpoint_ns": "tools:a|tools:b"},
+        inputs={"subagent_type": "fact-checker", "description": "check"},
+    )
+    await handler.on_chat_model_start(
+        {}, [[FakeMessage("human", "x")]], run_id=llm_rid,
+        metadata={"langgraph_node": "model", "langgraph_checkpoint_ns": "tools:a|tools:b|model:c"},
+    )
+    await handler.on_llm_end(FakeLLMResult(FakeAIMessage("y")), run_id=llm_rid)
+    await handler.aclose()
+
+    assert next(e for e in _events(post) if e["type"] == "llm_call")["source"] == "fact-checker"
+
+
+async def test_subagent_attribution_survives_a_cached_agent(post):
+    """A server reuses one compiled agent (and its compiled sub-agent) across
+    requests: the sub-agent's calls stay on its lane on every request, not
+    only the first."""
+    from langchain.agents import create_agent
+    from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
+    from langchain_core.messages import AIMessage
+    from langchain_core.tools import tool
+
+    class ScriptedModel(FakeMessagesListChatModel):
+        def bind_tools(self, tools, **kwargs):
+            return self
+
+    @tool
+    def lookup(query: str) -> str:
+        """Look something up."""
+        return "found"
+
+    researcher = create_agent(
+        ScriptedModel(responses=[
+            AIMessage(content="", tool_calls=[{"name": "lookup", "args": {"query": "x"}, "id": "call_2"}]),
+            AIMessage(content="sub-agent answer"),
+        ]),
+        tools=[lookup],
+        name="researcher",
+    )
+
+    @tool
+    async def task(description: str, subagent_type: str) -> str:
+        """Hand a task to a sub-agent."""
+        result = await researcher.ainvoke({"messages": [{"role": "user", "content": description}]})
+        return result["messages"][-1].content
+
+    agent = create_agent(
+        ScriptedModel(responses=[
+            AIMessage(content="", tool_calls=[
+                {"name": "task", "args": {"description": "dig", "subagent_type": "researcher"}, "id": "call_1"}
+            ]),
+            AIMessage(content="answer"),
+        ]),
+        tools=[task],
+    )
+
+    for _ in range(2):
+        post.reset_mock()
+        handler = AsyncAgentTraceCallbackHandler(
+            "run", client=AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+        )
+        await agent.ainvoke({"messages": [{"role": "user", "content": "q"}]}, config={"callbacks": [handler]})
+        await handler.aclose()
+        assert [(e["type"], e["source"]) for e in _events(post)] == [
+            ("llm_call", "Orchestrator"),
+            ("handoff", "Orchestrator"),
+            ("llm_call", "researcher"),
+            ("tool_call", "researcher"),
+            ("tool_result", "lookup"),
+            ("llm_call", "researcher"),
+            ("tool_result", "researcher"),
+            ("llm_call", "Orchestrator"),
+        ]

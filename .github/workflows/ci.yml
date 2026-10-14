@@ -1,12 +1,14 @@
 # AgentTrace — CI
-# Runs on every push and pull request:
-#   1. lint  (eslint)
-#   2. typecheck (tsc --noEmit)
-#   3. build (next build, standalone output)
-#   4. docker build (both web + socket targets)
-#   5. python tests (pytest, server + SDK + shim)
+# Runs on pushes to main/master and on every pull request, whatever its base
+# (stacked pull requests target feature branches):
+#   1. ui      — lint, typecheck, unit tests (Vitest), static export (uploaded as the `ui-bundle` artifact)
+#   2. python  — pytest (server + SDK + shim), the example notebooks, then a wheel check that the UI ships
+#   3. e2e     — Playwright drives the bundled dashboard served by `agenttrace ui`
+#                (theme screenshots uploaded as the `theme-screenshots` artifact)
+#   4. docker  — build the single image and smoke test it against Postgres
 #
-# Bun is used as the runtime/package manager to match local dev.
+# Bun is the package manager, as in local dev; the ui job also installs Node 22
+# (Vitest 5 needs ^22.12, so it does not rely on the runner image's default).
 
 name: CI
 
@@ -14,7 +16,10 @@ on:
   push:
     branches: [main, master]
   pull_request:
-    branches: [main, master]
+
+# Read-only token: CI runs on every pull request and never writes to the repo.
+permissions:
+  contents: read
 
 # Cancel in-flight runs for the same ref when a new commit is pushed.
 concurrency:
@@ -23,47 +28,34 @@ concurrency:
 
 jobs:
   # ────────────────────────────────────────────────────────────
-  # lint + typecheck + build (Node/Bun)
+  # UI: lint + typecheck + unit tests + static export (Bun, Node 22)
   # ────────────────────────────────────────────────────────────
-  quality:
-    name: lint · typecheck · build
+  ui:
+    name: ui · lint · typecheck · build
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.3
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Generate Prisma client
-        run: bun run db:generate
-        env:
-          # generate doesn't connect, but the URL scheme must match the
-          # postgresql provider in schema.prisma.
-          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
-
-      - name: Lint
-        run: bun run lint
-
-      - name: Typecheck
-        run: bunx tsc --noEmit
-
-      - name: Build (Next.js standalone)
-        run: bun run build
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun run test
+      - run: bun run build:ui
         env:
           NEXT_TELEMETRY_DISABLED: "1"
-          # next build reads DATABASE_URL via prisma generate; a dummy postgres
-          # value is fine because we don't run migrations or queries at build time.
-          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ui-bundle
+          path: python-server/agenttrace/server/static
 
   # ────────────────────────────────────────────────────────────
-  # Docker images (web + socket)
+  # Docker image (Python server + bundled UI)
   # ────────────────────────────────────────────────────────────
   docker:
     name: docker build
@@ -74,90 +66,119 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
-      - name: Build web image (Next.js standalone)
-        uses: docker/build-push-action@v6
+      - name: Build image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
-          target: web
           push: false
           load: true
-          tags: agenttrace-web:ci
+          tags: agenttrace:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Build socket image (Socket.IO service)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          target: socket
-          push: false
-          load: true
-          tags: agenttrace-socket:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Smoke test — web responds
+      - name: Smoke test — server serves the UI and API
         run: |
-          # web runs `prisma db push` on boot, so it needs a real Postgres.
-          # Put both containers on a shared network so web reaches it by DNS name.
+          # Postgres on a shared network so the server reaches it by DNS name.
           docker network create agenttrace-ci
           docker run -d --name pg --network agenttrace-ci \
             -e POSTGRES_DB=agenttrace \
             -e POSTGRES_USER=agenttrace \
             -e POSTGRES_PASSWORD=agenttrace \
             postgres:16-alpine
-          # wait for postgres to accept connections
           for i in $(seq 1 30); do
             docker exec pg pg_isready -U agenttrace -d agenttrace >/dev/null 2>&1 && { echo "pg ready"; break; }
             sleep 1
           done
-          docker run -d --name web --network agenttrace-ci -p 3000:3000 \
-            -e DATABASE_URL="postgresql://agenttrace:agenttrace@pg:5432/agenttrace" \
-            -e NEXTAUTH_SECRET="ci-secret" \
-            -e NEXTAUTH_URL="http://localhost:3000" \
-            -e SOCKET_SERVICE_URL="http://localhost:3003" \
-            agenttrace-web:ci
-          # wait for the server to come up
+          docker run -d --name agenttrace --network agenttrace-ci -p 3000:3000 \
+            -e DATABASE_URL="postgresql+psycopg://agenttrace:agenttrace@pg:5432/agenttrace" \
+            -e AGENTTRACE_SECRET="ci-secret" \
+            agenttrace:ci
+          up=0
           for i in $(seq 1 30); do
-            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 || echo 000)
-            [ "$code" = "200" ] && { echo "web up ($code)"; break; }
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/ || echo 000)
+            [ "$code" = "200" ] && { echo "server up ($code)"; up=1; break; }
             sleep 1
           done
-          curl -sf -o /dev/null "http://localhost:3000/api/auth/providers" || { echo "web /api/auth/providers failed"; docker logs web; exit 1; }
-          echo "web smoke test passed"
-
-      - name: Smoke test — socket responds
-        run: |
-          docker run -d --name socket -p 3003:3003 agenttrace-socket:ci
-          for i in $(seq 1 20); do
-            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3003/ || echo 000)
-            [ "$code" = "200" ] && { echo "socket up ($code)"; break; }
-            sleep 1
-          done
-          echo "socket smoke test passed"
+          [ "$up" = "1" ] || { echo "server did not come up"; docker logs agenttrace; exit 1; }
+          curl -s http://localhost:3000/ | grep -q "<title>AgentTrace" || { echo "UI title missing"; docker logs agenttrace; exit 1; }
+          curl -sf http://localhost:3000/api/auth/session | grep -q '"authMode":"password"' || { echo "auth session check failed"; docker logs agenttrace; exit 1; }
+          echo "smoke test passed"
 
   # ────────────────────────────────────────────────────────────
-  # Python package (deepagents-trace) + legacy shim
+  # Python tests + wheel check (needs the UI bundle)
   # ────────────────────────────────────────────────────────────
   python:
     name: python tests
+    needs: ui
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Download UI bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: ui-bundle
+          path: python-server/agenttrace/server/static
+
       - name: Setup uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
 
       - name: Install
         run: |
           uv venv .venv --python 3.12
-          uv pip install --python .venv -e "python-server[dev]" -e integrations/agenttrace-langchain
+          uv pip install --python .venv -e "./python-server[dev]" -e ./integrations/agenttrace-langchain
 
       - name: Test
         run: |
           .venv/bin/pytest python-server/tests -q
           .venv/bin/pytest integrations/agenttrace-langchain/tests -q
+
+      # Offline (scripted models, temp SQLite): a failing cell fails the job.
+      - name: Example notebooks run
+        run: |
+          uv pip install --python .venv nbconvert ipykernel
+          .venv/bin/jupyter nbconvert --to notebook --execute \
+            --ExecutePreprocessor.kernel_name=python3 --ExecutePreprocessor.timeout=300 \
+            --output-dir "$RUNNER_TEMP/notebooks" python-server/examples/notebooks/*.ipynb
+
+      - name: Wheel ships the UI
+        run: |
+          uv build python-server --wheel --out-dir dist
+          .venv/bin/python python-server/scripts/check_wheel.py dist/*.whl
+
+  # ────────────────────────────────────────────────────────────
+  # End-to-end: Playwright against `agenttrace ui` with the bundle
+  # ────────────────────────────────────────────────────────────
+  e2e:
+    name: e2e (playwright)
+    runs-on: ubuntu-latest
+    needs: ui
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: ui-bundle
+          path: python-server/agenttrace/server/static
+      - name: Install
+        run: |
+          uv venv .venv --python 3.12
+          uv pip install --python .venv "./python-server[dev,e2e]"
+          .venv/bin/playwright install --with-deps chromium
+      # The suite skips without the bundle; in CI a missing bundle must fail.
+      - name: Installed package ships the UI bundle
+        run: .venv/bin/python -c "import agenttrace.server.app as a, pathlib; assert (pathlib.Path(a.__file__).parent/'static'/'index.html').is_file()"
+      - name: E2E
+        run: .venv/bin/pytest python-server/tests_e2e -q
+      # dashboard, run and sign-in screens in each theme (saved by test_themes.py)
+      - name: Upload theme screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: theme-screenshots
+          path: python-server/tests_e2e/artifacts/

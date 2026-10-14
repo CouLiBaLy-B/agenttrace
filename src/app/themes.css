@@ -1,0 +1,109 @@
+/* Three complete themes. Attribute selectors (not :root) so a subtree can
+   carry its own theme, e.g. the Settings previews.
+   --action / --danger (with their --on-* label colours) are the filled-button
+   and accent-text colours: unlike the --ev-* strokes (3:1) they reach 4.5:1.
+   globals.css aliases --primary and --destructive to them. */
+[data-theme="phosphore"] {
+  --surface-0: #0C151C; --surface-1: #101D25; --surface-2: #152631;
+  --line: #22343E; --line-strong: #2E4A57;
+  --ink: #D6E7EE; --ink-2: #8FB3BF; --ink-3: #5E7C88;
+  --ev-handoff: #F5B83D; --ev-llm: #4FD1E8; --ev-tool: #A78BFA;
+  --ev-result: #4ADE9C; --ev-answer: #F472B6; --ev-error: #FF6B6B;
+  --ev-handoff-text: var(--ev-handoff); --ev-llm-text: var(--ev-llm); --ev-tool-text: var(--ev-tool);
+  --ev-result-text: var(--ev-result); --ev-answer-text: var(--ev-answer); --ev-error-text: var(--ev-error);
+  --st-running: #F5B83D; --st-ok: #4ADE9C; --st-failed: #FF6B6B;
+  --action: var(--ev-result); --on-action: var(--surface-0);
+  --danger: var(--ev-error); --on-danger: var(--surface-0);
+  --kind-user: var(--ev-answer); --kind-orchestrator: var(--ev-result); --kind-llm: var(--ev-llm);
+  --kind-tool: var(--ev-tool); --kind-subagent: var(--ev-handoff);
+  --font-ui: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-data: "Martian Mono", ui-monospace, monospace;
+  --font-clock: var(--font-data);
+  --radius-panel: 6px; --radius-control: 4px;
+  --shadow-raised: none;
+  --shadow-overlay: -8px 0 24px -12px rgb(0 0 0 / 0.6);
+  --focus-ring: #4FD1E8;
+  color-scheme: dark;
+}
+
+[data-theme="cyanotype"] {
+  --surface-0: #10335A; --surface-1: #0C2A4B; --surface-2: #143C68;
+  --line: #3A5F88; --line-strong: #9DB7D6;
+  --ink: #EAF2FF; --ink-2: #9DB7D6; --ink-3: #6F8DB0;
+  --ev-handoff: #FFC56B; --ev-llm: #8FE3FF; --ev-tool: #C9B8FF;
+  --ev-result: #9BF0C4; --ev-answer: #FF9FC8; --ev-error: #FF8A8A;
+  --ev-handoff-text: var(--ev-handoff); --ev-llm-text: var(--ev-llm); --ev-tool-text: var(--ev-tool);
+  --ev-result-text: var(--ev-result); --ev-answer-text: var(--ev-answer); --ev-error-text: var(--ev-error);
+  --st-running: #FFC56B; --st-ok: #9BF0C4; --st-failed: #FF8A8A;
+  --action: var(--ev-result); --on-action: var(--surface-0);
+  --danger: var(--ev-error); --on-danger: var(--surface-0);
+  --kind-user: var(--ev-answer); --kind-orchestrator: var(--ev-result); --kind-llm: var(--ev-llm);
+  --kind-tool: var(--ev-tool); --kind-subagent: var(--ev-handoff);
+  --font-ui: "B612", ui-sans-serif, system-ui, sans-serif;
+  --font-data: "B612 Mono", ui-monospace, monospace;
+  /* B612 Mono sets ":" and "." in full cells ("17: 34: 23"); B612's own digits
+     are already tabular, so times stay aligned with tight punctuation. */
+  --font-clock: "B612", ui-sans-serif, system-ui, sans-serif;
+  --radius-panel: 2px; --radius-control: 2px;
+  --shadow-raised: none;
+  --shadow-overlay: -8px 0 24px -12px rgb(3 14 30 / 0.6);
+  --focus-ring: #8FE3FF;
+  color-scheme: dark;
+}
+
+[data-theme="studio"] {
+  --surface-0: #E3E6EA; --surface-1: #F5F6F8; --surface-2: #FFFFFF;
+  --line: #C3C8D0; --line-strong: #A9B0BA;
+  --ink: #1D2026; --ink-2: #5B6270; --ink-3: #7D8490;
+  --ev-handoff: #E25200; --ev-llm: #2F6BFF; --ev-tool: #7A4DFF;
+  --ev-result: #0C8F52; --ev-answer: #F0387F; --ev-error: #E5383B;
+  --ev-handoff-text: #B84400; --ev-llm-text: #2457D6; --ev-tool-text: #6236E0;
+  --ev-result-text: #0B7A47; --ev-answer-text: #C21E5F; --ev-error-text: #B3202A;
+  --st-running: #E25200; --st-ok: #0C8F52; --st-failed: #E5383B;
+  --action: #096F40; --on-action: var(--surface-2);
+  --danger: var(--ev-error-text); --on-danger: var(--surface-2);
+  --kind-user: var(--ev-answer); --kind-orchestrator: var(--ev-result); --kind-llm: var(--ev-llm);
+  --kind-tool: var(--ev-tool); --kind-subagent: var(--ev-handoff);
+  --font-ui: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-data: "DM Mono", ui-monospace, monospace;
+  --font-clock: var(--font-data);
+  --radius-panel: 10px; --radius-control: 7px;
+  --shadow-raised: 0 1px 2px rgb(11 18 32 / 0.12), 0 1px 1px rgb(11 18 32 / 0.06);
+  --shadow-overlay: -8px 0 24px -12px rgb(11 18 32 / 0.22);
+  --focus-ring: #2457D6;
+  color-scheme: light;
+}
+
+/* Canvas backgrounds (the diagram surface). --canvas is its plain colour,
+   without the grid: the diagram paints knockouts and its sticky lane-header
+   band with it. */
+.at-canvas { --canvas: var(--surface-0); background: var(--canvas); }
+[data-theme="phosphore"] .at-canvas {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--line) 55%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--line) 55%, transparent) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+[data-theme="cyanotype"] .at-canvas {
+  background-image:
+    linear-gradient(to right, rgb(234 242 255 / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(234 242 255 / 0.05) 1px, transparent 1px),
+    linear-gradient(to right, rgb(234 242 255 / 0.11) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(234 242 255 / 0.11) 1px, transparent 1px);
+  background-size: 10px 10px, 10px 10px, 50px 50px, 50px 50px;
+}
+[data-theme="studio"] .at-canvas { --canvas: var(--surface-1); background: var(--canvas); }
+
+/* Theme switch: a circle revealed from the clicked swatch (View Transitions).
+   --vt-x / --vt-y are set by applyTheme. Reduced motion never gets here. */
+::view-transition-old(root),
+::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-new(root) { animation: at-theme-reveal 450ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+@keyframes at-theme-reveal {
+  from { clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 50%)); }
+  to { clip-path: circle(150vmax at var(--vt-x, 50%) var(--vt-y, 50%)); }
+}
+/* Fallback without View Transitions: a short colour cross-fade. */
+[data-theme-switching] *, [data-theme-switching] *::before, [data-theme-switching] *::after {
+  transition: background-color 200ms, color 200ms, border-color 200ms, fill 200ms, stroke 200ms !important;
+}

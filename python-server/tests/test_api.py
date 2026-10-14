@@ -154,6 +154,29 @@ def test_stats_endpoint(client):
     assert stats["totalRuns"] == 1
     assert stats["completed"] == 1
     assert stats["successRate"] == 100
+    # Timestamps carry an explicit UTC offset so browsers don't read them as local time.
+    assert stats["perProject"][0]["lastRunAt"].endswith("+00:00")
+    [recent] = stats["recent"]
+    assert recent["startedAt"].endswith("+00:00") and recent["endedAt"].endswith("+00:00")
+    assert recent["events"] == 0 and recent["project"]["name"] == "Stats demo"
+    assert stats["totalEvents"] == 0 and stats["typeDist"] == {}
+
+
+def test_stats_counts_only_the_current_users_events(client):
+    _signup(client)
+    created = client.post("/api/projects", json={"name": "Mine"}).json()
+    headers = {"Authorization": f"Bearer {created['apiKey']}"}
+    run_id = client.post("/api/events", json={"runId": None, "name": "r"}, headers=headers).json()["runId"]
+    for type_ in ("llm_call", "llm_call", "tool_call"):
+        client.post("/api/events", json={"runId": run_id, "source": "a", "target": "b", "type": type_}, headers=headers)
+    mine = client.get("/api/stats").json()
+    assert mine["totalEvents"] == 3 and mine["typeDist"] == {"llm_call": 2, "tool_call": 1}
+    assert mine["recent"][0]["events"] == 3
+
+    client.post("/api/auth/signout")
+    _signup(client)
+    other = client.get("/api/stats").json()
+    assert other["totalEvents"] == 0 and other["typeDist"] == {} and other["recent"] == []
 
 
 def test_websocket_receives_broadcast_event(client):
@@ -246,3 +269,31 @@ def test_ingest_does_db_work_off_the_event_loop(client, monkeypatch):
     assert client.post("/api/events", json=event, headers=headers).status_code == 201
     assert client.post("/api/events", json={"runId": run_id, "endRun": "completed"}, headers=headers).status_code == 200
     assert on_loop == [False, False, False]
+
+
+def test_event_counts_in_stats_and_project_detail(client):
+    _signup(client)
+    created = client.post("/api/projects", json={"name": "Counts"}).json()
+    project_id = created["project"]["id"]
+    headers = {"Authorization": f"Bearer {created['apiKey']}"}
+
+    def run_with(types):
+        run_id = client.post("/api/events", json={"runId": None, "name": "r"}, headers=headers).json()["runId"]
+        for t in types:
+            ok = client.post(
+                "/api/events", json={"runId": run_id, "source": "A", "target": "B", "type": t}, headers=headers
+            )
+            assert ok.status_code == 201
+        return run_id
+
+    busy = run_with(["llm_call", "tool_call", "tool_result"])
+    small = run_with(["llm_call"])
+    empty = run_with([])
+
+    stats = client.get("/api/stats").json()
+    assert stats["totalEvents"] == 4
+    assert stats["typeDist"] == {"llm_call": 2, "tool_call": 1, "tool_result": 1}
+    assert {r["id"]: r["events"] for r in stats["recent"]} == {busy: 3, small: 1, empty: 0}
+
+    runs = client.get(f"/api/projects/{project_id}").json()["project"]["runs"]
+    assert {r["id"]: r["_count"]["events"] for r in runs} == {busy: 3, small: 1, empty: 0}

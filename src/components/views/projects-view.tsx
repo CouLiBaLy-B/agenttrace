@@ -1,10 +1,10 @@
 "use client"
 
+import { LoadError } from "@/components/load-error"
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api, formatRelative } from "@/lib/api"
 import { useNav } from "@/lib/store"
-import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -29,23 +29,21 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import {
-  Plus,
-  FolderGit2,
-  ArrowRight,
-  Trash2,
-  Pencil,
-  Activity,
-  Sparkles,
-} from "lucide-react"
+import { Plus, Trash2, Pencil } from "lucide-react"
+import { useElementWidth } from "@/lib/hooks"
+import type { RecentRun, RunShape } from "@/lib/types"
+import { cn } from "@/lib/utils"
+import { MiniDiagram } from "@/components/mini-diagram/mini-diagram"
+import { useSeedDemo, useTileClass } from "@/components/dashboard/run-feed"
+import type { DashboardStats } from "@/components/dashboard/stat-strip"
 
 interface Project {
   id: string
   name: string
   description: string | null
   createdAt: string
-  _count: { runs: number }
-  runs: { id: string; name: string; status: string; startedAt: string }[]
+  _count?: { runs: number }
+  runs?: { id: string; name: string; status: string; startedAt: string }[]
 }
 
 export function ProjectsView() {
@@ -57,9 +55,14 @@ export function ProjectsView() {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
 
-  const { data, isLoading } = useQuery<{ projects: Project[] }>({
+  const { data, isLoading, isError, refetch } = useQuery<{ projects: Project[] }>({
     queryKey: ["projects"],
     queryFn: () => api("/api/projects"),
+  })
+  // Run count, success rate and last activity per project (shared with the dashboard).
+  const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
+    queryKey: ["stats"],
+    queryFn: () => api("/api/stats"),
   })
 
   const createMut = useMutation({
@@ -159,15 +162,18 @@ export function ProjectsView() {
   }
 
   const projects = data?.projects || []
+  const perProject = new Map((stats?.perProject ?? []).map((row) => [row.id, row]))
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            {"// workspaces"}
-          </p>
-          <h1 className="text-2xl font-semibold mt-0.5">Projects</h1>
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold text-[var(--ink)]">Projects</h1>
+          {projects.length > 0 && (
+            <p className="mt-0.5 text-[13px] text-[var(--ink-2)]">
+              {projects.length === 1 ? "1 project" : `${projects.length} projects`}, each with its last run
+            </p>
+          )}
         </div>
         <Button size="sm" onClick={() => setCreateOpen(true)} className="gap-1.5">
           <Plus className="h-4 w-4" />
@@ -176,69 +182,30 @@ export function ProjectsView() {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className={GRID}>
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-32" />
+            <Skeleton key={i} className="h-[196px] rounded-[var(--radius-panel)]" />
           ))}
         </div>
+      ) : isError ? (
+        <LoadError what="your projects" onRetry={refetch} />
       ) : projects.length === 0 ? (
-        <EmptyProjects
-          onCreate={() => {
-            setCreateOpen(true)
-          }}
-        />
+        <EmptyProjects onCreate={() => setCreateOpen(true)} />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <ul className={GRID} aria-label="Projects">
           {projects.map((p) => (
-            <Card
-              key={p.id}
-              className="p-4 hover:border-primary/40 cursor-pointer transition-colors group"
-              onClick={() => go("project", { projectId: p.id })}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-start gap-3 min-w-0 flex-1">
-                  <div className="h-9 w-9 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                    <FolderGit2 className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{p.name}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
-                      {p.description || "No description"}
-                    </p>
-                  </div>
-                </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-              </div>
-              <div className="mt-3 pt-3 border-t border-border flex items-center gap-3 text-xs">
-                <span className="font-mono text-muted-foreground flex items-center gap-1">
-                  <Activity className="h-3 w-3" />
-                  {p._count.runs} runs
-                </span>
-                <span className="font-mono text-muted-foreground ml-auto">
-                  {formatRelative(p.runs[0]?.startedAt || p.createdAt)}
-                </span>
-                <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                    onClick={() => openEdit(p)}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-muted-foreground hover:text-red-400"
-                    onClick={() => setDeleting(p)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            </Card>
+            <li key={p.id} className="min-w-0">
+              <ProjectCard
+                project={p}
+                stats={perProject.get(p.id)}
+                statsLoading={statsLoading}
+                onOpen={() => go("project", { projectId: p.id })}
+                onEdit={() => openEdit(p)}
+                onDelete={() => setDeleting(p)}
+              />
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
       {/* create dialog */}
@@ -330,7 +297,7 @@ export function ProjectsView() {
           <AlertDialogFooter>
             <AlertDialogCancel>Keep it</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-[var(--danger)] text-[var(--on-danger)] hover:bg-[color-mix(in_oklab,var(--danger)_90%,transparent)]"
               onClick={() => deleting && deleteMut.mutate(deleting.id)}
             >
               Delete project
@@ -342,23 +309,151 @@ export function ProjectsView() {
   )
 }
 
-function EmptyProjects({ onCreate }: { onCreate: () => void }) {
+const GRID = "grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
+const DIAGRAM_H = 88
+/** Three bare lifelines: where the last run will be drawn once it loads. */
+const PLACEHOLDER: RunShape = { participants: ["", "", ""], events: [] }
+
+
+/** The project's last run as a mini diagram: lifelines while it loads, a note when there is none. */
+function LastRun({ projectId, width }: { projectId: string; width: number }) {
+  const { data, isLoading, isError } = useQuery<{ runs: RecentRun[] }>({
+    queryKey: ["runs-recent", projectId, 1],
+    queryFn: () => api(`/api/runs/recent?projectId=${encodeURIComponent(projectId)}&limit=1`),
+    enabled: !projectId.startsWith("temp-"),
+  })
+  const run = data?.runs[0]
+  if (width === 0) return null
+  if (run) return <MiniDiagram shape={run.shape} width={width} height={DIAGRAM_H} />
+  if (isLoading && !projectId.startsWith("temp-")) {
+    return (
+      <span className="block animate-pulse motion-reduce:animate-none">
+        <MiniDiagram shape={PLACEHOLDER} width={width} height={DIAGRAM_H} />
+      </span>
+    )
+  }
   return (
-    <Card className="p-10 at-graticule at-scanlines relative overflow-hidden text-center">
-      <div className="relative z-10 max-w-md mx-auto">
-        <div className="h-16 w-16 mx-auto rounded-full border border-primary/30 flex items-center justify-center">
-          <Sparkles className="h-7 w-7 text-primary at-glow" />
+    <span className="flex h-full items-center justify-center text-[12px] text-[var(--ink-2)]">
+      {isError ? "Couldn't load the last run" : "No runs yet"}
+    </span>
+  )
+}
+
+function ProjectCard({
+  project: p,
+  stats,
+  statsLoading,
+  onOpen,
+  onEdit,
+  onDelete,
+}: {
+  project: Project
+  stats: DashboardStats["perProject"][number] | undefined
+  statsLoading: boolean
+  onOpen: () => void
+  onEdit: () => void
+  onDelete: () => void
+}) {
+  const [well, width] = useElementWidth<HTMLDivElement>()
+  const tile = useTileClass()
+  const runCount = stats?.runs ?? p._count?.runs ?? 0
+  const lastRunAt = stats?.lastRunAt ?? p.runs?.[0]?.startedAt ?? null
+  return (
+    <div
+      className={cn(
+        tile,
+        "relative flex h-full flex-col",
+        // the card is a div: show the ring when its stretched name button has keyboard focus
+        "has-[[data-open]:focus-visible]:outline-2 has-[[data-open]:focus-visible]:outline-offset-2 has-[[data-open]:focus-visible]:outline-[var(--focus-ring)]",
+      )}
+    >
+      <div ref={well} aria-hidden="true" className="at-canvas border-b border-[var(--line)]" style={{ height: DIAGRAM_H }}>
+        <LastRun projectId={p.id} width={width} />
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col px-3 py-2.5">
+        <div className="flex min-w-0 items-start gap-2">
+          <h2 className="min-w-0 flex-1 text-sm font-medium leading-6 text-[var(--ink)]">
+            {/* The whole card opens the project; the name is the link that does it. */}
+            <button
+              type="button"
+              data-open
+              onClick={onOpen}
+              title={p.name}
+              className="block max-w-full truncate text-left outline-none after:absolute after:inset-0 after:content-['']"
+            >
+              {p.name}
+            </button>
+          </h2>
+          <div className="relative z-10 -mr-1 flex shrink-0 items-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={`Edit ${p.name}`}
+              className="h-7 w-7 text-[var(--ink-2)] hover:text-[var(--ink)]"
+              onClick={onEdit}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={`Delete ${p.name}`}
+              className="h-7 w-7 text-[var(--ink-2)] hover:text-[var(--danger)]"
+              onClick={onDelete}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
-        <h3 className="mt-6 text-lg font-medium">No projects yet</h3>
-        <p className="mt-1.5 text-sm text-muted-foreground">
-          Create your first project to get an ingestion API key, then point your agent at it and
-          watch events stream into a live sequence diagram.
+        <p className={cn("mt-0.5 line-clamp-2 text-[13px] leading-5", p.description ? "text-[var(--ink-2)]" : "text-[var(--ink-3)]")}>
+          {p.description || "No description"}
         </p>
-        <Button onClick={onCreate} className="mt-5 gap-1.5">
+        <dl className="mt-auto flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 pt-3 text-[12px] text-[var(--ink-2)]">
+          <div className="flex items-baseline gap-1">
+            <dt className="sr-only">Runs</dt>
+            <dd>
+              <span className="font-mono tabular-nums text-[var(--ink)]">{runCount}</span> {runCount === 1 ? "run" : "runs"}
+            </dd>
+          </div>
+          <div className="flex items-baseline gap-1">
+            <dt className="sr-only">Success rate</dt>
+            <dd>
+              <span className="font-mono tabular-nums text-[var(--ink)]">
+                {statsLoading ? "…" : stats && stats.runs > 0 ? `${stats.successRate}%` : "—"}
+              </span>{" "}
+              success
+            </dd>
+          </div>
+          <div className="ml-auto flex items-baseline gap-1">
+            <dt className="sr-only">Last activity</dt>
+            <dd className="tabular-nums">
+              {lastRunAt ? `last run ${formatRelative(lastRunAt)}` : `created ${formatRelative(p.createdAt)}`}
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  )
+}
+
+function EmptyProjects({ onCreate }: { onCreate: () => void }) {
+  const seed = useSeedDemo()
+  return (
+    <div className="rounded-[var(--radius-panel)] border border-dashed border-[var(--line-strong)] px-6 py-12 text-center">
+      <h2 className="text-base font-semibold text-[var(--ink)]">No projects yet.</h2>
+      <p className="mx-auto mt-1.5 max-w-md text-sm text-[var(--ink-2)]">
+        A project groups the runs of one agent and gives it an API key. Create one, or load the demo projects to look
+        around first.
+      </p>
+      <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+        <Button size="sm" onClick={onCreate} className="gap-1.5">
           <Plus className="h-4 w-4" />
-          Create your first project
+          New project
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => seed.mutate()} disabled={seed.isPending}>
+          {seed.isPending ? "Loading demo projects…" : "Load demo projects"}
         </Button>
       </div>
-    </Card>
+    </div>
   )
 }
