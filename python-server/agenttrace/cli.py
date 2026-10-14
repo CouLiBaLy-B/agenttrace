@@ -29,9 +29,15 @@ _LOGO = r"""
       /____/
 """
 
-# Password query parameters (libpq style: ?password=..., &sslpassword=...).
-# The value runs to the next "&": SQLAlchemy keeps a "#" inside it.
-_QUERY_PASSWORD = re.compile(r"(?i)(?P<key>[?&][^=&]*(?:password|passwd|pwd)[^=&]*=)[^&]*")
+# Credential query parameters (?password=..., &sslpassword=..., ?authToken=...,
+# ?motherduck_token=...). The value runs to the next "&": SQLAlchemy keeps a
+# "#" inside it.
+_QUERY_PASSWORD = re.compile(
+    r"(?i)(?P<key>[?&][^=&]*(?:password|passwd|pwd|secret|token|credential)[^=&]*=)[^&]*"
+)
+# Inline key=value passwords: libpq keyword DSNs ("host=db password=..."),
+# PWD=... inside an ODBC connect string, URL-encoded or not.
+_INLINE_PASSWORD = re.compile(r"(?i)(?P<key>(?:password|passwd|pwd)\s*(?:=|%3D)\s*)(?:'[^']*'|[^\s;&]*)")
 # SQLite URLs that never carry credentials (sqlite+pysqlcipher does: masked).
 _PLAIN_SQLITE = {"sqlite", "sqlite+pysqlite", "sqlite+aiosqlite"}
 
@@ -54,11 +60,13 @@ def mask_db_url(url: str) -> str:
     with the password. A URL without a password is printed as is."""
     text = url.strip()
     scheme, sep, rest = text.partition("://")
-    if not sep:
-        return _mask_userinfo(text)
-    if scheme.lower() in _PLAIN_SQLITE:
+    if sep and scheme.lower() in _PLAIN_SQLITE:
         return text
-    return f"{scheme}://" + _QUERY_PASSWORD.sub(r"\g<key>***", _mask_userinfo(rest))
+    if sep:
+        masked = f"{scheme}://" + _QUERY_PASSWORD.sub(r"\g<key>***", _mask_userinfo(rest))
+    else:
+        masked = _mask_userinfo(text)
+    return _INLINE_PASSWORD.sub(r"\g<key>***", masked)
 
 
 def _require_server_extra() -> None:

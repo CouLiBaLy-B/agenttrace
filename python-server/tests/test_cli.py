@@ -199,6 +199,20 @@ def test_ui_banner_masks_a_password_from_database_url_env(fake_uvicorn, monkeypa
         ),
         ("postgresql://host/db?password=sec#secret2", "postgresql://host/db?password=***"),
         ("postgresql://u@host/db?sslpassword=secret", "postgresql://u@host/db?sslpassword=***"),
+        # other drivers' credential parameters, keyword DSNs, ODBC connect strings
+        ("sqlite+libsql://db.turso.io/?authToken=secret", "sqlite+libsql://db.turso.io/?authToken=***"),
+        ("duckdb:///md:my_db?motherduck_token=secret", "duckdb:///md:my_db?motherduck_token=***"),
+        ("bigquery://proj?credentials_base64=secret", "bigquery://proj?credentials_base64=***"),
+        ("host=db user=u password=secret dbname=x", "host=db user=u password=*** dbname=x"),
+        ("host=db user=u password='sec secret' dbname=x", "host=db user=u password=*** dbname=x"),
+        (
+            "mssql+pyodbc:///?odbc_connect=DRIVER={ODBC};SERVER=h;PWD=secret;",
+            "mssql+pyodbc:///?odbc_connect=DRIVER={ODBC};SERVER=h;PWD=***;",
+        ),
+        (
+            "mssql+pyodbc:///?odbc_connect=DRIVER%3D%7BODBC%7D%3BSERVER%3Dh%3BPWD%3Dsecret%3B",
+            "mssql+pyodbc:///?odbc_connect=DRIVER%3D%7BODBC%7D%3BSERVER%3Dh%3BPWD%3D***",
+        ),
         # SQLCipher URLs carry a passphrase
         ("sqlite+pysqlcipher://:secret@/traces.db?cipher=aes-256-cfb", "sqlite+pysqlcipher://***@/traces.db?cipher=aes-256-cfb"),
         # no password: printed as is
