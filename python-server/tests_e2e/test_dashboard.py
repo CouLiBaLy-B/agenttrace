@@ -72,9 +72,11 @@ def test_polling_fallback_when_websocket_is_blocked(page: Page, local_server):
     expect(page.get_by_text("polled first").first).to_be_visible(timeout=10_000)
     _wait_for(page, lambda: bool(blocked), "an intercepted /ws connection")
 
-    # a new event reaches the diagram via the 5 s refetch alone
+    # a new event reaches the diagram via the 5 s refetch alone. Up to two
+    # cycles: a refetch already in flight when the event is written can come
+    # back without it.
     client.log_event(run_id, source="Orchestrator", target="web_search", type="tool_call", label="polled second")
-    expect(page.get_by_text("polled second").first).to_be_visible(timeout=8_000)
+    expect(page.get_by_text("polled second").first).to_be_visible(timeout=12_000)
 
     # the run header counts the diagram's events
     expect(page.locator("header p")).to_have_text(re.compile(r"^2 events · "), timeout=8_000)
@@ -82,7 +84,7 @@ def test_polling_fallback_when_websocket_is_blocked(page: Page, local_server):
     # ending the run flips the diagram out of live mode: the header says so and
     # the filter row's live-stream indicator goes away
     client.end_run(run_id, status="completed")
-    expect(page.locator("header").get_by_text("Completed", exact=True)).to_be_visible(timeout=8_000)
+    expect(page.locator("header").get_by_text("Completed", exact=True)).to_be_visible(timeout=12_000)
     expect(page.get_by_text(re.compile(r"^(Listening|Connecting…|Reconnecting…)$"))).to_have_count(0)
 
 

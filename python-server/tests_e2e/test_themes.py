@@ -204,14 +204,26 @@ def test_large_run_opens_quickly(page: Page, local_server, record_property):
         client.log_event(run_id, source=source, target=target, type=kind, label=f"step {i}")
     client.end_run(run_id, status="completed")
 
+    # Timed from the click on the run's tile to its first arrow drawn: the
+    # spec's "opens in under 500 ms on a mid-range laptop", with headroom for
+    # CI runners. The page load before it (the 1.2 s boot sequence, the
+    # dashboard's queries) isn't part of opening a run.
+    page.goto(base)
+    tile = page.locator("section[aria-labelledby='run-feed-title']").get_by_role(
+        "button", name=re.compile(r"^e2e large run, ")
+    )
+    expect(tile).to_be_visible(timeout=15_000)
     start = time.monotonic()
-    diagram = open_run(page, base, "e2e large run", timeout=3_000)
-    arrow(diagram, "step 0").click(timeout=3_000)
-    expect(_inspector_title(page)).to_have_text("step 0", timeout=3_000)
+    tile.click()
+    diagram = page.get_by_test_id("diagram")
+    expect(arrow(diagram, "step 0")).to_be_attached(timeout=5_000)
     elapsed = time.monotonic() - start
     print(f"opening a 1 000-event run took {elapsed:.2f} s")
     record_property("large_run_open_s", round(elapsed, 3))
-    assert elapsed < 3.0, f"opening a 1 000-event run took {elapsed:.2f} s"
+    assert elapsed < 2.0, f"opening a 1 000-event run took {elapsed:.2f} s"
+
+    arrow(diagram, "step 0").click(timeout=3_000)
+    expect(_inspector_title(page)).to_have_text("step 0", timeout=3_000)
 
     drawn = diagram.locator("[data-event-id]").count()
     assert 0 < drawn < 200, f"{drawn} arrow groups in the DOM for 1 000 events"
