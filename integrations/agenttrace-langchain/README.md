@@ -1,3 +1,37 @@
+> **Deprecated.** This package is now a thin shim. Use
+> `pip install 'deepagents-trace[langchain]'` and `import agenttrace.langchain`
+> (or `agenttrace.langchain.autolog()`). Existing top-level imports keep
+> working and emit a `DeprecationWarning`, as do the old submodule paths
+> (`agenttrace_langchain.client`, `.async_client`, `.run`, `.async_run`,
+> `.middleware`, `.callback`, `.projection`), which are now aliases.
+>
+> | `agenttrace_langchain` | New import |
+> | --- | --- |
+> | `AgentTraceMiddleware` | `agenttrace.langchain.AgentTraceMiddleware` |
+> | `AgentTraceCallbackHandler` (0.2.2, async) | `agenttrace.langchain.AsyncAgentTraceCallbackHandler` |
+> | `AgentTraceClient` | `agenttrace.tracking.http.HttpEventClient` |
+> | `AgentTraceRun` | `agenttrace.tracking.http.AgentTraceRun` |
+> | `AsyncAgentTraceClient` | `agenttrace.tracking.async_http.AsyncHttpEventClient` |
+> | `AsyncAgentTraceRun` | `agenttrace.tracking.async_run.AsyncAgentTraceRun` |
+>
+> Note: `agenttrace.langchain.AgentTraceCallbackHandler` (no `Async`) is the
+> sync handler used by `autolog()`, not the 0.2.2 class.
+
+## Upgrading from 0.2.x
+
+- **No API key now posts keylessly.** An `AsyncAgentTraceClient` with no key
+  (`api_key=None` and no `AGENTTRACE_KEY`) used to disable tracing; it now
+  sends without an `Authorization` header, for a local
+  `agenttrace ui --auth none`. A server that wants a key answers 401, and the
+  run is then disabled with one warning. If you relied on a missing key as an
+  off switch, gate tracing in your app (don't attach the handler).
+- **The anonymizer also receives strings.** It is called with every payload
+  (a JSON-safe dict), every label (a str) and the run name, and must handle
+  both. If it raises, or returns a non-str for a label, the field is redacted
+  instead of being sent unmasked.
+- **Only a tool named exactly `task`** (or containing `handoff`/`delegate`)
+  counts as a sub-agent handoff; e.g. `create_task` is a plain tool call.
+
 # agenttrace-langchain
 
 `AgentTraceMiddleware` — an `AgentMiddleware` for LangChain's `create_agent` /
@@ -7,8 +41,11 @@ deepagents' `create_deep_agent` that streams a run to an
 ## Install
 
 ```bash
-pip install -e integrations/agenttrace-langchain
+pip install 'deepagents-trace[langchain]'
 ```
+
+This shim package stays installable (`pip install -e integrations/agenttrace-langchain`)
+for code that still imports `agenttrace_langchain`.
 
 ## Usage
 
@@ -57,10 +94,9 @@ The middleware is built to never affect the agent it instruments:
   disables tracing for that run (one warning logged via the standard
   `logging` module), the agent keeps running normally.
 - **Bounded payloads** — tool args/results, LLM output previews and the
-  final answer are truncated (`agenttrace_langchain.run.truncate`/`compact`)
-  before being sent, so a single large value can't blow up an event body.
+  final answer are truncated before being sent, so a single large value can't blow up an event body.
 
-`AgentTraceRun` (`run.py`) implements this contract and can be reused
+`AgentTraceRun` implements this contract and can be reused
 directly if you're not going through the middleware (e.g. to trace a custom
 orchestration loop):
 
@@ -73,7 +109,7 @@ run.end("completed")
 run.close()  # bounded wait for the queue to drain
 ```
 
-`AgentTraceClient` (`client.py`) itself stays a thin, fail-loud HTTP
+`AgentTraceClient` itself stays a thin, fail-loud HTTP
 primitive (raises on a missing key or a failed request) — the right
 behavior when called directly; `AgentTraceRun` is the layer that adds the
 non-blocking/never-fatal guarantees on top.
@@ -88,7 +124,12 @@ run's `after_agent` closes the AgentTrace run, and every later request on that
 cached agent silently traces into an already-closed run. The middleware is
 only correct when the agent is (re)built per invocation.
 
-For a cached-agent server, create one `AsyncAgentTraceRun` **per request**
+The least-code option is one `AgentTraceCallbackHandler` (0.2.2 API, now
+`agenttrace.langchain.AsyncAgentTraceCallbackHandler`) per request, attached via
+`config={"callbacks": [handler]}`; see "Async servers" in the
+[deepagents-trace README](../../python-server/README.md).
+
+Lower-level: create one `AsyncAgentTraceRun` **per request**
 instead, independent of the agent build, and feed it events from your own
 stream projection (`agent.astream_events(...)`) rather than from `middleware`:
 

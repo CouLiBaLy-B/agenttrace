@@ -14,6 +14,8 @@ from sqlalchemy.orm import Session
 
 from .. import models
 from ..db import get_db
+from ..deps import auth_mode
+from ...store.local import get_or_create_local_user
 from ..security import (
     SESSION_COOKIE_NAME,
     SESSION_MAX_AGE_SECONDS,
@@ -90,6 +92,8 @@ def signout(response: Response):
 def session(request: Request, db: Session = Depends(get_db)):
     """Unlike `require_user`, this never raises — an anonymous caller just
     gets `{"user": null}`, matching how a frontend checks session-on-load."""
+    if auth_mode() == "none":
+        return {"user": user_out(get_or_create_local_user(db))}
     token = request.cookies.get(SESSION_COOKIE_NAME)
     user_id = read_session_token(token) if token else None
     user = db.get(models.User, user_id) if user_id else None

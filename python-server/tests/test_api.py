@@ -197,3 +197,52 @@ def test_keys_management(client):
 
     keys = client.get(f"/api/keys?projectId={project_id}").json()["keys"]
     assert len(keys) == 1
+
+
+def test_websocket_cross_origin_refused_in_password_mode(client, monkeypatch):
+    """The session cookie rides along on cross-site WebSocket handshakes (CSWSH)."""
+    from starlette.websockets import WebSocketDisconnect
+
+    monkeypatch.delenv("AGENTTRACE_ALLOWED_HOSTS", raising=False)
+    _signup(client)
+    with pytest.raises(WebSocketDisconnect) as refused:
+        with client.websocket_connect("/ws", headers={"Origin": "http://evil.example"}):
+            pass
+    assert refused.value.code == 1008
+    with client.websocket_connect("/ws", headers={"Origin": "http://testserver"}):
+        pass
+    with client.websocket_connect("/ws"):  # non-browser clients send no Origin
+        pass
+    monkeypatch.setenv("AGENTTRACE_ALLOWED_HOSTS", "evil.example")
+    with client.websocket_connect("/ws", headers={"Origin": "http://evil.example"}):
+        pass
+
+
+def test_ingest_does_db_work_off_the_event_loop(client, monkeypatch):
+    """A locked SQLite file (busy timeout 30 s) must not freeze the loop (poller, websockets)."""
+    import asyncio
+
+    from agenttrace.server.routes import events as events_route
+
+    on_loop = []
+
+    def record(real):
+        def wrapper(*args, **kwargs):
+            try:
+                asyncio.get_running_loop()
+                on_loop.append(True)
+            except RuntimeError:
+                on_loop.append(False)
+            return real(*args, **kwargs)
+
+        return wrapper
+
+    for name in ("create_run", "append_event", "close_run"):
+        monkeypatch.setattr(events_route, name, record(getattr(events_route, name)))
+    _signup(client)
+    headers = {"Authorization": f"Bearer {client.post('/api/projects', json={'name': 'loop'}).json()['apiKey']}"}
+    run_id = client.post("/api/events", json={"runId": None, "name": "r"}, headers=headers).json()["runId"]
+    event = {"runId": run_id, "source": "a", "target": "b", "type": "tool_call"}
+    assert client.post("/api/events", json=event, headers=headers).status_code == 201
+    assert client.post("/api/events", json={"runId": run_id, "endRun": "completed"}, headers=headers).status_code == 200
+    assert on_loop == [False, False, False]

@@ -4,6 +4,7 @@
 #   2. typecheck (tsc --noEmit)
 #   3. build (next build, standalone output)
 #   4. docker build (both web + socket targets)
+#   5. python tests (pytest, server + SDK + shim)
 #
 # Bun is used as the runtime/package manager to match local dev.
 
@@ -136,3 +137,27 @@ jobs:
             sleep 1
           done
           echo "socket smoke test passed"
+
+  # ────────────────────────────────────────────────────────────
+  # Python package (deepagents-trace) + legacy shim
+  # ────────────────────────────────────────────────────────────
+  python:
+    name: python tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install
+        run: |
+          uv venv .venv --python 3.12
+          uv pip install --python .venv -e "python-server[dev]" -e integrations/agenttrace-langchain
+
+      - name: Test
+        run: |
+          .venv/bin/pytest python-server/tests -q
+          .venv/bin/pytest integrations/agenttrace-langchain/tests -q

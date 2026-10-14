@@ -6,9 +6,9 @@ tool — so this package is published under a different name; the importable
 module, the CLI command, and the product itself are still called
 `agenttrace`/AgentTrace).
 
-`pip install deepagents-trace && agenttrace ui` — starts the AgentTrace web
+`pip install 'deepagents-trace[server]' && agenttrace ui` — starts the AgentTrace web
 API (and a `/ws` live-stream) with **zero Node/Bun process**, `mlflow ui`-style.
-For local development against this checkout: `pip install -e python-server`.
+For local development against this checkout: `pip install -e "python-server[dev]"`.
 
 This is **Phase 1 + 3** of the Python migration plan: a FastAPI backend that
 is a 1:1 contract port of the Next.js API (`src/app/api/*` in the main repo),
@@ -17,11 +17,84 @@ plus the CLI. **Phase 2 is not done yet** — there is no bundled frontend, so
 directly (`/api/*`) or the existing Next.js dashboard against this backend's
 data once Phase 2 lands.
 
-## Install & run
+## Quick start (MLflow-style)
 
 ```bash
-pip install -e python-server
-agenttrace ui                      # http://127.0.0.1:3000, SQLite by default (./agenttrace.db)
+pip install 'deepagents-trace[langchain,server]'
+```
+
+```python
+import agenttrace
+import agenttrace.langchain
+
+agenttrace.set_project("support-bot")      # like mlflow.set_experiment
+agenttrace.langchain.autolog()             # like mlflow.langchain.autolog
+agent.invoke({"messages": [...]})          # traced into ./agenttrace.db
+```
+
+```bash
+agenttrace ui                              # http://127.0.0.1:3000, reads ./agenttrace.db, no login
+```
+
+Manual tracing:
+
+```python
+with agenttrace.start_run("triage"):
+    agenttrace.log_event(source="Orchestrator", target="LLM", type="llm_call", duration_ms=420)
+
+@agenttrace.trace                          # tool_call -> tool_result | error
+def web_search(query: str) -> str: ...
+```
+
+### Async servers (cached agent, one handler per request)
+
+A server that compiles the agent once can't bake a per-run middleware into
+it; attach a fresh async callback handler per request instead. It traces the
+main agent and every deepagents sub-agent, and posts to a running
+`agenttrace ui` (`AGENTTRACE_TRACKING_URI=http://host:port`, plus
+`AGENTTRACE_KEY` with `--auth password`), or pass `client=`:
+
+```python
+from agenttrace.langchain import AsyncAgentTraceCallbackHandler
+from agenttrace.tracking.async_http import AsyncHttpEventClient
+
+client = AsyncHttpEventClient(url=..., api_key=..., client=httpx_async_client)  # optional
+handler = AsyncAgentTraceCallbackHandler(session_id, client=client, phrases=_PHRASES, anonymizer=fn)
+handler.on_user_message(query)        # then config={"callbacks": [handler]} on astream_events
+handler.approval_required(info)       # HITL pause
+await handler.finish(status, answer=report); await handler.aclose()
+```
+
+`anonymizer` sees every payload (dict), label (str) and the run name; if it
+raises, the field is redacted, never sent unmasked. The 0.2.2 import
+`from agenttrace_langchain import AgentTraceCallbackHandler, AsyncAgentTraceClient`
+still works (deprecated).
+
+| MLflow | AgentTrace |
+| --- | --- |
+| `mlflow.set_tracking_uri()` / `MLFLOW_TRACKING_URI` | `agenttrace.set_tracking_uri()` / `AGENTTRACE_TRACKING_URI` |
+| `mlflow.set_experiment()` | `agenttrace.set_project()` / `AGENTTRACE_PROJECT` |
+| `mlflow.start_run()` / `active_run()` / `end_run()` | same names |
+| `@mlflow.trace` | `@agenttrace.trace` |
+| `mlflow.langchain.autolog()` | `agenttrace.langchain.autolog()` |
+| `MlflowClient` | `agenttrace.AgentTraceClient` |
+| `mlflow ui` | `agenttrace ui` |
+
+Tracking URIs: unset -> `sqlite:///./agenttrace.db`; any SQLAlchemy URL (e.g.
+`postgresql://...`) -> written directly; `http(s)://host:port` -> sent to a
+running `agenttrace ui` (set `AGENTTRACE_KEY` if that server uses
+`--auth password`). The legacy `AGENTTRACE_URL` is still honored as a fallback.
+
+`agenttrace ui --auth none` (default on localhost) needs no account or API
+key; in this mode the server only accepts loopback `Host`/`Origin` headers.
+When serving behind a reverse proxy, add the public hostnames with
+`AGENTTRACE_ALLOWED_HOSTS` (comma-separated). `--auth password` (default on any
+other host) keeps accounts and `atr_` project keys, and `/ws` requires a
+session cookie.
+
+To serve another database, or listen on another port/interface:
+
+```bash
 agenttrace ui --database-url postgresql://user:pass@localhost:5432/agenttrace
 agenttrace ui --port 8080 --host 0.0.0.0
 ```
@@ -29,6 +102,22 @@ agenttrace ui --port 8080 --host 0.0.0.0
 `agenttrace db init` creates the schema explicitly (also runs automatically
 on `agenttrace ui` startup) — schema-push style (`Base.metadata.create_all`),
 matching how this repo already runs `prisma db push` rather than migrations.
+
+## Upgrading from 0.1
+
+- The server is now the `[server]` extra: `pip install 'deepagents-trace[server]'`
+  (the core package only carries the tracking SDK: SQLAlchemy, requests, click).
+- On localhost, `agenttrace ui` now defaults to `--auth none`: no login, and
+  everything is owned by a single local user, so projects created under
+  existing accounts are hidden. Start it with `agenttrace ui --auth password`
+  to keep using accounts and `atr_` keys.
+- `agenttrace-langchain` is now a deprecation shim over `agenttrace.langchain`
+  (`pip install 'deepagents-trace[langchain]'`); old imports keep working.
+- If only `AGENTTRACE_KEY` is set (no `AGENTTRACE_TRACKING_URI`/`AGENTTRACE_URL`),
+  traces still go to the pre-0.2 default server `http://localhost:3000`
+  (a warning is logged once); set `AGENTTRACE_TRACKING_URI` to choose explicitly.
+- `AgentTraceRun.emit` now raises `ValueError` on an invalid event type
+  instead of silently dropping the event.
 
 ## What's ported
 
@@ -82,6 +171,7 @@ from here:
 ## Known gaps vs. the Next.js backend (tracked for later phases)
 
 - No frontend bundle yet (Phase 2).
+- Live updates are polled from the database every 0.5 s (so direct SQLite writes appear live).
 - No demo-account seeding on signup (the Next.js version seeds 3 sample
   projects — intentionally skipped here to keep this phase scoped to the API
   contract).

@@ -1,6 +1,6 @@
 import pytest
 
-from agenttrace_langchain.middleware import AgentTraceMiddleware
+from agenttrace.langchain.middleware import AgentTraceMiddleware
 
 
 class FakeToolRequest:
@@ -8,9 +8,17 @@ class FakeToolRequest:
         self.tool_call = {"name": name, "args": args}
 
 
+class FakeMessage:
+    def __init__(self, role, content):
+        self.type = role
+        self.content = content
+
+
 class FakeModelRequest:
-    def __init__(self, model_name):
+    def __init__(self, model_name, messages=None, system_message=None):
         self.model = type("Model", (), {"model": model_name})()
+        self.messages = messages or []
+        self.system_message = system_message
 
 
 class FakeToolMessage:
@@ -122,6 +130,42 @@ def test_wrap_model_call_emits_llm_call(middleware, post):
     assert events[0]["target"] == "gpt-4o-mini"
 
 
+def test_wrap_model_call_captures_llm_input_and_output(middleware, post):
+    request = FakeModelRequest(
+        "gpt-4o-mini",
+        messages=[FakeMessage("human", "What's the weather in Paris?")],
+        system_message=FakeMessage("system", "You are a helpful assistant."),
+    )
+    handler = lambda req: FakeToolMessage("It's sunny in Paris.")
+
+    middleware.wrap_model_call(request, handler)
+
+    middleware._run.close(timeout=2.0)
+    events = [b for b in _bodies(post) if b.get("runId") == "run_1" and "type" in b]
+    payload = events[0]["payload"]
+    assert payload["input"]["system"] == "You are a helpful assistant."
+    assert payload["input"]["messages"] == [{"role": "human", "content": "What's the weather in Paris?"}]
+    assert payload["output_preview"] == "It's sunny in Paris."
+
+
+def test_wrap_model_call_flattens_list_content_output(middleware, post):
+    blocks = [{"type": "text", "text": "Hello "}, {"type": "text", "text": "world"}]
+    middleware.wrap_model_call(FakeModelRequest("gpt-4o-mini"), lambda req: FakeToolMessage(blocks))
+
+    middleware._run.close(timeout=2.0)
+    events = [b for b in _bodies(post) if b.get("runId") == "run_1" and "type" in b]
+    assert events[0]["payload"]["output_preview"] == "Hello world"
+
+
+def test_wrap_tool_call_handoff_prefers_subagent_type(middleware, post):
+    request = FakeToolRequest("delegate_work", {"subagent_type": "researcher", "to": "other"})
+    middleware.wrap_tool_call(request, lambda req: FakeToolMessage("ok"))
+
+    middleware._run.close(timeout=2.0)
+    handoff = next(b for b in _bodies(post) if b.get("type") == "handoff")
+    assert handoff["target"] == "researcher"
+
+
 def test_wrap_model_call_unwraps_real_model_response(middleware, post):
     """Regression test: a real langchain wrap_model_call handler returns a
     ModelResponse (`.result: list[BaseMessage]`), not a bare message — verified
@@ -174,3 +218,45 @@ async def test_async_wrap_tool_call_and_model_call(middleware, post):
     events = [b for b in _bodies(post) if b.get("runId") == "run_1" and "type" in b]
     types = [e["type"] for e in events]
     assert types == ["tool_call", "tool_result", "llm_call"]
+
+
+def test_middleware_without_url_or_key_uses_tracking_uri(tracking_db):
+    from tests.conftest import read_runs
+
+    mw = AgentTraceMiddleware(run_name="local run", project="mw-project")
+    mw.before_agent({"messages": []}, runtime=None)
+    mw.wrap_tool_call(FakeToolRequest("noop", {}), lambda req: FakeToolMessage("ok"))
+    mw.after_agent({"messages": [FakeToolMessage("done")]}, runtime=None)
+    [run] = read_runs(tracking_db)
+    assert run["name"] == "local run" and run["project"] == "mw-project" and run["status"] == "completed"
+    assert [e["type"] for e in run["events"]] == ["tool_call", "tool_result", "final_answer"]
+
+
+def _create_body(mw, post):
+    mw.before_agent({"messages": []}, runtime=None)
+    mw.wrap_tool_call(FakeToolRequest("noop", {}), lambda req: FakeToolMessage("ok"))
+    mw._run.close(timeout=2.0)
+    return post.call_args_list[0]
+
+
+def test_keyless_url_sends_the_project(post, monkeypatch):
+    """Against an `--auth none` server the project must be named explicitly."""
+    monkeypatch.delenv("AGENTTRACE_KEY", raising=False)
+    call = _create_body(AgentTraceMiddleware(run_name="r", url="http://h:3000/api/events", project="x"), post)
+    assert call.kwargs["json"] == {"runId": None, "name": "r", "project": "x"}
+
+
+def test_key_only_env_posts_to_the_legacy_server_without_project(tracking_db, post, monkeypatch):
+    from agenttrace.tracking import _uri
+
+    agenttrace_uri = _uri._tracking_uri
+    _uri.set_tracking_uri(None)
+    monkeypatch.setattr(_uri, "_legacy_logged", True)
+    monkeypatch.setenv("AGENTTRACE_KEY", "atr_env")
+    try:
+        call = _create_body(AgentTraceMiddleware(run_name="r", project="x"), post)
+    finally:
+        _uri.set_tracking_uri(agenttrace_uri)
+    assert call.args[0] == "http://localhost:3000/api/events"
+    assert call.kwargs["headers"]["Authorization"] == "Bearer atr_env"
+    assert call.kwargs["json"] == {"runId": None, "name": "r"}
