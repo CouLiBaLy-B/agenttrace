@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Observability for AI agents — a live sequence-diagram dashboard for deepagents / LangChain runs.">
+        <meta name="description" content="Live sequence diagrams for AI agents. An MLflow-style tracking SDK, a LangChain / deepagents integration, and a dashboard served by `agenttrace ui`.">
       
       
       
@@ -20,7 +20,7 @@
         
       
       
-      <link rel="icon" href="assets/images/favicon.png">
+      <link rel="icon" href="assets/favicon.svg">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
@@ -67,7 +67,7 @@
     
     
     
-    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="teal">
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal">
   
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
@@ -94,8 +94,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="." title="AgentTrace" class="md-header__button md-logo" aria-label="AgentTrace" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="assets/logo.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -125,20 +124,20 @@
     
     
     
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
     
-      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
       </label>
     
   
     
     
     
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
     
-      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
       </label>
     
   
@@ -174,6 +173,8 @@
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
         </button>
       </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
       
     </form>
     <div class="md-search__output">
@@ -230,8 +231,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href="." title="AgentTrace" class="md-nav__button md-logo" aria-label="AgentTrace" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="assets/logo.svg" alt="logo">
 
     </a>
     AgentTrace
@@ -329,10 +329,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pick-your-integration" class="md-nav__link">
+  <a href="#pick-an-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pick your integration
+        Pick an integration
       
     </span>
   </a>
@@ -466,6 +466,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="mlflow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from MLflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -503,7 +531,7 @@
   <span class="md-ellipsis">
     
   
-    LangChain integration
+    LangChain and deepagents
   
 
     
@@ -519,7 +547,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    LangChain integration
+    LangChain and deepagents
   
 
           </label>
@@ -567,35 +595,7 @@
   <span class="md-ellipsis">
     
   
-    Callback handler
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="events/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Event contract
+    Callback handlers
   
 
     
@@ -646,7 +646,7 @@
   <span class="md-ellipsis">
     
   
-    Operating
+    Reference
   
 
     
@@ -662,7 +662,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Operating
+    Reference
   
 
           </label>
@@ -675,14 +675,14 @@
   
   
     <li class="md-nav__item">
-      <a href="cli/" class="md-nav__link">
+      <a href="events/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    CLI reference
+    Event contract
   
 
     
@@ -703,14 +703,14 @@
   
   
     <li class="md-nav__item">
-      <a href="deployment/" class="md-nav__link">
+      <a href="cli/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Deployment
+    CLI
   
 
     
@@ -761,7 +761,7 @@
   <span class="md-ellipsis">
     
   
-    Reference
+    Dashboard
   
 
     
@@ -777,7 +777,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Reference
+    Dashboard
   
 
           </label>
@@ -790,14 +790,101 @@
   
   
     <li class="md-nav__item">
-      <a href="user-manual/" class="md-nav__link">
+      <a href="themes/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    User manual
+    Themes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
   
 
     
@@ -818,14 +905,14 @@
   
   
     <li class="md-nav__item">
-      <a href="functional-documentation/" class="md-nav__link">
+      <a href="upgrading/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Functional documentation
+    Upgrading
   
 
     
@@ -884,10 +971,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pick-your-integration" class="md-nav__link">
+  <a href="#pick-an-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pick your integration
+        Pick an integration
       
     </span>
   </a>
@@ -926,54 +1013,72 @@
 
 
 <h1 id="agenttrace">AgentTrace<a class="headerlink" href="#agenttrace" title="Permanent link">&para;</a></h1>
-<p><strong>Observability for AI agents.</strong> AgentTrace renders a deepagents / LangChain
-run as a <strong>live sequence diagram</strong> — User → Orchestrator → LLM, tools, and
-sub-agents — as it happens, with per-arrow timing, token usage, tool
-arguments/results, and the final answer.</p>
-<p>It ships as two pieces:</p>
+<p>AgentTrace shows an AI agent's run as a <strong>live sequence diagram</strong>: one lifeline
+per participant (the user, the orchestrator, each LLM, tool and sub-agent) and
+one arrow per event, drawn as it happens. Any past run can be replayed at 0.5×,
+1× or 2× speed, or shown at once.</p>
+<p><img alt="A run in the Phosphore theme" src="screenshots/run-phosphore.png" /></p>
+<p>It ships as one Python package, <code>deepagents-trace</code>, imported as <code>agenttrace</code>:</p>
+<ul>
+<li>a <strong>tracking SDK</strong> modelled on MLflow's: <code>set_project()</code>, <code>start_run()</code>,
+  <code>log_event()</code>, <code>@agenttrace.trace</code>;</li>
+<li>a <strong>LangChain and deepagents integration</strong>: <code>agenttrace.langchain.autolog()</code>,
+  a middleware and two callback handlers;</li>
+<li>the <strong>dashboard</strong>: <code>agenttrace ui</code> serves the API, a WebSocket live stream and
+  the web interface, from one Python process (no Node or Bun at runtime).</li>
+</ul>
+<p>By default the SDK writes to a SQLite file, <code>./agenttrace.db</code>, and
+<code>agenttrace ui</code> reads that same file. Tracing needs no server, no account and
+no API key.</p>
+<h2 id="how-it-fits-together">How it fits together<a class="headerlink" href="#how-it-fits-together" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart LR
+    agent["Your agent&lt;br/&gt;SDK, autolog, middleware"] -- "writes (default)" --&gt; db[("./agenttrace.db&lt;br/&gt;or PostgreSQL")]
+    agent -- "POST /api/events&lt;br/&gt;(http tracking URI)" --&gt; ui["agenttrace ui&lt;br/&gt;API and dashboard"]
+    ui --- db
+    ui -- "/ws live stream" --&gt; browser["Browser"]</code></pre>
+<p>The <a href="mlflow/#tracking-uris">tracking URI</a> decides where runs go: the default
+SQLite file, any SQLAlchemy database URL, or a running <code>agenttrace ui</code> over
+HTTP. The dashboard reads new events from the database, so runs that the SDK
+writes there directly show up live as well.</p>
+<h2 id="pick-an-integration">Pick an integration<a class="headerlink" href="#pick-an-integration" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Package</th>
-<th>Install</th>
-<th>What it is</th>
+<th>Your code</th>
+<th>Use</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong><code>deepagents-trace</code></strong></td>
-<td><code>pip install deepagents-trace</code></td>
-<td>The dashboard + API, 100% Python (FastAPI + a pre-built frontend). Launch with <code>agenttrace ui</code> — no Node/Bun required, <code>mlflow ui</code>-style.</td>
+<td>LangChain or deepagents, any setup</td>
+<td><a href="integration-callback/#autolog-and-agenttracecallbackhandler"><code>agenttrace.langchain.autolog()</code></a>: one line, the agent code doesn't change</td>
 </tr>
 <tr>
-<td><strong><code>agenttrace-langchain</code></strong></td>
-<td><code>pip install agenttrace-langchain</code></td>
-<td>The client that streams your agent's run to a dashboard: a <code>AgentTraceMiddleware</code>, an <code>AgentTraceCallbackHandler</code>, and lower-level run primitives.</td>
+<td>An agent built for each invocation</td>
+<td><a href="integration-middleware/"><code>AgentTraceMiddleware</code></a>, passed to <code>create_agent</code> or <code>create_deep_agent</code></td>
+</tr>
+<tr>
+<td>An async server that reuses a compiled agent, with sub-agents</td>
+<td><a href="integration-callback/#asyncagenttracecallbackhandler-one-per-request"><code>AsyncAgentTraceCallbackHandler</code></a>, one per request</td>
+</tr>
+<tr>
+<td>Any other Python code</td>
+<td>the <a href="quickstart/#3-trace-anything-else">fluent API</a></td>
+</tr>
+<tr>
+<td>Another language</td>
+<td><a href="events/"><code>POST /api/events</code></a></td>
 </tr>
 </tbody>
 </table>
-<h2 id="how-it-fits-together">How it fits together<a class="headerlink" href="#how-it-fits-together" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>your agent (deepagents / LangChain)
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>      │  middleware or callback handler (agenttrace-langchain)
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>      ▼
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  POST /api/events  ──────────►  AgentTrace dashboard (deepagents-trace)
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>                                 live sequence diagram in the browser
-</code></pre></div>
-<p>The client emits small, bounded events over <code>POST /api/events</code>; the dashboard
-stores them and streams them to the browser over a WebSocket. The contract is
-stable and language-agnostic — see <a href="events/">Event contract</a>.</p>
-<h2 id="pick-your-integration">Pick your integration<a class="headerlink" href="#pick-your-integration" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Agent built per invocation?</strong> Use the <a href="integration-middleware/">middleware</a> — one line in <code>create_deep_agent(...)</code>.</li>
-<li><strong>Server that caches/reuses a compiled agent across requests?</strong> Use the <a href="integration-callback/">callback handler</a> — attach one per request, it also captures sub-agents.</li>
-</ul>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
-<div class="grid cards" markdown>
-
-- :material-download: **[Install](install.md)** — get the dashboard and the client.
-- :material-rocket-launch: **[Quickstart](quickstart.md)** — `agenttrace ui`, a project key, first trace.
-- :material-sitemap: **[Event contract](events.md)** — the JSON your agent sends.
-
+<div class="grid cards">
+<ul>
+<li><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 20h14v-2H5m14-9h-4V3H9v6H5l7 7z"/></svg></span> <strong><a href="install/">Installation</a></strong>: the package and its extras.</li>
+<li><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m13.13 22.19-1.63-3.83c1.57-.58 3.04-1.36 4.4-2.27zM5.64 12.5l-3.83-1.63 6.1-2.77C7 9.46 6.22 10.93 5.64 12.5M21.61 2.39S16.66.269 11 5.93c-2.19 2.19-3.5 4.6-4.35 6.71-.28.75-.09 1.57.46 2.13l2.13 2.12c.55.56 1.37.74 2.12.46A19.1 19.1 0 0 0 18.07 13c5.66-5.66 3.54-10.61 3.54-10.61m-7.07 7.07c-.78-.78-.78-2.05 0-2.83s2.05-.78 2.83 0c.77.78.78 2.05 0 2.83s-2.05.78-2.83 0m-5.66 7.07-1.41-1.41zM6.24 22l3.64-3.64c-.34-.09-.67-.24-.97-.45L4.83 22zM2 22h1.41l4.77-4.76-1.42-1.41L2 20.59zm0-2.83 4.09-4.08c-.21-.3-.36-.62-.45-.97L2 17.76z"/></svg></span> <strong><a href="quickstart/">Quickstart</a></strong>: <code>agenttrace ui</code>, then a first trace.</li>
+<li><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m21 9-4-4v3h-7v2h7v3M7 11l-4 4 4 4v-3h7v-2H7z"/></svg></span> <strong><a href="mlflow/">Coming from MLflow</a></strong>: the same names, mapped.</li>
+<li><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 3h2v2H5v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5h2v2H5c-1.07-.27-2-.9-2-2v-4a2 2 0 0 0-2-2H0v-2h1a2 2 0 0 0 2-2V5a2 2 0 0 1 2-2m14 0a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h1v2h-1a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2h-2v-2h2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5h-2V3zm-7 12a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m-4 0a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m8 0a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1"/></svg></span> <strong><a href="events/">Event contract</a></strong>: the JSON an agent sends.</li>
+</ul>
 </div>
 
 
@@ -1005,6 +1110,30 @@ stable and language-agnostic — see <a href="events/">Event contract</a>.</p>
       
         <footer class="md-footer">
   
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+        
+          
+          <a href="install/" class="md-footer__link md-footer__link--next" aria-label="Next: Installation">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Installation
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
@@ -1030,7 +1159,7 @@ stable and language-agnostic — see <a href="events/">Event contract</a>.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.instant", "navigation.tracking", "navigation.sections", "navigation.top", "content.code.copy", "content.code.annotate", "toc.follow"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.instant", "navigation.tracking", "navigation.sections", "navigation.top", "navigation.footer", "content.code.copy", "search.suggest", "search.highlight", "toc.follow"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="assets/javascripts/bundle.d7400e89.min.js"></script>

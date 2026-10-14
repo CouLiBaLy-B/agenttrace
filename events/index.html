@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Observability for AI agents — a live sequence-diagram dashboard for deepagents / LangChain runs.">
+        <meta name="description" content="Live sequence diagrams for AI agents. An MLflow-style tracking SDK, a LangChain / deepagents integration, and a dashboard served by `agenttrace ui`.">
       
       
       
@@ -22,7 +22,7 @@
         
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../assets/favicon.svg">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
@@ -69,7 +69,7 @@
     
     
     
-    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="teal">
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal">
   
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
@@ -96,8 +96,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href=".." title="AgentTrace" class="md-header__button md-logo" aria-label="AgentTrace" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../assets/logo.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -127,20 +126,20 @@
     
     
     
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
     
-      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
       </label>
     
   
     
     
     
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
     
-      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
       </label>
     
   
@@ -176,6 +175,8 @@
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
         </button>
       </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
       
     </form>
     <div class="md-search__output">
@@ -232,8 +233,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href=".." title="AgentTrace" class="md-nav__button md-logo" aria-label="AgentTrace" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../assets/logo.svg" alt="logo">
 
     </a>
     AgentTrace
@@ -388,6 +388,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mlflow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from MLflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -399,8 +427,6 @@
       
   
   
-    
-  
   
   
     
@@ -413,11 +439,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
           <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
@@ -427,7 +453,7 @@
   <span class="md-ellipsis">
     
   
-    LangChain integration
+    LangChain and deepagents
   
 
     
@@ -438,12 +464,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
-    LangChain integration
+    LangChain and deepagents
   
 
           </label>
@@ -491,7 +517,7 @@
   <span class="md-ellipsis">
     
   
-    Callback handler
+    Callback handlers
   
 
     
@@ -504,6 +530,67 @@
   
 
               
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
             
               
                 
@@ -572,10 +659,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#post-apievents" class="md-nav__link">
+  <a href="#authentication" class="md-nav__link">
     <span class="md-ellipsis">
       
-        POST /api/events
+        Authentication
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-a-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Create a run
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#add-an-event" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Add an event
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#end-a-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        End a run
       
     </span>
   </a>
@@ -594,10 +714,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#participant-kinds" class="md-nav__link">
+  <a href="#with-curl" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Participant kinds
+        With curl
       
     </span>
   </a>
@@ -605,10 +725,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reliability-guarantees-client-side" class="md-nav__link">
+  <a href="#reading-runs-back" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reliability guarantees (client side)
+        Reading runs back
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#live-stream-ws" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Live stream: /ws
       
     </span>
   </a>
@@ -624,65 +755,6 @@
 
               
             
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-        
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
-        
-          
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Operating
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Operating
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
               
                 
   
@@ -697,35 +769,7 @@
   <span class="md-ellipsis">
     
   
-    CLI reference
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../deployment/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Deployment
+    CLI
   
 
     
@@ -776,7 +820,7 @@
   <span class="md-ellipsis">
     
   
-    Reference
+    Dashboard
   
 
     
@@ -792,7 +836,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Reference
+    Dashboard
   
 
           </label>
@@ -805,14 +849,101 @@
   
   
     <li class="md-nav__item">
-      <a href="../user-manual/" class="md-nav__link">
+      <a href="../themes/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    User manual
+    Themes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
   
 
     
@@ -833,14 +964,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../functional-documentation/" class="md-nav__link">
+      <a href="../upgrading/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Functional documentation
+    Upgrading
   
 
     
@@ -888,10 +1019,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#post-apievents" class="md-nav__link">
+  <a href="#authentication" class="md-nav__link">
     <span class="md-ellipsis">
       
-        POST /api/events
+        Authentication
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-a-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Create a run
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#add-an-event" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Add an event
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#end-a-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        End a run
       
     </span>
   </a>
@@ -910,10 +1074,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#participant-kinds" class="md-nav__link">
+  <a href="#with-curl" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Participant kinds
+        With curl
       
     </span>
   </a>
@@ -921,10 +1085,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reliability-guarantees-client-side" class="md-nav__link">
+  <a href="#reading-runs-back" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reliability guarantees (client side)
+        Reading runs back
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#live-stream-ws" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Live stream: /ws
       
     </span>
   </a>
@@ -952,90 +1127,229 @@
 
 
 <h1 id="event-contract">Event contract<a class="headerlink" href="#event-contract" title="Permanent link">&para;</a></h1>
-<p>The client talks to the dashboard over a single endpoint. The contract is
-stable and language-agnostic — you can emit events from any language, not just
-via <code>agenttrace-langchain</code>.</p>
-<h2 id="post-apievents"><code>POST /api/events</code><a class="headerlink" href="#post-apievents" title="Permanent link">&para;</a></h2>
-<p>Authenticated with a project API key: <code>Authorization: Bearer atr_...</code>.</p>
-<p><strong>Create a run</strong> (first call) — omit <code>runId</code>; the server returns the new id:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span><span class="w"> </span><span class="nt">&quot;runId&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;research run&quot;</span><span class="w"> </span><span class="p">}</span>
+<p>Agents send runs to <code>agenttrace ui</code> through one endpoint, <code>POST /api/events</code>,
+from any language. The Python SDK uses it when the tracking URI is
+<code>http(s)://</code>; when it writes straight to the database (the default), it stores
+the same runs and events.</p>
+<h2 id="authentication">Authentication<a class="headerlink" href="#authentication" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Server</th>
+<th>Request</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--auth password</code></td>
+<td><code>Authorization: Bearer atr_...</code>, a project key from the <strong>Integration</strong> page; the run goes to that key's project. No key: <code>401 {"error": "Missing or invalid API key"}</code>; an unknown key: <code>401 {"error": "Invalid API key"}</code>.</td>
+</tr>
+<tr>
+<td><code>--auth none</code></td>
+<td>No <code>Authorization</code> header: the body names the project when it creates a run. A header that is sent anyway is checked as a key. The server only accepts loopback <code>Host</code> and <code>Origin</code> names, plus <code>AGENTTRACE_ALLOWED_HOSTS</code>; others get <code>403 {"error": "Host not allowed"}</code> or <code>"Origin not allowed"</code>.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="create-a-run">Create a run<a class="headerlink" href="#create-a-run" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span><span class="nt">"runId"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"research run"</span><span class="p">,</span><span class="w"> </span><span class="nt">"project"</span><span class="p">:</span><span class="w"> </span><span class="s2">"support-bot"</span><span class="p">}</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span><span class="w"> </span><span class="nt">&quot;runId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;run_abc123&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="p">}</span>
+<p><code>project</code> is only read without a key: that project is created if it doesn't
+exist yet. <code>name</code> defaults to <code>Untitled run</code>. The answer is
+<code>201 {"runId": "&lt;run id&gt;", "event": null}</code>. Without a key and without
+<code>project</code>: <code>400 {"error": "project is required when no API key is sent"}</code>.</p>
+<h2 id="add-an-event">Add an event<a class="headerlink" href="#add-an-event" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">"runId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;run id&gt;"</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">"source"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Orchestrator"</span><span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">"target"</span><span class="p">:</span><span class="w"> </span><span class="s2">"web_search"</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"tool_call"</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="nt">"label"</span><span class="p">:</span><span class="w"> </span><span class="s2">"web_search(rust web frameworks)"</span><span class="p">,</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="nt">"payload"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"query"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rust web frameworks"</span><span class="p">}},</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="nt">"durationMs"</span><span class="p">:</span><span class="w"> </span><span class="mi">720</span><span class="p">,</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ok"</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="p">}</span>
 </code></pre></div>
-<p><strong>Emit an event</strong> — reference the <code>runId</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;runId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;run_abc123&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Orchestrator&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">&quot;target&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;web_search&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tool_call&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;web_search({\&quot;q\&quot;: \&quot;rust\&quot;})&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="nt">&quot;payload&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;q&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rust&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="nt">&quot;durationMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">120</span><span class="p">,</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ok&quot;</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="p">}</span>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Required</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>runId</code></td>
+<td>yes</td>
+<td>the id returned when the run was created</td>
+</tr>
+<tr>
+<td><code>source</code>, <code>target</code></td>
+<td>yes</td>
+<td>participant names: the diagram draws one lifeline per name</td>
+</tr>
+<tr>
+<td><code>type</code></td>
+<td>yes</td>
+<td><code>llm_call</code>, <code>tool_call</code>, <code>tool_result</code>, <code>handoff</code>, <code>error</code> or <code>final_answer</code></td>
+</tr>
+<tr>
+<td><code>label</code></td>
+<td>no</td>
+<td>the text on the arrow</td>
+</tr>
+<tr>
+<td><code>payload</code></td>
+<td>no</td>
+<td>any JSON, shown in the event's detail panel (default <code>{}</code>)</td>
+</tr>
+<tr>
+<td><code>durationMs</code></td>
+<td>no</td>
+<td>an integer</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>no</td>
+<td><code>ok</code>, <code>error</code> or <code>pending</code> (not checked by the server); default <code>error</code> for an <code>error</code> event, else <code>ok</code></td>
+</tr>
+</tbody>
+</table>
+<p>The server numbers the events of a run (<code>seq</code>: 0, 1, 2…) and timestamps them.
+The answer is <code>201 {"runId": "&lt;run id&gt;", "event": {...}}</code>, where the event has
+<code>id</code>, <code>runId</code>, <code>timestamp</code>, <code>seq</code>, <code>source</code>, <code>target</code>, <code>type</code>, <code>label</code>,
+<code>payload</code>, <code>durationMs</code> and <code>status</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Error</th>
+<th>Answer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>source</code>, <code>target</code> or <code>type</code> missing</td>
+<td><code>400 {"error": "source, target, type are required"}</code></td>
+</tr>
+<tr>
+<td>unknown <code>type</code></td>
+<td><code>400 {"error": "type must be one of: error, final_answer, handoff, llm_call, tool_call, tool_result"}</code></td>
+</tr>
+<tr>
+<td>unknown run, or a run of another project</td>
+<td><code>404 {"error": "Run not found in this project"}</code></td>
+</tr>
+<tr>
+<td>a body that isn't a JSON object</td>
+<td><code>400 {"error": "Invalid JSON body"}</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="end-a-run">End a run<a class="headerlink" href="#end-a-run" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span><span class="nt">"runId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;run id&gt;"</span><span class="p">,</span><span class="w"> </span><span class="nt">"endRun"</span><span class="p">:</span><span class="w"> </span><span class="s2">"completed"</span><span class="p">}</span>
 </code></pre></div>
-<p><strong>End a run</strong>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span><span class="w"> </span><span class="nt">&quot;runId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;run_abc123&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;endRun&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;completed&quot;</span><span class="w"> </span><span class="p">}</span>
-</code></pre></div>
+<p><code>"failed"</code> ends the run <code>failed</code>; any other value ends it <code>completed</code>. The
+answer is <code>200 {"runId": "&lt;run id&gt;", "closed": true, "status": "completed"}</code>. A
+body with a non-empty <code>endRun</code> only ends the run, whatever else it holds; an
+empty, <code>false</code> or <code>null</code> <code>endRun</code> is ignored, and the body is read as an event.
+A run that is never ended stays <code>running</code>.</p>
 <h2 id="event-types">Event types<a class="headerlink" href="#event-types" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
 <th><code>type</code></th>
-<th>Typical arrow</th>
-<th>Notes</th>
+<th>Usual arrow</th>
+<th>Payload sent by the SDK</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>llm_call</code></td>
-<td>Orchestrator → LLM</td>
-<td>payload: <code>input</code> (system + messages), <code>output_preview</code>, <code>tokens</code></td>
+<td>agent → model</td>
+<td><code>output_preview</code>, <code>tokens</code>; the middleware and the async handler also send <code>input</code> (system prompt and messages), autolog doesn't</td>
 </tr>
 <tr>
 <td><code>tool_call</code></td>
-<td>Orchestrator → tool</td>
-<td>payload: <code>args</code> (+ optional <code>server</code>)</td>
+<td>agent → tool</td>
+<td><code>args</code>; <code>@agenttrace.trace</code> adds <code>kwargs</code>, and the async handler <code>server</code> (with <code>tool_server=</code>)</td>
 </tr>
 <tr>
 <td><code>tool_result</code></td>
-<td>tool → Orchestrator</td>
-<td>payload: <code>result</code>; <code>durationMs</code></td>
+<td>tool → agent</td>
+<td><code>result</code> (and <code>server</code>); a sub-agent returning, in the async handler: <code>status</code></td>
 </tr>
 <tr>
 <td><code>handoff</code></td>
-<td>Orchestrator → Sub-agent (or User → Orchestrator)</td>
-<td>delegation / the opening user message</td>
+<td>User → Orchestrator, Orchestrator → sub-agent, or Orchestrator → User</td>
+<td>the user's <code>message</code>; a hand-off's <code>task</code>; an approval request's <code>actionRequests</code> (status <code>pending</code>)</td>
 </tr>
 <tr>
 <td><code>error</code></td>
-<td>tool/LLM → Orchestrator</td>
-<td><code>status: "error"</code></td>
+<td>tool or model → agent</td>
+<td><code>error</code> (the exception's class) and <code>message</code>; a run-level failure (<code>on_error()</code>) sends the message alone, as <code>error</code>; a failed sub-agent, <code>status</code> and <code>error</code></td>
 </tr>
 <tr>
 <td><code>final_answer</code></td>
 <td>Orchestrator → User</td>
-<td>payload: <code>answer</code></td>
+<td><code>answer</code></td>
 </tr>
 </tbody>
 </table>
-<p><code>status</code> is one of <code>ok</code>, <code>error</code>, <code>pending</code>. <code>durationMs</code> is optional.</p>
-<h2 id="participant-kinds">Participant kinds<a class="headerlink" href="#participant-kinds" title="Permanent link">&para;</a></h2>
-<p>The dashboard infers each participant's kind from <strong>how it's used in the
-event stream</strong>, not its name:</p>
-<ul>
-<li>target of an <code>llm_call</code> → <strong>llm</strong></li>
-<li>target of a <code>tool_call</code> / source of a <code>tool_result</code> → <strong>tool</strong></li>
-<li>a non-user <code>handoff</code> target → <strong>sub-agent</strong></li>
-<li><code>User</code> / <code>Orchestrator</code> by name → <strong>user</strong> / <strong>orchestrator</strong></li>
-</ul>
-<p>This is why a model id like <code>zai.glm-5</code> types as an LLM and a tool named
-<code>iam_resolve_user_scope</code> types as a tool (not a user).</p>
-<h2 id="reliability-guarantees-client-side">Reliability guarantees (client side)<a class="headerlink" href="#reliability-guarantees-client-side" title="Permanent link">&para;</a></h2>
-<p><code>agenttrace-langchain</code> wraps this contract so it never affects your agent:
-non-blocking emission (background queue), never fatal (first failure disables
-the run with one warning), and bounded payloads (truncation). See the
-<a href="../integration-middleware/">middleware</a> and <a href="../integration-callback/">callback handler</a>.</p>
+<h2 id="with-curl">With curl<a class="headerlink" href="#with-curl" title="Permanent link">&para;</a></h2>
+<p>Against <code>agenttrace ui</code> on localhost (<code>--auth none</code>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nv">url</span><span class="o">=</span>http://127.0.0.1:3000/api/events
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>post<span class="o">()</span><span class="w"> </span><span class="o">{</span><span class="w"> </span>curl<span class="w"> </span>-s<span class="w"> </span><span class="s2">"</span><span class="nv">$url</span><span class="s2">"</span><span class="w"> </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span>-d<span class="w"> </span><span class="s2">"</span><span class="nv">$1</span><span class="s2">"</span><span class="p">;</span><span class="w"> </span>echo<span class="p">;</span><span class="w"> </span><span class="o">}</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nv">run</span><span class="o">=</span><span class="k">$(</span>post<span class="w"> </span><span class="s1">'{"runId": null, "name": "curl run", "project": "demo"}'</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s1">'import json, sys; print(json.load(sys.stdin)["runId"])'</span><span class="k">)</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>post<span class="w"> </span><span class="s1">'{"runId": "'</span><span class="s2">"</span><span class="nv">$run</span><span class="s2">"</span><span class="s1">'", "source": "Orchestrator", "target": "LLM",</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="s1">       "type": "llm_call", "label": "plan", "durationMs": 420}'</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>post<span class="w"> </span><span class="s1">'{"runId": "'</span><span class="s2">"</span><span class="nv">$run</span><span class="s2">"</span><span class="s1">'", "endRun": "completed"}'</span>
+</code></pre></div>
+<p>For a server in password mode, add <code>-H "Authorization: Bearer $AGENTTRACE_KEY"</code>
+to <code>post</code> (the key then decides the project).</p>
+<h2 id="reading-runs-back">Reading runs back<a class="headerlink" href="#reading-runs-back" title="Permanent link">&para;</a></h2>
+<p>The dashboard reads runs through the same server: <code>GET /api/runs/recent</code>
+(<code>?limit=</code> up to 50, default 12, and <code>&amp;projectId=</code>) lists the latest runs, and
+<code>GET /api/runs/&lt;run id&gt;</code> returns one run with its events. In <code>--auth none</code>
+mode they need nothing else; in password mode they need the session cookie
+that signing in sets.</p>
+<h2 id="live-stream-ws">Live stream: <code>/ws</code><a class="headerlink" href="#live-stream-ws" title="Permanent link">&para;</a></h2>
+<p>The browser follows runs over a WebSocket at <code>/ws</code>, with plain JSON messages:</p>
+<table>
+<thead>
+<tr>
+<th>Client sends</th>
+<th>Server sends</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>{"action": "subscribe", "runId": "..."}</code></td>
+<td><code>{"type": "subscribed", "runId": "..."}</code>, then <code>{"type": "event", "data": {...}}</code> for each new event, and <code>{"type": "run:update", "runId": "...", "patch": {"status": ..., "endedAt": ...}}</code> when the run ends</td>
+</tr>
+<tr>
+<td><code>{"action": "unsubscribe", "runId": "..."}</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>{"action": "replay", "runId": "...", "events": [...], "speed": 1}</code></td>
+<td><code>{"type": "replay:event", "data": {...}}</code> for each event, paced by their timestamps divided by <code>speed</code> (all at once for <code>0</code>), then <code>{"type": "replay:done", "runId": "..."}</code></td>
+</tr>
+<tr>
+<td><code>{"action": "replay:stop", "runId": "..."}</code></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>An unknown run, or in password mode another user's run, gets
+<code>{"type": "error", "runId": "...", "error": "Run not found"}</code>; a connection can
+follow up to 50 runs. New events are read from the database every 0.5 seconds,
+so events written by the SDK straight to the database stream too.</p>
+<p>In password mode, the connection needs the session cookie, and a browser's
+<code>Origin</code> must match the host (or be listed in <code>AGENTTRACE_ALLOWED_HOSTS</code>);
+otherwise it is closed with code 1008. In <code>--auth none</code> mode, the API's <code>Host</code>
+and <code>Origin</code> check applies.</p>
 
 
 
@@ -1066,6 +1380,46 @@ the run with one warning), and bounded payloads (truncation). See the
       
         <footer class="md-footer">
   
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../integration-callback/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Callback handlers">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Callback handlers
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../cli/" class="md-footer__link md-footer__link--next" aria-label="Next: CLI">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                CLI
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
@@ -1091,7 +1445,7 @@ the run with one warning), and bounded payloads (truncation). See the
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.sections", "navigation.top", "content.code.copy", "content.code.annotate", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.sections", "navigation.top", "navigation.footer", "content.code.copy", "search.suggest", "search.highlight", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
