@@ -8,7 +8,7 @@ module, the CLI command, and the product itself are still called
 
 `pip install 'deepagents-trace[server]' && agenttrace ui` — starts the AgentTrace web
 API (and a `/ws` live-stream) with **zero Node/Bun process**, `mlflow ui`-style.
-For local development against this checkout: `pip install -e "python-server[dev]"`.
+For local development against this checkout: `pip install -e "./python-server[dev]"`.
 
 The bundled dashboard has three themes (Phosphore, Cyanotype, Studio); see [Themes](https://github.com/CouLiBaLy-B/agenttrace#themes).
 
@@ -23,7 +23,7 @@ agenttrace ui        # dashboard at http://127.0.0.1:3000
 
 Where the bundled UI comes from: wheels published to PyPI (and built in CI)
 already contain it, because CI builds the UI before building the wheel. For a
-source install (`pip install -e python-server`), build it yourself with
+source install (`pip install -e ./python-server`), build it yourself with
 `bun install && bun run build:ui` from the repo root, which writes
 `python-server/agenttrace/server/static/` (git-ignored). Without it, `/` serves
 a placeholder page and the API still works.
@@ -168,14 +168,14 @@ types.
 ## Tests
 
 ```bash
-pip install -e "python-server[dev]"
+pip install -e "./python-server[dev]"
 pytest python-server/tests
 ```
 
 End-to-end (Playwright, needs the built UI):
 
 ```bash
-pip install -e "python-server[dev,e2e]" && playwright install chromium
+pip install -e "./python-server[dev,e2e]" && playwright install chromium
 bun run build:ui
 pytest python-server/tests_e2e
 ```

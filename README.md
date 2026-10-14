@@ -95,7 +95,7 @@ effect on a password-mode server.
 Backend:
 
 ```bash
-pip install -e "python-server[dev]"      # or: uv pip install -e "python-server[dev]"
+pip install -e "./python-server[dev]"    # or: uv pip install -e "./python-server[dev]"
 agenttrace ui --auth none                # API + /ws on :3000
 pytest python-server/tests
 ```
@@ -116,7 +116,7 @@ run it before testing the bundled UI from a source install. Also:
 End-to-end tests (Playwright, against the bundled UI):
 
 ```bash
-pip install -e "python-server[dev,e2e]" && playwright install chromium
+pip install -e "./python-server[dev,e2e]" && playwright install chromium
 bun run build:ui
 pytest python-server/tests_e2e
 ```

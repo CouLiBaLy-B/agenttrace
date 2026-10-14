@@ -36,7 +36,7 @@ agenttrace ui     # the dashboard, on http://127.0.0.1:3000
 
 ```bash
 git clone https://github.com/CouLiBaLy-B/agenttrace && cd agenttrace
-pip install -e "python-server[dev]"
+pip install -e "./python-server[dev]"
 bun install && bun run build:ui  # builds the dashboard
 ```
 
