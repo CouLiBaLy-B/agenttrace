@@ -1,0 +1,47 @@
+[project]
+name = "deepagents-trace"
+version = "0.3.0"
+description = "Deprecated: renamed to lanetrace. This package installs lanetrace and keeps `import agenttrace` and the `agenttrace` command working."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+keywords = ["agents", "llm", "observability", "tracing", "deepagents", "langchain", "lanetrace"]
+classifiers = [
+    "Development Status :: 7 - Inactive",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: System :: Monitoring",
+]
+dependencies = ["lanetrace==0.3.*"]
+
+# The extras of deepagents-trace 0.2, each mapped to the same lanetrace extra.
+[project.optional-dependencies]
+server = ["lanetrace[server]==0.3.*"]
+postgres = ["lanetrace[postgres]==0.3.*"]
+e2e = ["lanetrace[e2e]==0.3.*"]
+langchain = ["lanetrace[langchain]==0.3.*"]
+dev = ["lanetrace[dev]==0.3.*"]
+
+[project.urls]
+Homepage = "https://github.com/CouLiBaLy-B/lanetrace"
+Documentation = "https://coulibaly-b.github.io/lanetrace/"
+Repository = "https://github.com/CouLiBaLy-B/lanetrace"
+Issues = "https://github.com/CouLiBaLy-B/lanetrace/issues"
+
+[project.scripts]
+agenttrace = "agenttrace._cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["agenttrace*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
