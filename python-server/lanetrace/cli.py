@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Optional
 
 import click
+from click.core import ParameterSource
 
 from . import _env
 
@@ -201,12 +202,19 @@ def ui(host: str, port: int, database_url: str | None, auth: str | None) -> None
     if database_url:
         os.environ["DATABASE_URL"] = database_url
     notices = []
+    if auth is not None and click.get_current_context().get_parameter_source("auth") == ParameterSource.ENVIRONMENT:
+        _env.warn_if_legacy("AUTH")  # click read AGENTTRACE_AUTH: say so, like every other fallback
     if auth is None:
         auth = "none" if host in LOOPBACK_HOSTS else "password"
     elif auth == "none" and host not in LOOPBACK_HOSTS:
         notices.append(_auth_none_warning(host))
     os.environ["LANETRACE_AUTH"] = auth
     if auth == "password" and not _env.getenv("SECRET"):
+        from .server.security import REQUIRED_SECRET_MESSAGE, missing_required_secret
+
+        if missing_required_secret():
+            click.echo(f"[LaneTrace] ERROR: {REQUIRED_SECRET_MESSAGE}", err=True)
+            sys.exit(1)
         notices.append(
             "[LaneTrace] WARNING: LANETRACE_SECRET not set — using a random secret; sign-ins won't survive a restart"
         )

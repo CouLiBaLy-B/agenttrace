@@ -41,7 +41,9 @@ docker compose up --build
 `lanetrace` service on port 3000, connected through
 `DATABASE_URL=postgresql+psycopg://...@db:5432/...`, built from
 `POSTGRES_DB`, `POSTGRES_USER` and `POSTGRES_PASSWORD` (all `lanetrace` by
-default). Compose refuses to start until `LANETRACE_SECRET` is set.
+default). The `lanetrace` service exits with an error until
+`LANETRACE_SECRET` is set: compose sets `LANETRACE_REQUIRE_SECRET=1`, which
+makes the server refuse a random secret in password mode.
 PostgreSQL isn't published on the host: add a `ports:` entry to the `db`
 service to reach it. `docker compose down -v` deletes the data.
 

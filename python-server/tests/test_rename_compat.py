@@ -181,3 +181,90 @@ def test_old_langchain_class_names_are_aliases():
     assert lc.AgentTraceCallbackHandler is lc.LaneTraceCallbackHandler
     assert lc.AsyncAgentTraceCallbackHandler is lc.AsyncLaneTraceCallbackHandler
     assert {"AgentTraceMiddleware", "AgentTraceCallbackHandler", "AsyncAgentTraceCallbackHandler"} <= set(lc.__all__)
+
+
+def test_an_empty_new_variable_falls_back_to_the_old_one(monkeypatch):
+    monkeypatch.setenv("LANETRACE_PROJECT", "")
+    monkeypatch.setenv("AGENTTRACE_PROJECT", "old")
+    with pytest.warns(DeprecationWarning):
+        assert _env.getenv("PROJECT") == "old"
+
+
+def test_empty_values_count_as_unset(monkeypatch):
+    monkeypatch.setenv("LANETRACE_PROJECT", "")
+    monkeypatch.setenv("AGENTTRACE_PROJECT", "")
+    assert _env.getenv("PROJECT") is None
+    assert _env.getenv("PROJECT", "dflt") == "dflt"
+
+
+def test_secret_from_the_old_name_when_the_new_one_is_empty(monkeypatch):
+    from lanetrace.server import security
+
+    monkeypatch.setenv("LANETRACE_SECRET", "")
+    monkeypatch.setenv("AGENTTRACE_SECRET", "real-secret")
+    with pytest.warns(DeprecationWarning):
+        assert security._secret_key() == "real-secret"
+
+
+def test_ui_auth_from_the_old_variable_logs_the_deprecation(fake_uvicorn, monkeypatch, caplog):
+    monkeypatch.setenv("AGENTTRACE_AUTH", "none")
+    with caplog.at_level(logging.WARNING, logger="lanetrace"):
+        result = CliRunner().invoke(cli.main, ["ui"])
+    assert result.exit_code == 0, result.output
+    assert "AGENTTRACE_AUTH -> LANETRACE_AUTH" in caplog.text
+
+
+def test_ui_auth_from_the_new_variable_logs_nothing(fake_uvicorn, monkeypatch, caplog):
+    monkeypatch.setenv("LANETRACE_AUTH", "none")
+    with caplog.at_level(logging.WARNING, logger="lanetrace"):
+        result = CliRunner().invoke(cli.main, ["ui"])
+    assert result.exit_code == 0, result.output
+    assert "deprecated" not in caplog.text
+
+
+@pytest.fixture
+def no_secret(monkeypatch):
+    for var in (*_env.names("SECRET"), *_env.names("REQUIRE_SECRET")):
+        monkeypatch.delenv(var, raising=False)
+
+
+def test_ui_refuses_to_start_without_a_required_secret(fake_uvicorn, no_secret, monkeypatch):
+    monkeypatch.setenv("LANETRACE_REQUIRE_SECRET", "1")
+    result = CliRunner().invoke(cli.main, ["ui", "--auth", "password"])
+    assert result.exit_code == 1
+    assert "LANETRACE_SECRET is not set" in result.output
+    assert fake_uvicorn == []
+
+
+def test_ui_starts_with_a_required_secret_from_either_name(fake_uvicorn, no_secret, monkeypatch):
+    monkeypatch.setenv("LANETRACE_REQUIRE_SECRET", "1")
+    monkeypatch.setenv("AGENTTRACE_SECRET", "s")
+    result = CliRunner().invoke(cli.main, ["ui", "--auth", "password"])
+    assert result.exit_code == 0, result.output
+    assert len(fake_uvicorn) == 1
+
+
+def test_server_refuses_to_start_without_a_required_secret(no_secret, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from lanetrace.server.app import app
+
+    monkeypatch.setenv("LANETRACE_REQUIRE_SECRET", "1")
+    monkeypatch.setenv("LANETRACE_AUTH", "password")
+    with pytest.raises(RuntimeError, match="LANETRACE_SECRET is not set"):
+        with TestClient(app):
+            pass
+
+
+def test_0_2_submodule_reexports():
+    import importlib
+
+    pytest.importorskip("langchain")
+    # `lanetrace.langchain.autolog` the attribute is the function; get the module.
+    autolog = importlib.import_module("lanetrace.langchain.autolog")
+    async_callback = importlib.import_module("lanetrace.langchain.async_callback")
+    from lanetrace.langchain.callback import LaneTraceCallbackHandler
+    from lanetrace.tracking.async_run import AsyncLaneTraceRun
+
+    assert autolog.AgentTraceCallbackHandler is LaneTraceCallbackHandler
+    assert async_callback.AsyncAgentTraceRun is AsyncLaneTraceRun

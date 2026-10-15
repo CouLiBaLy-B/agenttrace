@@ -82,8 +82,9 @@ docker run -p 3000:3000 -e LANETRACE_SECRET=$(openssl rand -base64 32) \
 ```
 
 `docker-compose.yml` runs Postgres alongside the `lanetrace` service, which
-connects with `DATABASE_URL=postgresql+psycopg://...`. Compose refuses to start
-unless `LANETRACE_SECRET` is set (put it in `.env`, see `.env.example`). With
+connects with `DATABASE_URL=postgresql+psycopg://...`. The `lanetrace` service
+refuses to start unless `LANETRACE_SECRET` is set (put it in `.env`, see
+`.env.example`; compose sets `LANETRACE_REQUIRE_SECRET=1`). With
 bare `docker run` and no `DATABASE_URL`, the server uses SQLite at
 `/data/lanetrace.db`: mount a volume on `/data` (as above) or the data is lost
 with the container; without `LANETRACE_SECRET` a random secret is used and

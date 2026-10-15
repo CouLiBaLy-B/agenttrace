@@ -24,7 +24,7 @@ from .db import init_db
 from .deps import auth_mode
 from .local_guard import LocalGuardMiddleware
 from .realtime import manager
-from .security import SESSION_COOKIE_NAME, read_session_token
+from .security import REQUIRED_SECRET_MESSAGE, SESSION_COOKIE_NAME, missing_required_secret, read_session_token
 from .routes import auth, events, keys, projects, runs, seed, stats, timeline
 
 DEFAULT_STATIC_DIR = Path(__file__).parent / "static"
@@ -42,6 +42,8 @@ The API is available under <code>/api/*</code>.</p>
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
+    if auth_mode() == "password" and missing_required_secret():
+        raise RuntimeError(REQUIRED_SECRET_MESSAGE)
     init_db()
     poller = asyncio.create_task(manager.poll_forever())
     try:

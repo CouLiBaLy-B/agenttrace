@@ -43,7 +43,7 @@ def _warn_legacy() -> None:
         if _warned:
             return
         _warned = True
-    legacy = sorted(k for k in os.environ if k.startswith(LEGACY_PREFIX))
+    legacy = sorted(k for k in os.environ if k.startswith(LEGACY_PREFIX) and os.environ[k])
     renames = ", ".join(f"{k} -> {PREFIX}{k[len(LEGACY_PREFIX):]}" for k in legacy)
     message = (
         f"LaneTrace: the AGENTTRACE_* environment variables are deprecated, rename them: {renames}"
@@ -57,15 +57,28 @@ def getenv(name: str) -> Optional[str]: ...
 @overload
 def getenv(name: str, default: str) -> str: ...
 def getenv(name: str, default: Optional[str] = None) -> Optional[str]:
-    """`LANETRACE_<name>`, else the legacy `AGENTTRACE_<name>`, else `default`."""
+    """`LANETRACE_<name>`, else the legacy `AGENTTRACE_<name>`, else `default`.
+    An empty value counts as unset (as click's `envvar=` does)."""
     value = os.environ.get(PREFIX + name)
-    if value is not None:
+    if value:
         return value
     value = os.environ.get(LEGACY_PREFIX + name)
-    if value is not None:
+    if value:
         _warn_legacy()
         return value
     return default
+
+
+def is_legacy(name: str) -> bool:
+    """True when `name` would be read from its `AGENTTRACE_*` fallback."""
+    return not os.environ.get(PREFIX + name) and bool(os.environ.get(LEGACY_PREFIX + name))
+
+
+def warn_if_legacy(name: str) -> None:
+    """Log the deprecation line when a value for `name` came from the legacy
+    variable through another reader (click's `envvar=`)."""
+    if is_legacy(name):
+        _warn_legacy()
 
 
 def default_sqlite_url() -> str:

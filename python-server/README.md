@@ -156,7 +156,10 @@ the command. Data, API keys and the HTTP API are unchanged.
   Compose still reads `AGENTTRACE_SECRET` if `LANETRACE_SECRET` is unset.
   Its Postgres defaults are now `lanetrace`: to keep a volume created
   before 0.3, set `POSTGRES_DB`, `POSTGRES_USER` and `POSTGRES_PASSWORD` to
-  `agenttrace` in `.env`.
+  `agenttrace` in `.env`. The volume is named after the compose project (by
+  default the checkout's directory), so a new clone in `lanetrace/` starts
+  empty: keep the directory name or set `COMPOSE_PROJECT_NAME=agenttrace`.
+- Logger names are `lanetrace.*` (were `agenttrace.*`).
 - Not ready to change the code yet? `deepagents-trace` 0.3.0 is a
   compatibility package: it installs `lanetrace`, keeps `import agenttrace`
   (every submodule resolves to the `lanetrace` one) and the `agenttrace`
@@ -185,7 +188,7 @@ the command. Data, API keys and the HTTP API are unchanged.
     replaces them): run `docker compose up --build --remove-orphans` to remove
     their stale containers;
   - `NEXTAUTH_SECRET` is replaced by `LANETRACE_SECRET`, which compose now
-    requires (it refuses to start without it);
+    requires (the server refuses to start without it);
   - reusing the old `pgdata` volume keeps the orphan Prisma tables (`"User"`,
     `"Project"`, `"Run"`, `"Event"`, `"ApiKey"`, `"Account"`, `"Session"`,
     `"VerificationToken"`) next to the new `users`/`projects`/`runs`/`events`/

@@ -55,6 +55,17 @@ def _secret_key() -> str:
     return _random_secret
 
 
+def missing_required_secret() -> bool:
+    """LANETRACE_REQUIRE_SECRET=1 (set by docker-compose) and no secret: the
+    server refuses to start in password mode rather than use a random one."""
+    return _env.getenv("REQUIRE_SECRET", "") not in ("", "0", "false", "no") and not _env.getenv("SECRET")
+
+
+REQUIRED_SECRET_MESSAGE = (
+    "LANETRACE_SECRET is not set and LANETRACE_REQUIRE_SECRET is: set it (openssl rand -base64 32)"
+)
+
+
 def _serializer() -> URLSafeTimedSerializer:
     return URLSafeTimedSerializer(_secret_key(), salt="lanetrace-session")
 

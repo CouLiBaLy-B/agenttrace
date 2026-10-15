@@ -3,7 +3,8 @@ from itsdangerous import URLSafeTimedSerializer
 
 from lanetrace.server import security
 
-OLD_DEFAULT = "lanetrace-dev-secret-key-change-in-production"
+# The public default of releases before 0.2 (named before the LaneTrace rename).
+OLD_DEFAULT = "agenttrace-dev-secret-key-change-in-production"
 
 
 @pytest.fixture

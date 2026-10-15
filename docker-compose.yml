@@ -1,7 +1,9 @@
 # LaneTrace — docker-compose: Postgres + the LaneTrace Python server.
 # A deployment created before 0.3 (AgentTrace) keeps its Postgres volume, whose
 # database, user and password are still `agenttrace`: set POSTGRES_DB,
-# POSTGRES_USER and POSTGRES_PASSWORD to those values in .env.
+# POSTGRES_USER and POSTGRES_PASSWORD to those values in .env. The volume is
+# named after the compose project (the directory name by default): in a new
+# checkout directory, set COMPOSE_PROJECT_NAME to the old one to keep it.
 services:
   db:
     image: postgres:16-alpine
@@ -25,8 +27,12 @@ services:
       - "3000:3000"
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-lanetrace}:${POSTGRES_PASSWORD:-lanetrace}@db:5432/${POSTGRES_DB:-lanetrace}
-      # AGENTTRACE_SECRET: the pre-0.3 name, still accepted.
-      LANETRACE_SECRET: ${LANETRACE_SECRET:-${AGENTTRACE_SECRET:?set LANETRACE_SECRET (openssl rand -base64 32)}}
+      # Set LANETRACE_SECRET in .env (openssl rand -base64 32); the pre-0.3
+      # name AGENTTRACE_SECRET is still accepted. Without either, the server
+      # refuses to start (LANETRACE_REQUIRE_SECRET) instead of signing
+      # sessions with a random per-process secret.
+      LANETRACE_SECRET: ${LANETRACE_SECRET:-${AGENTTRACE_SECRET:-}}
+      LANETRACE_REQUIRE_SECRET: "1"
     depends_on:
       db:
         condition: service_healthy

@@ -78,6 +78,7 @@ without the `server` extra.
 | `LANETRACE_AUTH` | `ui` | `none` or `password`, when `--auth` isn't given |
 | `LANETRACE_SECRET` | the server, in password mode | the secret that signs session cookies |
 | `LANETRACE_ALLOWED_HOSTS` | the server | comma-separated host names accepted besides loopback: for `Host` and `Origin` in `--auth none` mode, and for the `/ws` origin check in password mode |
+| `LANETRACE_REQUIRE_SECRET` | `ui`, the server | `1`: in password mode, refuse to start without `LANETRACE_SECRET` instead of using a random secret (docker-compose sets it) |
 | `LANETRACE_STATIC_DIR` | the server | serve the dashboard from this directory instead of the bundled one |
 | `NO_COLOR` | `ui` | plain-text banner and log |
 | `LANETRACE_TRACKING_URI` | the SDK | where runs go, see [tracking URIs](mlflow.md#tracking-uris) |
@@ -87,6 +88,7 @@ without the `server` extra.
 
 Each `LANETRACE_*` variable also accepts its pre-0.3 name, `AGENTTRACE_*`
 (from before the rename to LaneTrace), when the new one is unset; the first
-one used logs a deprecation line naming its replacement. Without
+one used logs a deprecation line naming its replacement. An empty value
+counts as unset. Without
 `DATABASE_URL`, an existing `./agenttrace.db` is used when there is no
 `./lanetrace.db` (see [Upgrading](upgrading.md#from-02-renamed-to-lanetrace)).
