@@ -1,6 +1,6 @@
 # Event contract
 
-Agents send runs to `agenttrace ui` through one endpoint, `POST /api/events`,
+Agents send runs to `lanetrace ui` through one endpoint, `POST /api/events`,
 from any language. The Python SDK uses it when the tracking URI is
 `http(s)://`; when it writes straight to the database (the default), it stores
 the same runs and events.
@@ -10,7 +10,7 @@ the same runs and events.
 | Server | Request |
 | --- | --- |
 | `--auth password` | `Authorization: Bearer atr_...`, a project key from the **Integration** page; the run goes to that key's project. No key: `401 {"error": "Missing or invalid API key"}`; an unknown key: `401 {"error": "Invalid API key"}`. |
-| `--auth none` | No `Authorization` header: the body names the project when it creates a run. A header that is sent anyway is checked as a key. The server only accepts loopback `Host` and `Origin` names, plus `AGENTTRACE_ALLOWED_HOSTS`; others get `403 {"error": "Host not allowed"}` or `"Origin not allowed"`. |
+| `--auth none` | No `Authorization` header: the body names the project when it creates a run. A header that is sent anyway is checked as a key. The server only accepts loopback `Host` and `Origin` names, plus `LANETRACE_ALLOWED_HOSTS`; others get `403 {"error": "Host not allowed"}` or `"Origin not allowed"`. |
 
 ## Create a run
 
@@ -77,7 +77,7 @@ A run that is never ended stays `running`.
 | `type` | Usual arrow | Payload sent by the SDK |
 | --- | --- | --- |
 | `llm_call` | agent → model | `output_preview`, `tokens`; the middleware and the async handler also send `input` (system prompt and messages), autolog doesn't |
-| `tool_call` | agent → tool | `args`; `@agenttrace.trace` adds `kwargs`, and the async handler `server` (with `tool_server=`) |
+| `tool_call` | agent → tool | `args`; `@lanetrace.trace` adds `kwargs`, and the async handler `server` (with `tool_server=`) |
 | `tool_result` | tool → agent | `result` (and `server`); a sub-agent returning, in the async handler: `status` |
 | `handoff` | User → Orchestrator, Orchestrator → sub-agent, or Orchestrator → User | the user's `message`; a hand-off's `task`; an approval request's `actionRequests` (status `pending`) |
 | `error` | tool or model → agent | `error` (the exception's class) and `message`; a run-level failure (`on_error()`) sends the message alone, as `error`; a failed sub-agent, `status` and `error` |
@@ -85,7 +85,7 @@ A run that is never ended stays `running`.
 
 ## With curl
 
-Against `agenttrace ui` on localhost (`--auth none`):
+Against `lanetrace ui` on localhost (`--auth none`):
 
 ```bash
 url=http://127.0.0.1:3000/api/events
@@ -98,7 +98,7 @@ post '{"runId": "'"$run"'", "source": "Orchestrator", "target": "LLM",
 post '{"runId": "'"$run"'", "endRun": "completed"}'
 ```
 
-For a server in password mode, add `-H "Authorization: Bearer $AGENTTRACE_KEY"`
+For a server in password mode, add `-H "Authorization: Bearer $LANETRACE_KEY"`
 to `post` (the key then decides the project).
 
 ## Reading runs back
@@ -126,6 +126,6 @@ follow up to 50 runs. New events are read from the database every 0.5 seconds,
 so events written by the SDK straight to the database stream too.
 
 In password mode, the connection needs the session cookie, and a browser's
-`Origin` must match the host (or be listed in `AGENTTRACE_ALLOWED_HOSTS`);
+`Origin` must match the host (or be listed in `LANETRACE_ALLOWED_HOSTS`);
 otherwise it is closed with code 1008. In `--auth none` mode, the API's `Host`
 and `Origin` check applies.

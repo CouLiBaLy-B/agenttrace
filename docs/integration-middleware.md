@@ -1,19 +1,19 @@
 # Middleware
 
-`AgentTraceMiddleware` is an `AgentMiddleware` for LangChain's `create_agent`
+`LaneTraceMiddleware` is an `AgentMiddleware` for LangChain's `create_agent`
 and deepagents' `create_deep_agent`. Use it when the agent is **built for each
 invocation**: one middleware instance is one run. A server that compiles its
 agent once and reuses it across requests would trace every request into the
 same run; it needs a [callback handler](integration-callback.md) instead.
 
 ```python
-from agenttrace.langchain import AgentTraceMiddleware
+from lanetrace.langchain import LaneTraceMiddleware
 from deepagents import create_deep_agent
 
 agent = create_deep_agent(
     model=model,
     tools=[web_search],
-    middleware=[AgentTraceMiddleware(run_name="research run")],
+    middleware=[LaneTraceMiddleware(run_name="research run")],
 )
 question = "What's the state of Rust web frameworks?"
 agent.invoke({"messages": [{"role": "user", "content": question}]})
@@ -35,9 +35,9 @@ async hooks too.
 
 Without `url` and `api_key`, the middleware writes to the
 [tracking URI](mlflow.md#tracking-uris), like the rest of the SDK:
-`./agenttrace.db` by default. Given either one, it posts to `url` (else
-`AGENTTRACE_URL`, else `http://localhost:3000/api/events`) with `api_key` (else
-`AGENTTRACE_KEY`), as before version 0.2. With a key, the key decides the
+`./lanetrace.db` by default. Given either one, it posts to `url` (else
+`LANETRACE_URL`, else `http://localhost:3000/api/events`) with `api_key` (else
+`LANETRACE_KEY`), as before version 0.2. With a key, the key decides the
 project.
 
 ## What it records
@@ -57,7 +57,7 @@ after the model (its `model` or `model_name` attribute), else `LLM`.
 The middleware sees only the agent it is attached to. A deepagents sub-agent
 runs as a separate graph behind the `task` tool: the middleware records the
 `task` call and its result as a plain tool call, but not the sub-agent's own
-LLM and tool calls. [`AsyncAgentTraceCallbackHandler`](integration-callback.md#asyncagenttracecallbackhandler-one-per-request)
+LLM and tool calls. [`AsyncLaneTraceCallbackHandler`](integration-callback.md#asynclanetracecallbackhandler-one-per-request)
 records those, on the sub-agent's own lifeline.
 
 ## Reliability

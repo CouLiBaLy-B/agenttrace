@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#00897b">
-  <!-- The AgentTrace mark (src/components/trace-logo.tsx), teal for the favicon. -->
+  <!-- The LaneTrace mark (src/components/trace-logo.tsx), teal for the favicon. -->
   <rect x="2" y="2" width="20" height="20" rx="3" stroke-width="1.5" opacity="0.5"/>
   <path d="M2 12 L7 12 L9 7 L11 17 L13 9 L15 15 L17 12 L22 12" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
