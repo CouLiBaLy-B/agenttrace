@@ -2,9 +2,9 @@ import uuid
 
 import pytest
 
-import agenttrace
-from agenttrace.langchain import AsyncAgentTraceCallbackHandler
-from agenttrace.tracking.async_http import AsyncHttpEventClient as AsyncAgentTraceClient
+import lanetrace
+from lanetrace.langchain import AsyncLaneTraceCallbackHandler
+from lanetrace.tracking.async_http import AsyncHttpEventClient as AsyncLaneTraceClient
 
 
 class FakeMessage:
@@ -47,8 +47,8 @@ def post(mocker):
 
 @pytest.fixture
 async def handler(post):
-    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
-    return AsyncAgentTraceCallbackHandler("test run", client=client)
+    client = AsyncLaneTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    return AsyncLaneTraceCallbackHandler("test run", client=client)
 
 
 def _bodies(post):
@@ -129,15 +129,15 @@ async def test_tool_result_payload_is_the_tool_messages_content(handler, post):
 async def test_tool_result_anonymized_before_truncation(post):
     from langchain_core.messages import ToolMessage
 
-    from agenttrace.tracking.run import RESULT_LIMIT
+    from lanetrace.tracking.run import RESULT_LIMIT
 
     def scrub(value):  # payloads arrive as dicts, labels and the run name as strings
         if isinstance(value, dict):
             return {key: scrub(item) for key, item in value.items()}
         return value.replace("jane@x.com", "<email>") if isinstance(value, str) else value
 
-    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
-    handler = AsyncAgentTraceCallbackHandler("run", client=client, anonymizer=scrub)
+    client = AsyncLaneTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    handler = AsyncLaneTraceCallbackHandler("run", client=client, anonymizer=scrub)
     # The address straddles the truncation limit: truncating first would leak "jane@x".
     content = "x" * (RESULT_LIMIT - 6) + " jane@x.com and more"
     rid = uuid.uuid4()
@@ -217,8 +217,8 @@ async def test_subagent_inner_calls_attributed_via_task_ns(handler, post):
 
 
 async def test_anonymizer_applied_to_every_payload(post):
-    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
-    h = AsyncAgentTraceCallbackHandler(
+    client = AsyncLaneTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    h = AsyncLaneTraceCallbackHandler(
         "run", client=client, anonymizer=lambda v: "<masked>" if isinstance(v, str) else {"masked": True}
     )
     rid, task_rid = uuid.uuid4(), uuid.uuid4()
@@ -270,11 +270,11 @@ async def test_approval_required_emits_pending_handoff(handler, post):
 
 
 async def test_keyless_client_posts_without_auth_header(post, monkeypatch):
-    """No API key: events still go out (local `agenttrace ui --auth none`),
+    """No API key: events still go out (local `lanetrace ui --auth none`),
     without an Authorization header and with the project named."""
-    monkeypatch.delenv("AGENTTRACE_KEY", raising=False)
-    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events")
-    h = AsyncAgentTraceCallbackHandler("run", client=client)
+    monkeypatch.delenv("LANETRACE_KEY", raising=False)
+    client = AsyncLaneTraceClient(url="http://localhost:3000/api/events")
+    h = AsyncLaneTraceCallbackHandler("run", client=client)
     h.on_user_message("hi")
     await h.finish("completed", answer="ok")
     await h.aclose()
@@ -286,8 +286,8 @@ async def test_keyless_client_posts_without_auth_header(post, monkeypatch):
 
 async def test_never_fatal_when_the_server_fails(post):
     post.side_effect = RuntimeError("connection refused")
-    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
-    h = AsyncAgentTraceCallbackHandler("run", client=client)
+    client = AsyncLaneTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    h = AsyncLaneTraceCallbackHandler("run", client=client)
     rid = uuid.uuid4()
     h.on_user_message("hi")
     await h.on_tool_start({"name": "t"}, "", run_id=rid, inputs={})
@@ -302,36 +302,36 @@ async def test_never_fatal_when_the_server_fails(post):
 
 @pytest.fixture
 def tracking_uri(monkeypatch):
-    for var in ("AGENTTRACE_TRACKING_URI", "AGENTTRACE_URL", "AGENTTRACE_KEY"):
+    for var in ("LANETRACE_TRACKING_URI", "LANETRACE_URL", "LANETRACE_KEY"):
         monkeypatch.delenv(var, raising=False)
-    yield agenttrace.set_tracking_uri
-    agenttrace.set_tracking_uri(None)
+    yield lanetrace.set_tracking_uri
+    lanetrace.set_tracking_uri(None)
 
 
 async def test_client_defaults_to_tracking_uri_events_url(tracking_uri, monkeypatch):
     tracking_uri("http://traces.local:4000")
-    monkeypatch.setenv("AGENTTRACE_KEY", "atr_env")
-    h = AsyncAgentTraceCallbackHandler("run")
+    monkeypatch.setenv("LANETRACE_KEY", "atr_env")
+    h = AsyncLaneTraceCallbackHandler("run")
     client = h.run._client
-    assert isinstance(client, AsyncAgentTraceClient)
+    assert isinstance(client, AsyncLaneTraceClient)
     assert client.url == "http://traces.local:4000/api/events"
     assert client.api_key == "atr_env"
     await h.aclose()
 
 
 async def test_client_required_for_non_http_tracking_uri(tracking_uri, tmp_path):
-    tracking_uri(f"sqlite:///{tmp_path}/agenttrace.db")
-    with pytest.raises(ValueError, match="AGENTTRACE_TRACKING_URI=http://host:port"):
-        AsyncAgentTraceCallbackHandler("run")
+    tracking_uri(f"sqlite:///{tmp_path}/lanetrace.db")
+    with pytest.raises(ValueError, match="LANETRACE_TRACKING_URI=http://host:port"):
+        AsyncLaneTraceCallbackHandler("run")
 
 
 async def test_llm_input_and_output_anonymized_before_truncation(post):
-    from agenttrace.langchain.projection import SYSTEM_LIMIT
-    from agenttrace.tracking.run import RESULT_LIMIT
+    from lanetrace.langchain.projection import SYSTEM_LIMIT
+    from lanetrace.tracking.run import RESULT_LIMIT
     from tests.tracking.test_async_run import _scrub, _straddle, assert_no_token_fragment
 
-    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
-    h = AsyncAgentTraceCallbackHandler("run", client=client, anonymizer=_scrub)
+    client = AsyncLaneTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    h = AsyncLaneTraceCallbackHandler("run", client=client, anonymizer=_scrub)
     chat, text, tool = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
     await h.on_chat_model_start(
         {},
@@ -370,7 +370,7 @@ async def test_only_exact_task_tool_is_a_handoff(handler, post):
 
 
 async def test_handoff_target_is_anonymized_and_capped(post):
-    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    client = AsyncLaneTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
     def scrub(v):
         if isinstance(v, str):
             return v.replace("Jane Doe", "<name>")
@@ -378,7 +378,7 @@ async def test_handoff_target_is_anonymized_and_capped(post):
             return {k: scrub(x) for k, x in v.items()}
         return v
 
-    h = AsyncAgentTraceCallbackHandler("run", client=client, anonymizer=scrub)
+    h = AsyncLaneTraceCallbackHandler("run", client=client, anonymizer=scrub)
     pii, long_name = uuid.uuid4(), uuid.uuid4()
     await h.on_tool_start({"name": "handoff_to"}, "", run_id=pii, inputs={"to": "Jane Doe"})
     await h.on_tool_end("ok", run_id=pii)
@@ -396,8 +396,8 @@ async def test_handoff_target_falls_back_when_anonymizer_fails(post):
     def broken(value):
         raise RuntimeError("down")
 
-    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
-    h = AsyncAgentTraceCallbackHandler("run", client=client, anonymizer=broken)
+    client = AsyncLaneTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    h = AsyncLaneTraceCallbackHandler("run", client=client, anonymizer=broken)
     rid = uuid.uuid4()
     await h.on_tool_start({"name": "task"}, "", run_id=rid, inputs={"subagent_type": "researcher"})
     await h.aclose()
@@ -406,7 +406,7 @@ async def test_handoff_target_falls_back_when_anonymizer_fails(post):
 
 
 async def test_error_messages_are_bounded(handler, post):
-    from agenttrace.tracking.run import PAYLOAD_LIMIT
+    from lanetrace.tracking.run import PAYLOAD_LIMIT
 
     llm, tool = uuid.uuid4(), uuid.uuid4()
     await handler.on_chat_model_start({}, [[FakeMessage("human", "x")]], run_id=llm)
@@ -506,8 +506,8 @@ async def test_subagent_attribution_survives_a_cached_agent(post):
 
     for _ in range(2):
         post.reset_mock()
-        handler = AsyncAgentTraceCallbackHandler(
-            "run", client=AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+        handler = AsyncLaneTraceCallbackHandler(
+            "run", client=AsyncLaneTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
         )
         await agent.ainvoke({"messages": [{"role": "user", "content": "q"}]}, config={"callbacks": [handler]})
         await handler.aclose()

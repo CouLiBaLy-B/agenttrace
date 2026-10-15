@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from agenttrace.langchain import AsyncAgentTraceCallbackHandler, AsyncHttpEventClient
+from lanetrace.langchain import AsyncLaneTraceCallbackHandler, AsyncHttpEventClient
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -59,7 +59,7 @@ async def test_scrub_masks_what_the_handler_sends(scrub, mocker):
     post.return_value = response
 
     client = AsyncHttpEventClient(url="http://localhost:3000", api_key="atr_test")
-    handler = AsyncAgentTraceCallbackHandler("chat with café@x.com", client=client, anonymizer=scrub)
+    handler = AsyncLaneTraceCallbackHandler("chat with café@x.com", client=client, anonymizer=scrub)
     handler.on_user_message("Contact:\njane.doe@example.com")
     await handler.finish("completed", answer="Mailed jane.doe@example.com")
     await handler.aclose()

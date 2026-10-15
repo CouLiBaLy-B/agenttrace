@@ -1,6 +1,6 @@
 import pytest
 
-from agenttrace.langchain.middleware import AgentTraceMiddleware
+from lanetrace.langchain.middleware import LaneTraceMiddleware
 
 
 class FakeToolRequest:
@@ -31,7 +31,7 @@ class FakeModelResponse:
     wrap_model_call handler actually returns (`.result: list[BaseMessage]`),
     not a bare message. A middleware that reads `.content` off this directly
     (instead of unwrapping `.result[-1]`) silently captures the wrong thing —
-    see AgentTraceMiddleware._emit_llm_call / _last_model_message."""
+    see LaneTraceMiddleware._emit_llm_call / _last_model_message."""
 
     def __init__(self, messages):
         self.result = messages
@@ -46,7 +46,7 @@ def post(mocker):
 
 @pytest.fixture
 def middleware():
-    return AgentTraceMiddleware(
+    return LaneTraceMiddleware(
         run_name="test run", url="http://localhost:3000/api/events", api_key="atr_test", timeout=2.0
     )
 
@@ -57,7 +57,7 @@ def _bodies(post):
 
 @pytest.mark.parametrize("url", ["http://localhost:3000", "http://localhost:3000/", "http://localhost:3000/api/events"])
 def test_url_may_be_the_server_base_url(post, url):
-    middleware = AgentTraceMiddleware(run_name="r", url=url, api_key="atr_test")
+    middleware = LaneTraceMiddleware(run_name="r", url=url, api_key="atr_test")
     middleware.before_agent({"messages": []}, runtime=None)
     middleware.wrap_tool_call(FakeToolRequest("noop", {}), lambda req: FakeToolMessage("ok"))
     middleware._run.close(timeout=2.0)
@@ -69,7 +69,7 @@ def test_before_agent_creates_the_run_object_without_a_network_call_yet(middlewa
     middleware.before_agent({"messages": []}, runtime=None)
     middleware._run.close(timeout=2.0)
 
-    # The AgentTraceRun exists, but the remote run itself is only created lazily
+    # The LaneTraceRun exists, but the remote run itself is only created lazily
     # on the first real event — before_agent alone shouldn't hit the network.
     assert middleware._run is not None
     post.assert_not_called()
@@ -233,7 +233,7 @@ async def test_async_wrap_tool_call_and_model_call(middleware, post):
 def test_middleware_without_url_or_key_uses_tracking_uri(tracking_db):
     from tests.conftest import read_runs
 
-    mw = AgentTraceMiddleware(run_name="local run", project="mw-project")
+    mw = LaneTraceMiddleware(run_name="local run", project="mw-project")
     mw.before_agent({"messages": []}, runtime=None)
     mw.wrap_tool_call(FakeToolRequest("noop", {}), lambda req: FakeToolMessage("ok"))
     mw.after_agent({"messages": [FakeToolMessage("done")]}, runtime=None)
@@ -251,22 +251,22 @@ def _create_body(mw, post):
 
 def test_keyless_url_sends_the_project(post, monkeypatch):
     """Against an `--auth none` server the project must be named explicitly."""
-    monkeypatch.delenv("AGENTTRACE_KEY", raising=False)
-    call = _create_body(AgentTraceMiddleware(run_name="r", url="http://h:3000/api/events", project="x"), post)
+    monkeypatch.delenv("LANETRACE_KEY", raising=False)
+    call = _create_body(LaneTraceMiddleware(run_name="r", url="http://h:3000/api/events", project="x"), post)
     assert call.kwargs["json"] == {"runId": None, "name": "r", "project": "x"}
 
 
 def test_key_only_env_posts_to_the_legacy_server_without_project(tracking_db, post, monkeypatch):
-    from agenttrace.tracking import _uri
+    from lanetrace.tracking import _uri
 
-    agenttrace_uri = _uri._tracking_uri
+    lanetrace_uri = _uri._tracking_uri
     _uri.set_tracking_uri(None)
     monkeypatch.setattr(_uri, "_legacy_logged", True)
-    monkeypatch.setenv("AGENTTRACE_KEY", "atr_env")
+    monkeypatch.setenv("LANETRACE_KEY", "atr_env")
     try:
-        call = _create_body(AgentTraceMiddleware(run_name="r", project="x"), post)
+        call = _create_body(LaneTraceMiddleware(run_name="r", project="x"), post)
     finally:
-        _uri.set_tracking_uri(agenttrace_uri)
+        _uri.set_tracking_uri(lanetrace_uri)
     assert call.args[0] == "http://localhost:3000/api/events"
     assert call.kwargs["headers"]["Authorization"] == "Bearer atr_env"
     assert call.kwargs["json"] == {"runId": None, "name": "r"}

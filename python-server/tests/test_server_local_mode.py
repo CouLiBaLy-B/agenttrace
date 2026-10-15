@@ -2,14 +2,14 @@ import pytest
 from starlette.websockets import WebSocketDisconnect
 from fastapi.testclient import TestClient
 
-from agenttrace.server.app import app
-from agenttrace.tracking.stores.rest import RestStore
+from lanetrace.server.app import app
+from lanetrace.tracking.stores.rest import RestStore
 
 
 @pytest.fixture
 def local_client(monkeypatch):
-    monkeypatch.setenv("AGENTTRACE_AUTH", "none")
-    monkeypatch.setenv("AGENTTRACE_ALLOWED_HOSTS", "testserver")
+    monkeypatch.setenv("LANETRACE_AUTH", "none")
+    monkeypatch.setenv("LANETRACE_ALLOWED_HOSTS", "testserver")
     with TestClient(app) as c:
         yield c
 
@@ -57,7 +57,7 @@ def test_api_key_still_takes_precedence(local_client, monkeypatch):
 
 
 def test_password_mode_unchanged(monkeypatch):
-    monkeypatch.setenv("AGENTTRACE_AUTH", "password")
+    monkeypatch.setenv("LANETRACE_AUTH", "password")
     with TestClient(app) as c:
         assert c.post("/api/events", json={"runId": None, "name": "x", "project": "p"}).status_code == 401
         assert c.get("/api/stats").status_code == 401
@@ -115,7 +115,7 @@ def test_websocket_good_origin_connects(local_client):
 
 
 def test_password_mode_ignores_host_guard(monkeypatch):
-    monkeypatch.setenv("AGENTTRACE_AUTH", "password")
+    monkeypatch.setenv("LANETRACE_AUTH", "password")
     with TestClient(app) as c:
         resp = c.get("/api/auth/session", headers={"Host": "evil.example", "Origin": "http://evil.example"})
         assert resp.status_code == 200

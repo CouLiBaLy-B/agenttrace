@@ -1,12 +1,12 @@
 import pytest
 
-from agenttrace import AgentTraceClient
+from lanetrace import LaneTraceClient
 from tests.conftest import read_runs
 
 
 def test_explicit_client_is_synchronous_and_fail_loud(tmp_path):
     url = f"sqlite:///{tmp_path}/client.db"
-    client = AgentTraceClient(url)
+    client = LaneTraceClient(url)
     run_id = client.create_run("explicit", project="p")
     client.log_event(run_id, source="a", target="b", type="tool_call", duration_ms=4)
     client.end_run(run_id, "failed")

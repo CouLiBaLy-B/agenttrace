@@ -1,1 +1,1 @@
-recursive-include agenttrace/server/static *
+recursive-include lanetrace/server/static *

@@ -2,8 +2,8 @@ import threading
 
 from sqlalchemy import text
 
-from agenttrace.store import db as store_db
-from agenttrace.store import models
+from lanetrace.store import db as store_db
+from lanetrace.store import models
 
 
 def test_get_engine_is_cached_per_url(tmp_path):
@@ -21,14 +21,14 @@ def test_init_db_creates_all_tables(tmp_path):
 
 
 def test_server_models_are_the_store_models():
-    from agenttrace.server import models as server_models
+    from lanetrace.server import models as server_models
 
     assert server_models.Event is models.Event
     assert server_models.Base is models.Base
 
 
 def test_concurrent_writer_and_reader_on_same_sqlite_file(tmp_path):
-    """Review focus #2: the SDK writes while `agenttrace ui` reads the same file."""
+    """Review focus #2: the SDK writes while `lanetrace ui` reads the same file."""
     url = f"sqlite:///{tmp_path}/shared.db"
     store_db.init_db(url)
     writer = store_db.get_engine(url)

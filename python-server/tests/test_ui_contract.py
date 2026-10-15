@@ -3,21 +3,21 @@ import uuid
 import pytest
 from fastapi.testclient import TestClient
 
-import agenttrace
-from agenttrace.server.app import app
+import lanetrace
+from lanetrace.server.app import app
 
 
 @pytest.fixture
 def client(monkeypatch):
-    monkeypatch.delenv("AGENTTRACE_AUTH", raising=False)
+    monkeypatch.delenv("LANETRACE_AUTH", raising=False)
     with TestClient(app) as c:
         yield c
 
 
 @pytest.fixture
 def local_client(monkeypatch):
-    monkeypatch.setenv("AGENTTRACE_AUTH", "none")
-    monkeypatch.setenv("AGENTTRACE_ALLOWED_HOSTS", "testserver")
+    monkeypatch.setenv("LANETRACE_AUTH", "none")
+    monkeypatch.setenv("LANETRACE_ALLOWED_HOSTS", "testserver")
     with TestClient(app) as c:
         yield c
 
@@ -40,7 +40,7 @@ def test_run_detail_includes_project(client):
 
 def test_session_reports_auth_mode_and_version_anonymous(client):
     body = client.get("/api/auth/session").json()
-    assert body == {"user": None, "authMode": "password", "version": agenttrace.__version__}
+    assert body == {"user": None, "authMode": "password", "version": lanetrace.__version__}
 
 
 def test_session_reports_auth_mode_signed_in(client):
@@ -52,4 +52,4 @@ def test_session_reports_auth_mode_signed_in(client):
 def test_session_local_mode(local_client):
     body = local_client.get("/api/auth/session").json()
     assert body["authMode"] == "none" and body["user"]["email"] == "local@agenttrace"
-    assert body["version"] == agenttrace.__version__
+    assert body["version"] == lanetrace.__version__

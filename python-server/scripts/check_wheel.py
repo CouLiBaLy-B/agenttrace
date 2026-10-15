@@ -4,7 +4,7 @@ PyPI publish workflow): `python scripts/check_wheel.py dist/*.whl`."""
 import sys
 import zipfile
 
-REQUIRED = "agenttrace/server/static/index.html"
+REQUIRED = "lanetrace/server/static/index.html"
 
 for path in sys.argv[1:]:
     with zipfile.ZipFile(path) as wheel:

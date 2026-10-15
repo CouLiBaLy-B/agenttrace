@@ -7,7 +7,7 @@ import time
 import pytest
 from playwright.sync_api import Page, expect
 
-from agenttrace import AgentTraceClient
+from lanetrace import LaneTraceClient
 from conftest import (
     THEME_LABELS,
     THEME_REVEAL_MS,
@@ -83,7 +83,7 @@ def test_theme_switch_persists_without_flash(page: Page, local_server):
     page.goto(base)
     expect(page.get_by_role("heading", name="Dashboard")).to_be_visible(timeout=15_000)
     _switch_theme(page, "phosphore")
-    assert page.evaluate("localStorage.getItem('agenttrace-theme')") == "phosphore"
+    assert page.evaluate("localStorage.getItem('lanetrace-theme')") == "phosphore"
 
     page.reload()
     expect(page.get_by_role("heading", name="Dashboard")).to_be_visible(timeout=15_000)
@@ -116,7 +116,7 @@ def test_auto_follows_system(new_context, local_server, scheme, expected):
     page = new_context(color_scheme=scheme).new_page()
     page.goto(base)
     expect(page.get_by_role("heading", name="Dashboard")).to_be_visible(timeout=15_000)
-    assert page.evaluate("localStorage.getItem('agenttrace-theme')") is None
+    assert page.evaluate("localStorage.getItem('lanetrace-theme')") is None
     assert _theme(page) == expected
 
 
@@ -140,7 +140,7 @@ def test_run_view_each_theme_without_console_errors(new_context, local_server, t
 
 def test_reduced_motion_live_event(new_context, local_server):
     base, db_url = local_server
-    client = AgentTraceClient(db_url)
+    client = LaneTraceClient(db_url)
     run_id = client.create_run("e2e reduced motion", project="Customer Support Agent")
     client.log_event(run_id, source="Orchestrator", target="LLM", type="llm_call", label="calm first")
 
@@ -160,7 +160,7 @@ def test_reduced_motion_live_event(new_context, local_server):
 
 def test_theme_switch_mid_run_keeps_selection(page: Page, local_server):
     base, db_url = local_server
-    client = AgentTraceClient(db_url)
+    client = LaneTraceClient(db_url)
     run_id = client.create_run("e2e switch mid run", project="Customer Support Agent")
     client.log_event(run_id, source="Orchestrator", target="LLM", type="llm_call", label="picked step")
 
@@ -178,7 +178,7 @@ def test_theme_switch_mid_run_keeps_selection(page: Page, local_server):
 
 def test_many_participants_scrolls(page: Page, local_server):
     base, db_url = local_server
-    client = AgentTraceClient(db_url)
+    client = LaneTraceClient(db_url)
     run_id = client.create_run("e2e crowded run", project="Research Assistant")
     names = [f"participant {i:02d} ".ljust(40, "x") for i in range(12)]
     assert all(len(n) == 40 for n in names)
@@ -196,7 +196,7 @@ def test_many_participants_scrolls(page: Page, local_server):
 
 def test_large_run_opens_quickly(page: Page, local_server, record_property):
     base, db_url = local_server
-    client = AgentTraceClient(db_url)
+    client = LaneTraceClient(db_url)
     run_id = client.create_run("e2e large run", project="Code Review Bot")
     steps = [("Orchestrator", "LLM", "llm_call"), ("Orchestrator", "search", "tool_call"), ("search", "Orchestrator", "tool_result")]
     for i in range(1_000):

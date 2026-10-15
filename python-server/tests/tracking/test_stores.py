@@ -1,10 +1,10 @@
 import pytest
 
-from agenttrace.store import db as store_db
-from agenttrace.store import models
-from agenttrace.tracking.stores import store_for_uri
-from agenttrace.tracking.stores.rest import RestStore
-from agenttrace.tracking.stores.sql import SqlStore
+from lanetrace.store import db as store_db
+from lanetrace.store import models
+from lanetrace.tracking.stores import store_for_uri
+from lanetrace.tracking.stores.rest import RestStore
+from lanetrace.tracking.stores.sql import SqlStore
 
 
 def test_sql_store_round_trip(tmp_path):
@@ -77,15 +77,15 @@ def test_rest_store_with_key_and_no_project():
     assert session.calls[0]["headers"]["Authorization"] == "Bearer atr_x"
 
 
-def test_rest_store_401_without_key_mentions_agenttrace_key():
+def test_rest_store_401_without_key_mentions_lanetrace_key():
     """Review focus #5."""
     store = RestStore("http://h/api/events", session=FakeSession(FakeResponse(401, {"error": "x"})))
-    with pytest.raises(PermissionError, match="AGENTTRACE_KEY"):
+    with pytest.raises(PermissionError, match="LANETRACE_KEY"):
         store.create_run("p", "r")
 
 
 def test_store_for_uri(monkeypatch, tmp_path):
-    monkeypatch.setenv("AGENTTRACE_KEY", "atr_env")
+    monkeypatch.setenv("LANETRACE_KEY", "atr_env")
     rest = store_for_uri("http://h:3000")
     assert isinstance(rest, RestStore)
     assert rest.events_url == "http://h:3000/api/events" and rest.api_key == "atr_env"

@@ -3,7 +3,7 @@ import uuid
 import pytest
 from fastapi.testclient import TestClient
 
-from agenttrace.server.app import app
+from lanetrace.server.app import app
 
 
 @pytest.fixture
@@ -226,7 +226,7 @@ def test_websocket_cross_origin_refused_in_password_mode(client, monkeypatch):
     """The session cookie rides along on cross-site WebSocket handshakes (CSWSH)."""
     from starlette.websockets import WebSocketDisconnect
 
-    monkeypatch.delenv("AGENTTRACE_ALLOWED_HOSTS", raising=False)
+    monkeypatch.delenv("LANETRACE_ALLOWED_HOSTS", raising=False)
     _signup(client)
     with pytest.raises(WebSocketDisconnect) as refused:
         with client.websocket_connect("/ws", headers={"Origin": "http://evil.example"}):
@@ -236,7 +236,7 @@ def test_websocket_cross_origin_refused_in_password_mode(client, monkeypatch):
         pass
     with client.websocket_connect("/ws"):  # non-browser clients send no Origin
         pass
-    monkeypatch.setenv("AGENTTRACE_ALLOWED_HOSTS", "evil.example")
+    monkeypatch.setenv("LANETRACE_ALLOWED_HOSTS", "evil.example")
     with client.websocket_connect("/ws", headers={"Origin": "http://evil.example"}):
         pass
 
@@ -245,7 +245,7 @@ def test_ingest_does_db_work_off_the_event_loop(client, monkeypatch):
     """A locked SQLite file (busy timeout 30 s) must not freeze the loop (poller, websockets)."""
     import asyncio
 
-    from agenttrace.server.routes import events as events_route
+    from lanetrace.server.routes import events as events_route
 
     on_loop = []
 

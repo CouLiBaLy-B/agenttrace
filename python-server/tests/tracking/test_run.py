@@ -5,10 +5,10 @@ import time
 
 import pytest
 
-from agenttrace.store import db as store_db
-from agenttrace.store import models
-from agenttrace.tracking.run import ActiveRun, compact, truncate
-from agenttrace.tracking.stores.base import TrackingStore
+from lanetrace.store import db as store_db
+from lanetrace.store import models
+from lanetrace.tracking.run import ActiveRun, compact, truncate
+from lanetrace.tracking.stores.base import TrackingStore
 
 
 class RecordingStore(TrackingStore):
@@ -79,7 +79,7 @@ def test_store_failure_disables_run_without_raising(caplog):
     run.end()
     run.close(timeout=2)
     assert store.calls == [("create_run", None, "r")]
-    assert "AgentTrace disabled" in caplog.text
+    assert "LaneTrace disabled" in caplog.text
 
 
 def test_context_manager_marks_failed_and_reraises():
@@ -115,8 +115,8 @@ def test_short_script_flushes_on_interpreter_exit(tmp_path):
     """Review focus #1: no explicit end/close, the process just exits."""
     url = f"sqlite:///{tmp_path}/exit.db"
     script = textwrap.dedent(f"""
-        from agenttrace.tracking.run import ActiveRun
-        from agenttrace.tracking.stores.sql import SqlStore
+        from lanetrace.tracking.run import ActiveRun
+        from lanetrace.tracking.stores.sql import SqlStore
         run = ActiveRun(SqlStore({url!r}), "exit run")
         for i in range(20):
             run.log_event(source="O", target="T", type="tool_call", label=str(i))

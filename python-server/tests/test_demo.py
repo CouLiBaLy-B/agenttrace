@@ -2,11 +2,11 @@ from click.testing import CliRunner
 from fastapi.testclient import TestClient
 import pytest
 
-from agenttrace import cli
-from agenttrace.server.app import app
-from agenttrace.server.demo import SEED_PROJECTS, seed_demo
-from agenttrace.store import db as store_db
-from agenttrace.store import local, models
+from lanetrace import cli
+from lanetrace.server.app import app
+from lanetrace.server.demo import SEED_PROJECTS, seed_demo
+from lanetrace.store import db as store_db
+from lanetrace.store import local, models
 
 EXPECTED = {
     "Customer Support Agent": (4, 31),  # (runs, events)
@@ -34,8 +34,8 @@ def test_seed_demo_creates_projects_runs_events_once(tmp_path):
 
 @pytest.fixture
 def local_client(monkeypatch):
-    monkeypatch.setenv("AGENTTRACE_AUTH", "none")
-    monkeypatch.setenv("AGENTTRACE_ALLOWED_HOSTS", "testserver")
+    monkeypatch.setenv("LANETRACE_AUTH", "none")
+    monkeypatch.setenv("LANETRACE_ALLOWED_HOSTS", "testserver")
     with TestClient(app) as c:
         yield c
 
@@ -47,7 +47,7 @@ def test_seed_endpoint_is_idempotent(local_client):
 
 
 def test_seed_requires_login_in_password_mode(monkeypatch):
-    monkeypatch.delenv("AGENTTRACE_AUTH", raising=False)
+    monkeypatch.delenv("LANETRACE_AUTH", raising=False)
     with TestClient(app) as c:
         assert c.post("/api/seed").status_code == 401
 

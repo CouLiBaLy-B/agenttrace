@@ -6,16 +6,16 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from fastapi.testclient import TestClient
 
-from agenttrace.server.app import app
-from agenttrace.store import db as store_db
-from agenttrace.store import events as store_events
-from agenttrace.store import local, models
+from lanetrace.server.app import app
+from lanetrace.store import db as store_db
+from lanetrace.store import events as store_events
+from lanetrace.store import local, models
 
 
 @pytest.fixture
 def local_client(monkeypatch):
-    monkeypatch.setenv("AGENTTRACE_AUTH", "none")
-    monkeypatch.setenv("AGENTTRACE_ALLOWED_HOSTS", "testserver")
+    monkeypatch.setenv("LANETRACE_AUTH", "none")
+    monkeypatch.setenv("LANETRACE_ALLOWED_HOSTS", "testserver")
     with TestClient(app) as c:
         yield c
 
@@ -70,7 +70,7 @@ def test_recent_bounds_and_route_order(local_client):
 def _count_queries(client, url):
     from sqlalchemy import event
 
-    from agenttrace.server.db import engine
+    from lanetrace.server.db import engine
 
     statements = []
 
@@ -115,7 +115,7 @@ def test_recent_breaks_start_time_ties_by_id_desc(local_client):
 
 
 def test_other_users_project_is_invisible_in_password_mode(monkeypatch):
-    monkeypatch.delenv("AGENTTRACE_AUTH", raising=False)
+    monkeypatch.delenv("LANETRACE_AUTH", raising=False)
     with TestClient(app) as a, TestClient(app) as b:
         for c in (a, b):
             r = c.post("/api/auth/signup", json={"email": f"{uuid.uuid4().hex}@example.com", "password": "secret123", "name": "U"})
