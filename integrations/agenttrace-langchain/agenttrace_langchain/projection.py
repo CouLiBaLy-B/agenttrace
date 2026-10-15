@@ -1,6 +1,6 @@
-"""Deprecated alias: 0.2.2 `agenttrace_langchain.projection` — use `agenttrace.langchain.projection`."""
+"""Deprecated alias: 0.2.2 `agenttrace_langchain.projection` — use `lanetrace.langchain.projection`."""
 
-from agenttrace.langchain.projection import (
+from lanetrace.langchain.projection import (
     HANDOFF_MARKERS,
     content_to_text,
     emitting_agent,

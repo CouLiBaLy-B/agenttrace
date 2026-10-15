@@ -3,11 +3,11 @@
 `awrap_tool_call`) fire automatically, no extra wiring needed.
 
 Setup:
-    pip install -e ..                       # from this examples/ dir
+    pip install 'lanetrace[langchain]'
     pip install deepagents langchain-openai
     export OPENAI_API_KEY=...
-    export AGENTTRACE_KEY=atr_...            # project API key, Integration tab
-    export AGENTTRACE_URL=http://localhost:3000/api/events   # default
+    export LANETRACE_KEY=atr_...            # project API key, Integration tab
+    export LANETRACE_URL=http://localhost:3000/api/events   # default
 
 Run:
     python async_basic.py
@@ -19,7 +19,7 @@ from deepagents import create_deep_agent
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 
-from agenttrace_langchain import AgentTraceMiddleware
+from lanetrace.langchain import LaneTraceMiddleware
 
 
 @tool
@@ -42,8 +42,8 @@ async def main() -> None:
             "You are a research assistant. Use web_search + fetch_page to "
             "answer the user's question, then synthesize a cited summary."
         ),
-        # One middleware instance = one AgentTrace run.
-        middleware=[AgentTraceMiddleware(run_name="async example — Rust web frameworks")],
+        # One middleware instance = one LaneTrace run.
+        middleware=[LaneTraceMiddleware(run_name="async example — Rust web frameworks")],
     )
 
     result = await agent.ainvoke(
@@ -51,7 +51,7 @@ async def main() -> None:
     )
 
     print("answer:", result["messages"][-1].content)
-    print("trace: open the run in AgentTrace to replay it frame by frame")
+    print("trace: open the run in LaneTrace to replay it frame by frame")
 
 
 if __name__ == "__main__":

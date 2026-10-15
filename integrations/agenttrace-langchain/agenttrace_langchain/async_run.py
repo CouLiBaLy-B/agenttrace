@@ -1,5 +1,5 @@
-"""Deprecated alias: pre-0.2 `agenttrace_langchain.async_run` — use `agenttrace.tracking.async_run`."""
+"""Deprecated alias: pre-0.2 `agenttrace_langchain.async_run` — use `lanetrace.tracking.async_run`."""
 
-from agenttrace.tracking.async_run import AsyncAgentTraceRun
+from lanetrace.tracking.async_run import AsyncLaneTraceRun as AsyncAgentTraceRun
 
 __all__ = ["AsyncAgentTraceRun"]
