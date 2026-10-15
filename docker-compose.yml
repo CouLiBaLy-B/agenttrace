@@ -1,28 +1,32 @@
-# AgentTrace — docker-compose: Postgres + the AgentTrace Python server.
+# LaneTrace — docker-compose: Postgres + the LaneTrace Python server.
+# A deployment created before 0.3 (AgentTrace) keeps its Postgres volume, whose
+# database, user and password are still `agenttrace`: set POSTGRES_DB,
+# POSTGRES_USER and POSTGRES_PASSWORD to those values in .env.
 services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-agenttrace}
-      POSTGRES_USER: ${POSTGRES_USER:-agenttrace}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-agenttrace}
+      POSTGRES_DB: ${POSTGRES_DB:-lanetrace}
+      POSTGRES_USER: ${POSTGRES_USER:-lanetrace}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lanetrace}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-agenttrace} -d ${POSTGRES_DB:-agenttrace}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lanetrace} -d ${POSTGRES_DB:-lanetrace}"]
       interval: 5s
       timeout: 5s
       retries: 10
     restart: unless-stopped
 
-  agenttrace:
+  lanetrace:
     build: .
-    image: agenttrace:latest
+    image: lanetrace:latest
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-agenttrace}:${POSTGRES_PASSWORD:-agenttrace}@db:5432/${POSTGRES_DB:-agenttrace}
-      AGENTTRACE_SECRET: ${AGENTTRACE_SECRET:?set AGENTTRACE_SECRET (openssl rand -base64 32)}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-lanetrace}:${POSTGRES_PASSWORD:-lanetrace}@db:5432/${POSTGRES_DB:-lanetrace}
+      # AGENTTRACE_SECRET: the pre-0.3 name, still accepted.
+      LANETRACE_SECRET: ${LANETRACE_SECRET:-${AGENTTRACE_SECRET:?set LANETRACE_SECRET (openssl rand -base64 32)}}
     depends_on:
       db:
         condition: service_healthy

@@ -1,9 +1,9 @@
-# AgentTrace — CI
+# LaneTrace — CI
 # Runs on pushes to main/master and on every pull request, whatever its base
 # (stacked pull requests target feature branches):
 #   1. ui      — lint, typecheck, unit tests (Vitest), static export (uploaded as the `ui-bundle` artifact)
-#   2. python  — pytest (server + SDK + shim), the example notebooks, then a wheel check that the UI ships
-#   3. e2e     — Playwright drives the bundled dashboard served by `agenttrace ui`
+#   2. python  — pytest (server + SDK + both shims), the example notebooks, then a wheel check that the UI ships
+#   3. e2e     — Playwright drives the bundled dashboard served by `lanetrace ui`
 #                (theme screenshots uploaded as the `theme-screenshots` artifact)
 #   4. docker  — build the single image and smoke test it against Postgres
 #
@@ -52,7 +52,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ui-bundle
-          path: python-server/agenttrace/server/static
+          path: python-server/lanetrace/server/static
 
   # ────────────────────────────────────────────────────────────
   # Docker image (Python server + bundled UI)
@@ -74,36 +74,36 @@ jobs:
           context: .
           push: false
           load: true
-          tags: agenttrace:ci
+          tags: lanetrace:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Smoke test — server serves the UI and API
         run: |
           # Postgres on a shared network so the server reaches it by DNS name.
-          docker network create agenttrace-ci
-          docker run -d --name pg --network agenttrace-ci \
-            -e POSTGRES_DB=agenttrace \
-            -e POSTGRES_USER=agenttrace \
-            -e POSTGRES_PASSWORD=agenttrace \
+          docker network create lanetrace-ci
+          docker run -d --name pg --network lanetrace-ci \
+            -e POSTGRES_DB=lanetrace \
+            -e POSTGRES_USER=lanetrace \
+            -e POSTGRES_PASSWORD=lanetrace \
             postgres:16-alpine
           for i in $(seq 1 30); do
-            docker exec pg pg_isready -U agenttrace -d agenttrace >/dev/null 2>&1 && { echo "pg ready"; break; }
+            docker exec pg pg_isready -U lanetrace -d lanetrace >/dev/null 2>&1 && { echo "pg ready"; break; }
             sleep 1
           done
-          docker run -d --name agenttrace --network agenttrace-ci -p 3000:3000 \
-            -e DATABASE_URL="postgresql+psycopg://agenttrace:agenttrace@pg:5432/agenttrace" \
-            -e AGENTTRACE_SECRET="ci-secret" \
-            agenttrace:ci
+          docker run -d --name lanetrace --network lanetrace-ci -p 3000:3000 \
+            -e DATABASE_URL="postgresql+psycopg://lanetrace:lanetrace@pg:5432/lanetrace" \
+            -e LANETRACE_SECRET="ci-secret" \
+            lanetrace:ci
           up=0
           for i in $(seq 1 30); do
             code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/ || echo 000)
             [ "$code" = "200" ] && { echo "server up ($code)"; up=1; break; }
             sleep 1
           done
-          [ "$up" = "1" ] || { echo "server did not come up"; docker logs agenttrace; exit 1; }
-          curl -s http://localhost:3000/ | grep -q "<title>AgentTrace" || { echo "UI title missing"; docker logs agenttrace; exit 1; }
-          curl -sf http://localhost:3000/api/auth/session | grep -q '"authMode":"password"' || { echo "auth session check failed"; docker logs agenttrace; exit 1; }
+          [ "$up" = "1" ] || { echo "server did not come up"; docker logs lanetrace; exit 1; }
+          curl -s http://localhost:3000/ | grep -q "<title>LaneTrace" || { echo "UI title missing"; docker logs lanetrace; exit 1; }
+          curl -sf http://localhost:3000/api/auth/session | grep -q '"authMode":"password"' || { echo "auth session check failed"; docker logs lanetrace; exit 1; }
           echo "smoke test passed"
 
   # ────────────────────────────────────────────────────────────
@@ -122,7 +122,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ui-bundle
-          path: python-server/agenttrace/server/static
+          path: python-server/lanetrace/server/static
 
       - name: Setup uv
         uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
@@ -130,12 +130,14 @@ jobs:
       - name: Install
         run: |
           uv venv .venv --python 3.12
-          uv pip install --python .venv -e "./python-server[dev]" -e ./integrations/agenttrace-langchain
+          uv pip install --python .venv -e "./python-server[dev]" \
+            -e ./integrations/agenttrace-langchain -e ./integrations/deepagents-trace
 
       - name: Test
         run: |
           .venv/bin/pytest python-server/tests -q
           .venv/bin/pytest integrations/agenttrace-langchain/tests -q
+          .venv/bin/pytest integrations/deepagents-trace/tests -q
 
       # Offline (scripted models, temp SQLite): a failing cell fails the job.
       - name: Example notebooks run
@@ -151,7 +153,7 @@ jobs:
           .venv/bin/python python-server/scripts/check_wheel.py dist/*.whl
 
   # ────────────────────────────────────────────────────────────
-  # End-to-end: Playwright against `agenttrace ui` with the bundle
+  # End-to-end: Playwright against `lanetrace ui` with the bundle
   # ────────────────────────────────────────────────────────────
   e2e:
     name: e2e (playwright)
@@ -164,7 +166,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: ui-bundle
-          path: python-server/agenttrace/server/static
+          path: python-server/lanetrace/server/static
       - name: Install
         run: |
           uv venv .venv --python 3.12
@@ -172,7 +174,7 @@ jobs:
           .venv/bin/playwright install --with-deps chromium
       # The suite skips without the bundle; in CI a missing bundle must fail.
       - name: Installed package ships the UI bundle
-        run: .venv/bin/python -c "import agenttrace.server.app as a, pathlib; assert (pathlib.Path(a.__file__).parent/'static'/'index.html').is_file()"
+        run: .venv/bin/python -c "import lanetrace.server.app as a, pathlib; assert (pathlib.Path(a.__file__).parent/'static'/'index.html').is_file()"
       - name: E2E
         run: .venv/bin/pytest python-server/tests_e2e -q
       # dashboard, run and sign-in screens in each theme (saved by test_themes.py)
