@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { ThemeSwitcher } from "@/components/theme/theme-switcher"
 import { TraceLogo } from "@/components/trace-logo"
+import { accountLabel } from "@/lib/account-label"
 import { toast } from "sonner"
 
 const NAV: { id: ViewId; label: string; icon: any; hint: string }[] = [
@@ -36,6 +37,7 @@ export function Sidebar({
 }) {
   const { view, go } = useNav()
   const { user, authMode } = useSession()
+  const account = accountLabel(user, authMode)
   const { signOut } = useAuthActions()
 
   return (
@@ -144,9 +146,9 @@ export function Sidebar({
           <div className="flex flex-col items-center gap-2">
             <div
               className="h-8 w-8 shrink-0 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center font-mono text-xs text-primary"
-              title={user?.name || user?.email || "Account"}
+              title={authMode === "none" ? account.name : user?.name || user?.email || "Account"}
             >
-              {(user?.name || user?.email || "?").slice(0, 1).toUpperCase()}
+              {account.initial}
             </div>
             {authMode !== "none" && (
               <Button
@@ -163,11 +165,11 @@ export function Sidebar({
         ) : (
           <div className="flex items-center gap-3 px-2 py-1.5">
             <div className="h-8 w-8 shrink-0 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center font-mono text-xs text-primary">
-              {(user?.name || user?.email || "?").slice(0, 1).toUpperCase()}
+              {account.initial}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{user?.name || "Engineer"}</p>
-              <p className="truncate text-[11px] text-muted-foreground">{user?.email}</p>
+              <p className="truncate text-sm font-medium">{account.name}</p>
+              <p className="truncate text-[11px] text-muted-foreground">{account.detail}</p>
             </div>
             {authMode !== "none" && (
               <Button
