@@ -362,7 +362,7 @@ function SnippetBlock({
       </div>
       {lang === "deepagents" && (
         <div className="px-4 py-2 border-b border-[var(--line)] text-[12px] text-[var(--ink-2)]">
-          <code className="font-mono text-[var(--ink)]">agenttrace.langchain.autolog()</code> turns
+          <code className="font-mono text-[var(--ink)]">lanetrace.langchain.autolog()</code> turns
           every <code className="font-mono text-[var(--ink)]">agent.invoke()</code> into a run: LLM calls, tool
           calls and results, handoffs and the final answer, drawn live as a sequence diagram.
         </div>
@@ -388,26 +388,26 @@ const oneLine = (value: string) => value.replace(/[\r\n\u2028\u2029]+/g, " ")
 
 function pythonSnippet({ origin, projectName, apiKey, local }: SnippetOpts) {
   if (local) {
-    return `# pip install deepagents-trace
-import agenttrace
+    return `# pip install lanetrace
+import lanetrace
 
-agenttrace.set_tracking_uri(${q(origin)})
-agenttrace.set_project(${q(projectName)})
+lanetrace.set_tracking_uri(${q(origin)})
+lanetrace.set_project(${q(projectName)})
 
-with agenttrace.start_run("my run"):
-    agenttrace.log_event(source="Orchestrator", target="LLM", type="llm_call", label="classify intent")`
+with lanetrace.start_run("my run"):
+    lanetrace.log_event(source="Orchestrator", target="LLM", type="llm_call", label="classify intent")`
   }
-  return `# pip install deepagents-trace
-# export AGENTTRACE_TRACKING_URI=${q(origin)}
-# export AGENTTRACE_KEY=${q(apiKey)}        # project-scoped key
+  return `# pip install lanetrace
+# export LANETRACE_TRACKING_URI=${q(origin)}
+# export LANETRACE_KEY=${q(apiKey)}        # project-scoped key
 import os
-os.environ.setdefault("AGENTTRACE_TRACKING_URI", ${q(origin)})
-os.environ.setdefault("AGENTTRACE_KEY", ${q(apiKey)})
+os.environ.setdefault("LANETRACE_TRACKING_URI", ${q(origin)})
+os.environ.setdefault("LANETRACE_KEY", ${q(apiKey)})
 
-import agenttrace
+import lanetrace
 
-with agenttrace.start_run("my run"):
-    agenttrace.log_event(source="Orchestrator", target="LLM", type="llm_call", label="classify intent")`
+with lanetrace.start_run("my run"):
+    lanetrace.log_event(source="Orchestrator", target="LLM", type="llm_call", label="classify intent")`
 }
 
 function httpSnippet({ origin, projectName, apiKey, local }: SnippetOpts) {
@@ -420,7 +420,7 @@ function httpSnippet({ origin, projectName, apiKey, local }: SnippetOpts) {
   const create = local
     ? `{ runId: null, name: "demo refund flow", project: ${q(projectName)} }`
     : `{ runId: null, name: "demo refund flow" }`
-  return `// AgentTrace ingestion — ${oneLine(projectName)}${local ? "" : "\n// Authorization: Bearer " + apiKey}
+  return `// LaneTrace ingestion — ${oneLine(projectName)}${local ? "" : "\n// Authorization: Bearer " + apiKey}
 async function emit(event: Record<string, unknown>) {
   const res = await fetch(${q(origin + "/api/events")}, {
     method: "POST",
@@ -457,21 +457,21 @@ main().catch(console.error);`
 
 function deepagentsSnippet({ origin, projectName, apiKey, local }: SnippetOpts) {
   if (local) {
-    return `# pip install 'deepagents-trace[langchain]'
-import agenttrace, agenttrace.langchain
+    return `# pip install 'lanetrace[langchain]'
+import lanetrace, lanetrace.langchain
 
-agenttrace.set_tracking_uri(${q(origin)})
-agenttrace.set_project(${q(projectName)})
-agenttrace.langchain.autolog()   # every agent.invoke() becomes a run`
+lanetrace.set_tracking_uri(${q(origin)})
+lanetrace.set_project(${q(projectName)})
+lanetrace.langchain.autolog()   # every agent.invoke() becomes a run`
   }
-  return `# pip install 'deepagents-trace[langchain]'
-# export AGENTTRACE_TRACKING_URI=${q(origin)}
-# export AGENTTRACE_KEY=${q(apiKey)}        # project-scoped key
+  return `# pip install 'lanetrace[langchain]'
+# export LANETRACE_TRACKING_URI=${q(origin)}
+# export LANETRACE_KEY=${q(apiKey)}        # project-scoped key
 import os
-os.environ.setdefault("AGENTTRACE_TRACKING_URI", ${q(origin)})
-os.environ.setdefault("AGENTTRACE_KEY", ${q(apiKey)})
+os.environ.setdefault("LANETRACE_TRACKING_URI", ${q(origin)})
+os.environ.setdefault("LANETRACE_KEY", ${q(apiKey)})
 
-import agenttrace.langchain
+import lanetrace.langchain
 
-agenttrace.langchain.autolog()   # every agent.invoke() becomes a run`
+lanetrace.langchain.autolog()   # every agent.invoke() becomes a run`
 }

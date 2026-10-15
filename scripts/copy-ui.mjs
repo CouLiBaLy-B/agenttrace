@@ -10,20 +10,22 @@ const dest = join(root, "python-server", "lanetrace", "server", "static")
 
 // NEXT_PUBLIC_* values are inlined at build time: a dev-only WebSocket URL
 // would be baked into the shipped bundle and break /ws for every install.
-const WS_VAR = "NEXT_PUBLIC_AGENTTRACE_WS_URL"
-const envFiles = [".env", ".env.production", ".env.local", ".env.production.local"].filter((f) =>
-  existsSync(join(root, f)) &&
-  readFileSync(join(root, f), "utf8")
-    .split(/\r?\n/)
-    .some((line) => new RegExp(`^\\s*(export\\s+)?${WS_VAR}\\s*=\\s*\\S`).test(line))
-)
-if (process.env[WS_VAR] || envFiles.length) {
-  const where = process.env[WS_VAR] ? "the environment" : envFiles.join(", ")
-  console.error(
-    `[lanetrace] ${WS_VAR} is set (in ${where}) — it would be inlined into the shipped bundle. ` +
-      "Unset it (it is for `bun run dev` only) and re-run `bun run build:ui`."
+// The pre-rename NEXT_PUBLIC_AGENTTRACE_WS_URL is read too (src/lib/live.ts).
+for (const WS_VAR of ["NEXT_PUBLIC_LANETRACE_WS_URL", "NEXT_PUBLIC_AGENTTRACE_WS_URL"]) {
+  const envFiles = [".env", ".env.production", ".env.local", ".env.production.local"].filter((f) =>
+    existsSync(join(root, f)) &&
+    readFileSync(join(root, f), "utf8")
+      .split(/\r?\n/)
+      .some((line) => new RegExp(`^\\s*(export\\s+)?${WS_VAR}\\s*=\\s*\\S`).test(line))
   )
-  process.exit(1)
+  if (process.env[WS_VAR] || envFiles.length) {
+    const where = process.env[WS_VAR] ? "the environment" : envFiles.join(", ")
+    console.error(
+      `[lanetrace] ${WS_VAR} is set (in ${where}) — it would be inlined into the shipped bundle. ` +
+        "Unset it (it is for `bun run dev` only) and re-run `bun run build:ui`."
+    )
+    process.exit(1)
+  }
 }
 
 if (!existsSync(join(src, "index.html"))) {

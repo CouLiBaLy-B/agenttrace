@@ -17,7 +17,7 @@ export function Footer() {
           <span className="font-mono">live · /ws</span>
         </div>
         <span>
-          AgentTrace <span className="at-clock">{version ? `v${version}` : ""}</span>
+          LaneTrace <span className="at-clock">{version ? `v${version}` : ""}</span>
         </span>
       </div>
     </footer>

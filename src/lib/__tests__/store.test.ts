@@ -43,6 +43,24 @@ describe("layout store", () => {
     })
     const useLayout = await loadStore()
     useLayout.getState().toggleNav()
-    expect(JSON.parse(saved.get("agenttrace-layout")!).state).toMatchObject({ navCollapsed: true })
+    expect(JSON.parse(saved.get("lanetrace-layout")!).state).toMatchObject({ navCollapsed: true })
+  })
+
+  it("restores, and moves, a layout saved under the pre-rename key", async () => {
+    const saved = new Map<string, string>([
+      ["agenttrace-layout", JSON.stringify({ state: { navCollapsed: true, navWidth: 300 }, version: 0 })],
+    ])
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: (k: string) => saved.get(k) ?? null,
+        setItem: (k: string, v: string) => void saved.set(k, v),
+        removeItem: (k: string) => void saved.delete(k),
+      },
+    })
+    const useLayout = await loadStore()
+    await useLayout.persist.rehydrate()
+    expect(useLayout.getState()).toMatchObject({ navCollapsed: true, navWidth: 300 })
+    expect(JSON.parse(saved.get("lanetrace-layout")!).state).toMatchObject({ navCollapsed: true, navWidth: 300 })
   })
 })

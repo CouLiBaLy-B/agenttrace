@@ -60,7 +60,7 @@ export function SettingsView() {
         <SectionTitle icon={User}>Account</SectionTitle>
         {authMode === "none" ? (
           <p className="text-sm text-[var(--ink-2)]">
-            Local mode: no account (started with <code className="font-mono text-[var(--ink)]">agenttrace ui --auth none</code>).
+            Local mode: no account (started with <code className="font-mono text-[var(--ink)]">lanetrace ui --auth none</code>).
           </p>
         ) : (
           <>
@@ -79,7 +79,7 @@ export function SettingsView() {
               </div>
             </div>
             <div className="mt-4 pt-4 border-t border-[var(--line)] flex items-center justify-between gap-3">
-              <p className="text-xs text-[var(--ink-2)]">Sign out of AgentTrace on this device.</p>
+              <p className="text-xs text-[var(--ink-2)]">Sign out of LaneTrace on this device.</p>
               <Button
                 variant="outline"
                 size="sm"
@@ -117,7 +117,7 @@ export function SettingsView() {
       {/* About */}
       <Card className="p-5 gap-0">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <p className="text-sm font-semibold text-[var(--ink)]">AgentTrace</p>
+          <p className="text-sm font-semibold text-[var(--ink)]">LaneTrace</p>
           <p className="at-clock text-xs text-[var(--ink-2)]">{`v${version}`}</p>
         </div>
         <p className="mt-1 text-xs text-[var(--ink-2)]">Trace, replay and debug your agents.</p>

@@ -62,7 +62,7 @@ export function Sidebar({
         ) : (
           <>
             <TraceLogo className="shrink-0 text-primary" />
-            <span className="truncate text-[15px] font-semibold tracking-tight text-[var(--ink)]">AgentTrace</span>
+            <span className="truncate text-[15px] font-semibold tracking-tight text-[var(--ink)]">LaneTrace</span>
             {onToggle && (
               <Button
                 variant="ghost"
@@ -209,7 +209,7 @@ export function MobileTopBar() {
   return (
     <div className="lg:hidden flex items-center gap-2 px-4 h-14 border-b border-border bg-background/80 backdrop-blur">
       <ChevronRight className="h-4 w-4 text-muted-foreground" />
-      <span className="text-sm font-semibold text-[var(--ink-2)]">AgentTrace</span>
+      <span className="text-sm font-semibold text-[var(--ink-2)]">LaneTrace</span>
       <span className="text-muted-foreground">/</span>
       <span className="text-sm font-medium">{titles[view]}</span>
     </div>

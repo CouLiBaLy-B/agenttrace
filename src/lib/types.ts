@@ -1,4 +1,4 @@
-// Shared types for AgentTrace
+// Shared types for LaneTrace
 
 export type EventType =
   | "llm_call"

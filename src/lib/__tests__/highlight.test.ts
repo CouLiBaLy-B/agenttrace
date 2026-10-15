@@ -6,12 +6,12 @@ const joined = (tokens: Token[]) => tokens.map((t) => t.text).join("")
 
 describe("highlightLine", () => {
   it("keeps the line's text unchanged", () => {
-    const line = `    agenttrace.log_event(source="Orchestrator", type="llm_call")  # note`
+    const line = `    lanetrace.log_event(source="Orchestrator", type="llm_call")  # note`
     expect(joined(highlightLine(line))).toBe(line)
   })
 
   it("marks # and // comments to the end of the line", () => {
-    expect(kinds(highlightLine("# pip install deepagents-trace"))).toEqual([["comment", "# pip install deepagents-trace"]])
+    expect(kinds(highlightLine("# pip install lanetrace"))).toEqual([["comment", "# pip install lanetrace"]])
     expect(kinds(highlightLine("  // 2. Append events"))).toEqual([["comment", "// 2. Append events"]])
     expect(kinds(highlightLine(`x = 1   # project-scoped key`))).toEqual([["comment", "# project-scoped key"]])
   })
@@ -25,7 +25,7 @@ describe("highlightLine", () => {
     expect(kinds(highlightLine("throw new Error(`ingest failed: ${res.status}`);"))).toEqual([
       ["string", "`ingest failed: ${res.status}`"],
     ])
-    expect(kinds(highlightLine(`pip install 'deepagents-trace[langchain]'`))).toEqual([["string", `'deepagents-trace[langchain]'`]])
+    expect(kinds(highlightLine(`pip install 'lanetrace[langchain]'`))).toEqual([["string", `'lanetrace[langchain]'`]])
   })
 
   it("keeps escaped quotes inside a string", () => {
@@ -41,7 +41,7 @@ describe("highlightLine", () => {
       ["key", "source"],
       ["string", `"Orchestrator"`],
     ])
-    expect(kinds(highlightLine(`agenttrace ui --auth none`))).toEqual([["key", "--auth"]])
+    expect(kinds(highlightLine(`lanetrace ui --auth none`))).toEqual([["key", "--auth"]])
   })
 
   it("leaves assignments and comparisons alone", () => {

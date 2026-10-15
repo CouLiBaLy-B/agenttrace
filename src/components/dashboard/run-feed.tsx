@@ -177,7 +177,7 @@ export function EmptyFeed() {
     <div className="rounded-[var(--radius-panel)] border border-dashed border-[var(--line-strong)] px-6 py-10 text-center">
       <p className="mx-auto max-w-md text-sm text-[var(--ink-2)]">
         No runs yet. Start your agent with{" "}
-        <code className="font-mono text-[12px] text-[var(--ink)]">agenttrace.langchain.autolog()</code> and runs appear
+        <code className="font-mono text-[12px] text-[var(--ink)]">lanetrace.langchain.autolog()</code> and runs appear
         here live.
       </p>
       <Button size="sm" variant="outline" className="mt-4" onClick={() => seed.mutate()} disabled={seed.isPending}>

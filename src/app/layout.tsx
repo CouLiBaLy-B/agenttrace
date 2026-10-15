@@ -15,7 +15,7 @@ import { Providers } from "@/components/providers"
 import { THEME_BOOT_SCRIPT } from "@/lib/theme-core"
 
 export const metadata: Metadata = {
-  title: "AgentTrace — agent observability",
+  title: "LaneTrace — agent observability",
   description:
     "Watch autonomous and multi-agent systems run in real time. A live sequence diagram for AI engineers debugging agents.",
   keywords: ["agent observability", "tracing", "LLM", "sequence diagram", "AI agents"],

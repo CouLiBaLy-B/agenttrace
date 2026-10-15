@@ -91,6 +91,18 @@ def test_theme_switch_persists_without_flash(page: Page, local_server):
     assert _theme(page) == "phosphore"
 
 
+def test_pre_rename_theme_key_is_adopted_without_flash(page: Page, local_server):
+    """A preference stored by AgentTrace (before the LaneTrace rename) still
+    applies from first paint, and moves to the new key."""
+    base, _ = local_server
+    page.add_init_script("try { localStorage.setItem('agenttrace-theme', 'phosphore') } catch (e) {}")
+    page.add_init_script(RECORD_THEMES)
+    page.goto(base)
+    expect(page.get_by_role("heading", name="Dashboard")).to_be_visible(timeout=15_000)
+    assert page.evaluate("window.__themes") == ["phosphore"]
+    assert page.evaluate("localStorage.getItem('lanetrace-theme')") == "phosphore"
+
+
 def test_no_flash_recorder_catches_a_missing_boot_script(page: Page, local_server):
     """Guards the test above: without the boot script the first painted value is unset."""
     base, _ = local_server

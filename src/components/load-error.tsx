@@ -25,7 +25,7 @@ export function LoadError({
       )}
     >
       <span>
-        Couldn&apos;t load {what}. Check that <code className="font-mono text-[0.92em] text-[var(--ink)]">agenttrace ui</code>{" "}
+        Couldn&apos;t load {what}. Check that <code className="font-mono text-[0.92em] text-[var(--ink)]">lanetrace ui</code>{" "}
         is running, then retry.
       </span>
       <Button size="sm" variant="outline" onClick={() => onRetry()}>
