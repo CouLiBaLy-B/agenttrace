@@ -42,6 +42,9 @@ What keeps working while you migrate:
 
 What changes:
 
+- **Logger names** are `lanetrace.*` instead of `agenttrace.*`: update
+  logging configuration that filters or routes them (for example
+  `logging.getLogger("lanetrace").setLevel(...)`).
 - **Password mode signs everyone out once**: the session cookie is now
   `lanetrace_session`.
 - **Docker.** The image runs `lanetrace ui` and the compose service is
@@ -49,7 +52,14 @@ What changes:
   Compose still reads `AGENTTRACE_SECRET` when `LANETRACE_SECRET` is unset.
   Its Postgres defaults are now `lanetrace`; to keep a volume created before
   0.3, set `POSTGRES_DB`, `POSTGRES_USER` and `POSTGRES_PASSWORD` to
-  `agenttrace` in `.env`.
+  `agenttrace` in `.env`. The volume itself is named after the compose
+  project, which defaults to the checkout's directory name
+  (`agenttrace_pgdata` for a checkout in `agenttrace/`): a new clone in
+  `lanetrace/` starts with an empty database. Keep the directory name, or set
+  `COMPOSE_PROJECT_NAME=agenttrace` in `.env`.
+- **Password mode under compose** refuses to start without
+  `LANETRACE_SECRET` (or `AGENTTRACE_SECRET`): compose sets
+  `LANETRACE_REQUIRE_SECRET=1`.
 - **`agenttrace-langchain` 0.4.0** depends on `lanetrace[langchain]>=0.3.0`;
   its `agenttrace_langchain` imports are unchanged.
 

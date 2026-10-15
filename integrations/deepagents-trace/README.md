@@ -18,6 +18,12 @@
   `deepagents-trace[server]` installs `lanetrace[server]`, and likewise for
   `langchain`, `postgres`, `e2e` and `dev`.
 
+> **Don't install it next to the unrelated `agenttrace` project on PyPI.**
+> `pip install agenttrace` is someone else's package, and it ships a
+> top-level `agenttrace` module too: with both installed, one overwrites the
+> other's files. If you have it, uninstall it, or move to `import lanetrace`
+> and drop this package.
+
 The 0.2 class names (`AgentTraceClient`, `AgentTraceMiddleware`,
 `AgentTraceCallbackHandler`, `AsyncAgentTraceCallbackHandler`) are aliases
 in `lanetrace` itself, so they work through either import.
