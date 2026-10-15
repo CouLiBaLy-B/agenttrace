@@ -19,7 +19,7 @@ from typing import Optional
 
 from langchain_core.tracers.context import register_configure_hook
 
-from .callback import LaneTraceCallbackHandler
+from .callback import AgentTraceCallbackHandler, LaneTraceCallbackHandler  # noqa: F401 - 0.2 re-export (deprecated)
 
 _handler: Optional[LaneTraceCallbackHandler] = None
 _lock = threading.Lock()

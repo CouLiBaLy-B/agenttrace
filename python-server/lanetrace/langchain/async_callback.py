@@ -57,7 +57,7 @@ from langchain_core.callbacks import AsyncCallbackHandler
 
 from ..tracking._uri import events_url, get_tracking_uri, is_http_uri
 from ..tracking.async_http import AsyncHttpEventClient
-from ..tracking.async_run import AsyncLaneTraceRun, text_bound, unbounded
+from ..tracking.async_run import AsyncAgentTraceRun, AsyncLaneTraceRun, text_bound, unbounded  # noqa: F401 - AsyncAgentTraceRun: 0.2 re-export (deprecated)
 from ..tracking.run import PAYLOAD_LIMIT
 from .projection import (
     SUBAGENT_NAME_LIMIT,
