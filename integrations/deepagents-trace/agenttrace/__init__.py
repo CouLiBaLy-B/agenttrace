@@ -23,8 +23,6 @@ from lanetrace import __all__, __version__  # noqa: F401
 
 _OLD = __name__  # "agenttrace"
 _NEW = "lanetrace"
-# Modules of this shim package itself, not aliases.
-_OWN = {f"{_OLD}._cli"}
 
 
 class _AliasFinder(importlib.abc.MetaPathFinder, importlib.abc.Loader):
@@ -34,7 +32,7 @@ class _AliasFinder(importlib.abc.MetaPathFinder, importlib.abc.Loader):
         self._real_specs: dict = {}
 
     def find_spec(self, fullname, path=None, target=None):
-        if not fullname.startswith(_OLD + ".") or fullname in _OWN:
+        if not fullname.startswith(_OLD + "."):
             return None
         if importlib.util.find_spec(_NEW + fullname[len(_OLD) :]) is None:
             return None  # ModuleNotFoundError for agenttrace.<missing>, as before

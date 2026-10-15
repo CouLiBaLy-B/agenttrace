@@ -34,11 +34,14 @@ Repository = "https://github.com/CouLiBaLy-B/lanetrace"
 Issues = "https://github.com/CouLiBaLy-B/lanetrace/issues"
 
 [project.scripts]
-agenttrace = "agenttrace._cli:main"
+agenttrace = "_agenttrace_cli:main"
 
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["_agenttrace_cli"]
 
 [tool.setuptools.packages.find]
 include = ["agenttrace*"]

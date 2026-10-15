@@ -137,7 +137,7 @@ async def test_0_2_async_callback_handler_posts_events():
 
 def _run_cli(*args):
     script = shutil.which("agenttrace")
-    cmd = [script, *args] if script else [sys.executable, "-m", "agenttrace._cli", *args]
+    cmd = [script, *args] if script else [sys.executable, "-m", "_agenttrace_cli", *args]
     return subprocess.run(cmd, capture_output=True, text=True, timeout=60)
 
 
@@ -146,7 +146,9 @@ def test_agenttrace_ui_help():
     assert result.returncode == 0, result.stderr
     assert "Start the LaneTrace web UI" in result.stdout
     assert "--database-url" in result.stdout
-    assert result.stderr.count("deprecated") == 1 and "lanetrace" in result.stderr
+    # One line: the command doesn't import agenttrace (no import-time warning).
+    assert result.stderr.strip().count("\n") == 0, result.stderr
+    assert "deprecated" in result.stderr and "lanetrace" in result.stderr
 
 
 def test_agenttrace_version():
