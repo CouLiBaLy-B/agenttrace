@@ -251,7 +251,9 @@ def test_fresh_install_empty_states(page: Page, password_server):
     page.get_by_role("button", name="Create account").click()
 
     expect(page.get_by_role("heading", name="Dashboard")).to_be_visible(timeout=10_000)
-    expect(page.get_by_text("No runs yet")).to_be_visible()
+    # The chronogram and, once its query resolves, the feed both say so: any
+    # one of them is the empty state; none is left after loading the demo.
+    expect(page.get_by_text("No runs yet").first).to_be_visible()
     page.get_by_role("button", name="Load demo projects").click()
 
     chronogram = page.locator("section[aria-labelledby='chronogram-title']")
