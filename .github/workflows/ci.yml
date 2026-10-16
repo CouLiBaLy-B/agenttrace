@@ -49,7 +49,7 @@ jobs:
       - run: bun run build:ui
         env:
           NEXT_TELEMETRY_DISABLED: "1"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ui-bundle
           path: python-server/lanetrace/server/static
@@ -180,7 +180,7 @@ jobs:
       # dashboard, run and sign-in screens in each theme (saved by test_themes.py)
       - name: Upload theme screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: theme-screenshots
           path: python-server/tests_e2e/artifacts/
