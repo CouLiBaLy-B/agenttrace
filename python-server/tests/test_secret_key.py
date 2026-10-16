@@ -28,3 +28,26 @@ def test_token_signed_with_old_default_rejected(no_secret):
 def test_env_secret_used(monkeypatch):
     monkeypatch.setenv("LANETRACE_SECRET", "abc")
     assert security._secret_key() == "abc"
+
+
+import pytest  # noqa: E402
+
+from lanetrace.server import security  # noqa: E402
+
+
+@pytest.mark.parametrize("value", ["0", "false", "False", "NO", "off", " ", ""])
+def test_require_secret_off_values(monkeypatch, value):
+    monkeypatch.delenv("LANETRACE_SECRET", raising=False)
+    monkeypatch.delenv("AGENTTRACE_SECRET", raising=False)
+    monkeypatch.setenv("LANETRACE_REQUIRE_SECRET", value)
+    assert security.missing_required_secret() is False
+
+
+@pytest.mark.parametrize("value", ["1", "true", "TRUE", "yes"])
+def test_require_secret_on_values(monkeypatch, value):
+    monkeypatch.delenv("LANETRACE_SECRET", raising=False)
+    monkeypatch.delenv("AGENTTRACE_SECRET", raising=False)
+    monkeypatch.setenv("LANETRACE_REQUIRE_SECRET", value)
+    assert security.missing_required_secret() is True
+    monkeypatch.setenv("LANETRACE_SECRET", "s")
+    assert security.missing_required_secret() is False

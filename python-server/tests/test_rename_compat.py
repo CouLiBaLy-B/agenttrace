@@ -232,7 +232,7 @@ def test_ui_refuses_to_start_without_a_required_secret(fake_uvicorn, no_secret, 
     monkeypatch.setenv("LANETRACE_REQUIRE_SECRET", "1")
     result = CliRunner().invoke(cli.main, ["ui", "--auth", "password"])
     assert result.exit_code == 1
-    assert "LANETRACE_SECRET is not set" in result.output
+    assert "LANETRACE_SECRET is not: set it" in result.output
     assert fake_uvicorn == []
 
 
@@ -251,7 +251,7 @@ def test_server_refuses_to_start_without_a_required_secret(no_secret, monkeypatc
 
     monkeypatch.setenv("LANETRACE_REQUIRE_SECRET", "1")
     monkeypatch.setenv("LANETRACE_AUTH", "password")
-    with pytest.raises(RuntimeError, match="LANETRACE_SECRET is not set"):
+    with pytest.raises(RuntimeError, match="LANETRACE_SECRET is not: set it"):
         with TestClient(app):
             pass
 
