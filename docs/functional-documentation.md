@@ -1,6 +1,6 @@
-# AgentTrace — Documentation fonctionnelle
+# LaneTrace — Documentation fonctionnelle
 
-> **Note** : ce document décrit le déploiement antérieur à la version 0.2 (Next.js). Là où il mentionne NextAuth, Prisma, Socket.IO ou `bun run dev`, ces éléments ont été remplacés par le serveur Python FastAPI qui embarque l'interface (`pip install 'deepagents-trace[server]'`, `agenttrace ui`). Voir le [README](../README.md) pour l'installation et l'utilisation actuelles.
+> **Note** : ce document décrit le déploiement antérieur à la version 0.2 (Next.js). Là où il mentionne NextAuth, Prisma, Socket.IO ou `bun run dev`, ces éléments ont été remplacés par le serveur Python FastAPI qui embarque l'interface (`pip install 'lanetrace[server]'`, `lanetrace ui`). Voir le [README](../README.md) pour l'installation et l'utilisation actuelles.
 
 > Plateforme d'observabilité pour ingénieurs IA construisant et déboguant des systèmes autonomes ou multi-agents. Le diagramme de séquence live est l'élément central du produit.
 
@@ -14,7 +14,7 @@ Quand un agent autonome (ou un orchestrateur multi-agents) tourne, il enchaîne 
 
 ### 1.2 Solution
 
-AgentTrace stream les événements d'un agent en temps réel vers un **diagramme de séquence animé inspiré d'UML** : une ligne de vie verticale par participant (User, Orchestrator, LLM, chaque outil, chaque sous-agent), chaque événement apparaissant comme une flèche horizontale de haut en bas dans l'ordre chronologique. On voit littéralement les signaux se déplacer dans le système.
+LaneTrace stream les événements d'un agent en temps réel vers un **diagramme de séquence animé inspiré d'UML** : une ligne de vie verticale par participant (User, Orchestrator, LLM, chaque outil, chaque sous-agent), chaque événement apparaissant comme une flèche horizontale de haut en bas dans l'ordre chronologique. On voit littéralement les signaux se déplacer dans le système.
 
 ### 1.3 Cas d'usage
 
@@ -269,7 +269,7 @@ Quand un run `running` n'a pas encore d'événement, le canvas affiche un **rada
 
 - **Email/mot de passe** via NextAuth credentials provider (bcrypt hash)
 - **Mode signup** : crée le user + **auto-seed 3 projets de démo** (Customer Support Agent, Research Assistant, Code Review Bot)
-- **"Explore the live demo"** : bouton one-click qui crée/identifie un compte `demo@agenttrace.dev` préchargé
+- **"Explore the live demo"** : bouton one-click qui crée/identifie un compte `demo@lanetrace.dev` préchargé
 - **Session JWT** (pas de DB session pour rester léger)
 - **Pas d'OAuth Google** dans cette version (le type OAuth est prêt côté NextAuth mais le provider n'est pas configuré — voir §Limitations)
 
@@ -416,8 +416,8 @@ Deux images depuis un `Dockerfile` multi-stage :
 
 | Image | Target | Port | Rôle |
 |---|---|---|---|
-| `agenttrace-web` | `web` | 3000 | Next.js standalone + Prisma |
-| `agenttrace-socket` | `socket` | 3003 | Socket.IO service |
+| `lanetrace-web` | `web` | 3000 | Next.js standalone + Prisma |
+| `lanetrace-socket` | `socket` | 3003 | Socket.IO service |
 
 ```bash
 docker compose up --build
@@ -444,7 +444,7 @@ Tout le périmètre du prompt initial : diagramme live, replay, CRUD, ingestion 
 
 ### 8.2 Nice-to-haves non faits
 - **Team/workspace sharing** : les projets sont privés par user (pas de partage multi-user)
-- **OpenTelemetry** : ingestion uniquement via le format AgentTrace natif (pas de receiver OTel)
+- **OpenTelemetry** : ingestion uniquement via le format LaneTrace natif (pas de receiver OTel)
 - **Export** : pas d'export en lien partageable read-only ni en image statique du diagramme
 - **OAuth Google** : provider credentials uniquement (l'ajout Google OAuth = 10 lignes dans `auth.ts`)
 

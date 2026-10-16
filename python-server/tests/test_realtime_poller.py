@@ -5,8 +5,8 @@ import pytest
 from starlette.websockets import WebSocketDisconnect
 from fastapi.testclient import TestClient
 
-from agenttrace.server.app import app
-from agenttrace.tracking.stores.sql import SqlStore
+from lanetrace.server.app import app
+from lanetrace.tracking.stores.sql import SqlStore
 
 
 @pytest.fixture(autouse=True)
@@ -15,8 +15,8 @@ def _local_mode(request, monkeypatch):
     # (except in the password-mode authorization tests below).
     if "password_mode" in request.node.name:
         return
-    monkeypatch.setenv("AGENTTRACE_AUTH", "none")
-    monkeypatch.setenv("AGENTTRACE_ALLOWED_HOSTS", "testserver")
+    monkeypatch.setenv("LANETRACE_AUTH", "none")
+    monkeypatch.setenv("LANETRACE_ALLOWED_HOSTS", "testserver")
 
 
 def test_events_written_directly_to_db_are_streamed():
@@ -43,8 +43,8 @@ def test_events_written_directly_to_db_are_streamed():
 def test_run_state_emits_utc_offset_for_naive_datetimes():
     from datetime import datetime
 
-    from agenttrace.server import models
-    from agenttrace.server.realtime import _run_state
+    from lanetrace.server import models
+    from lanetrace.server.realtime import _run_state
 
     run = models.Run(status="completed", ended_at=datetime(2026, 10, 1, 12, 0, 0))
     assert _run_state(run) == ("completed", "2026-10-01T12:00:00+00:00")
@@ -52,7 +52,7 @@ def test_run_state_emits_utc_offset_for_naive_datetimes():
 
 
 def test_poll_once_ignores_runs_without_subscribers():
-    from agenttrace.server.realtime import ConnectionManager
+    from lanetrace.server.realtime import ConnectionManager
 
     store = SqlStore(os.environ["DATABASE_URL"])
     run_id = store.create_run("direct", "nobody watching")
@@ -66,7 +66,7 @@ def _subscribe(ws, run_id):
 
 
 def test_resubscribe_does_not_replay_old_events_and_cursors_are_cleared():
-    from agenttrace.server.realtime import manager
+    from lanetrace.server.realtime import manager
 
     store = SqlStore(os.environ["DATABASE_URL"])
     run_id = store.create_run("direct", "resub")
@@ -87,7 +87,7 @@ def test_resubscribe_does_not_replay_old_events_and_cursors_are_cleared():
 
 
 def test_subscribe_unknown_run_errors_and_creates_no_room():
-    from agenttrace.server.realtime import manager
+    from lanetrace.server.realtime import manager
 
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:
         assert _subscribe(ws, "nope") == {"type": "error", "runId": "nope", "error": "Run not found"}
@@ -95,7 +95,7 @@ def test_subscribe_unknown_run_errors_and_creates_no_room():
 
 
 def test_subscription_cap_per_socket():
-    from agenttrace.server.realtime import MAX_SUBSCRIPTIONS_PER_SOCKET
+    from lanetrace.server.realtime import MAX_SUBSCRIPTIONS_PER_SOCKET
 
     store = SqlStore(os.environ["DATABASE_URL"])
     run_ids = [store.create_run("direct", f"cap {i}") for i in range(MAX_SUBSCRIPTIONS_PER_SOCKET + 1)]
@@ -112,7 +112,7 @@ def test_subscription_cap_per_socket():
 def test_poll_does_not_resurrect_cursor_of_forgotten_run():
     import asyncio
 
-    from agenttrace.server.realtime import ConnectionManager
+    from lanetrace.server.realtime import ConnectionManager
 
     class FakeWs:
         pass

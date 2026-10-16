@@ -3,40 +3,40 @@
 A LangChain callback handler is attached per invocation, through
 `config={"callbacks": [...]}`, or for the whole process. Unlike the
 [middleware](integration-middleware.md), it isn't part of the compiled graph,
-so it also works for an agent that is compiled once and reused. AgentTrace has
+so it also works for an agent that is compiled once and reused. LaneTrace has
 two handlers:
 
-| | `AgentTraceCallbackHandler` | `AsyncAgentTraceCallbackHandler` |
+| | `LaneTraceCallbackHandler` | `AsyncLaneTraceCallbackHandler` |
 | --- | --- | --- |
 | Attached | for the whole process by `autolog()`, or per invocation | per request |
 | One run per | top-level invocation | handler |
-| Sends to | the tracking URI (`./agenttrace.db` by default) | a running `agenttrace ui`, over HTTP |
+| Sends to | the tracking URI (`./lanetrace.db` by default) | a running `lanetrace ui`, over HTTP |
 | LLM input (system prompt, messages) | not recorded | recorded |
 | Sub-agents | their calls are recorded, on the orchestrator's lifeline | each sub-agent has its own lifeline |
 | Hand-offs | tools whose name contains `handoff` or `delegate` | the same, plus a tool named exactly `task` (deepagents) |
 | Final answer | the last message of the top-level output | what the app passes to `finish(answer=...)` |
 | Anonymizer, labels | no | `anonymizer=`, `phrases=`, `tool_server=` |
 
-## `autolog()` and `AgentTraceCallbackHandler`
+## `autolog()` and `LaneTraceCallbackHandler`
 
 ```python
-import agenttrace
-import agenttrace.langchain
+import lanetrace
+import lanetrace.langchain
 
-agenttrace.set_project("support-bot")
-agenttrace.langchain.autolog()  # every invocation, from any thread
+lanetrace.set_project("support-bot")
+lanetrace.langchain.autolog()   # every invocation, from any thread
 ...
-agenttrace.langchain.autolog(disable=True)
+lanetrace.langchain.autolog(disable=True)
 ```
 
-`autolog()` registers one `AgentTraceCallbackHandler` with LangChain, which
+`autolog()` registers one `LaneTraceCallbackHandler` with LangChain, which
 adds it to every invocation, including those started on other threads (a
 FastAPI threadpool, say). Calling it again changes nothing;
 `autolog(disable=True)` switches it off.
 
 - Each **top-level invocation** becomes one run, named after the top-level
   runnable (for `create_agent`, its `name`), in the current project.
-- Inside `agenttrace.start_run()`, invocations join that run instead, and the
+- Inside `lanetrace.start_run()`, invocations join that run instead, and the
   run stays open until the block ends. (The implicit run that `log_event()`
   uses outside `start_run()` is never joined.)
 - Concurrent invocations don't mix: every event goes to the run of its own
@@ -53,13 +53,13 @@ other options. When autolog is on as well, it leaves those invocations to your
 handler, so nothing is traced twice:
 
 ```python
-from agenttrace.langchain import AgentTraceCallbackHandler
+from lanetrace.langchain import LaneTraceCallbackHandler
 
-handler = AgentTraceCallbackHandler(orchestrator="Planner")
+handler = LaneTraceCallbackHandler(orchestrator="Planner")
 agent.invoke(inputs, config={"callbacks": [handler]})
 ```
 
-## `AsyncAgentTraceCallbackHandler`: one per request
+## `AsyncLaneTraceCallbackHandler`: one per request
 
 For an async server that compiles its agent once (cached per user, say), create
 a handler for each request. One handler traces the main agent and every
@@ -67,8 +67,8 @@ deepagents sub-agent, because LangGraph passes the callbacks on to nested
 runs.
 
 ```python
-from agenttrace.langchain import (
-    AsyncAgentTraceCallbackHandler,
+from lanetrace.langchain import (
+    AsyncLaneTraceCallbackHandler,
     AsyncHttpEventClient,
 )
 
@@ -77,7 +77,7 @@ client = AsyncHttpEventClient(url="http://127.0.0.1:3000")  # once, at startup
 
 async def chat(session_id: str, question: str) -> str:
     name = f"chat {session_id}"
-    handler = AsyncAgentTraceCallbackHandler(name, client=client)
+    handler = AsyncLaneTraceCallbackHandler(name, client=client)
     handler.on_user_message(question)
     config = {
         "configurable": {"thread_id": session_id},
@@ -147,9 +147,9 @@ first and call `aclose()` afterwards, so tracing adds no latency.
 `AsyncHttpEventClient(url=None, api_key=None, timeout=10.0, client=None)`:
 
 - `url`: the server's base URL (`http://127.0.0.1:3000`) or its full
-  `/api/events` URL. Default: `AGENTTRACE_URL`, else
+  `/api/events` URL. Default: `LANETRACE_URL`, else
   `http://localhost:3000/api/events`.
-- `api_key`: the `atr_...` project key; default `AGENTTRACE_KEY`. Without a
+- `api_key`: the `atr_...` project key; default `LANETRACE_KEY`. Without a
   key, nothing is sent as `Authorization` and each run names its project (the
   current one), which a server running with `--auth none` accepts. A server
   that wants a key answers 401, and the run turns off with one warning.
@@ -158,7 +158,7 @@ first and call `aclose()` afterwards, so tracing adds no latency.
   closes an `httpx` client it created.
 
 Build one client at startup and share it. Without `client=`, the handler posts
-to the tracking URI (`set_tracking_uri()`, `AGENTTRACE_TRACKING_URI`), which
+to the tracking URI (`set_tracking_uri()`, `LANETRACE_TRACKING_URI`), which
 must then be `http://` or `https://`: anything else raises a `ValueError` when
 the handler is created.
 
@@ -199,7 +199,7 @@ def scrub(value):
     return value
 
 
-handler = AsyncAgentTraceCallbackHandler(
+handler = AsyncLaneTraceCallbackHandler(
     "chat", client=client, anonymizer=scrub
 )
 ```
@@ -240,9 +240,9 @@ turns tracing off for that run with one warning, and payloads are bounded
 messages at 500 each and the system prompt at 320 in the LLM input).
 
 !!! tip "Runnable notebook"
-    [`02_async_callback_handler.ipynb`](https://github.com/CouLiBaLy-B/agenttrace/blob/main/python-server/examples/notebooks/02_async_callback_handler.ipynb)
+    [`02_async_callback_handler.ipynb`](https://github.com/CouLiBaLy-B/lanetrace/blob/main/python-server/examples/notebooks/02_async_callback_handler.ipynb)
     runs a cached agent with a sub-agent, the anonymizer and translated labels
-    offline, against an in-process `agenttrace ui`.
+    offline, against an in-process `lanetrace ui`.
 
 The 0.2.2 import `from agenttrace_langchain import AgentTraceCallbackHandler`
 is this class (deprecated).

@@ -1,5 +1,5 @@
-"""Deprecated alias: pre-0.2 `agenttrace_langchain.middleware` — use `agenttrace.langchain`."""
+"""Deprecated alias: pre-0.2 `agenttrace_langchain.middleware` — use `lanetrace.langchain`."""
 
-from agenttrace.langchain.middleware import AgentTraceMiddleware
+from lanetrace.langchain.middleware import LaneTraceMiddleware as AgentTraceMiddleware
 
 __all__ = ["AgentTraceMiddleware"]

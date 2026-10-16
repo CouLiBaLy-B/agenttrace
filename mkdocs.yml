@@ -1,8 +1,8 @@
-site_name: AgentTrace
-site_description: Live sequence diagrams for AI agents. An MLflow-style tracking SDK, a LangChain / deepagents integration, and a dashboard served by `agenttrace ui`.
-site_url: https://coulibaly-b.github.io/agenttrace/
-repo_url: https://github.com/CouLiBaLy-B/agenttrace
-repo_name: CouLiBaLy-B/agenttrace
+site_name: LaneTrace
+site_description: Live sequence diagrams for AI agents. An MLflow-style tracking SDK, a LangChain / deepagents integration, and a dashboard served by `lanetrace ui`.
+site_url: https://coulibaly-b.github.io/lanetrace/
+repo_url: https://github.com/CouLiBaLy-B/lanetrace
+repo_name: CouLiBaLy-B/lanetrace
 edit_uri: edit/main/docs/
 
 # docs/ also holds internal specs and plans, the pre-0.2 (Next.js) manuals and

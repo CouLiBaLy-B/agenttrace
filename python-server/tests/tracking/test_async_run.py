@@ -3,8 +3,8 @@ import json
 import httpx
 import pytest
 
-from agenttrace.tracking.async_http import AsyncHttpEventClient as AsyncAgentTraceClient
-from agenttrace.tracking.async_run import AsyncAgentTraceRun
+from lanetrace.tracking.async_http import AsyncHttpEventClient as AsyncLaneTraceClient
+from lanetrace.tracking.async_run import AsyncLaneTraceRun
 
 
 @pytest.fixture
@@ -19,8 +19,8 @@ def post(mocker):
 
 @pytest.fixture
 async def run(post):
-    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
-    return AsyncAgentTraceRun("test run", client=client)
+    client = AsyncLaneTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    return AsyncLaneTraceRun("test run", client=client)
 
 
 def _bodies(post):
@@ -91,8 +91,8 @@ async def test_on_stream_event_final_answer(run, post):
 
 
 async def test_custom_phrases_override_default_labels(post):
-    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
-    run = AsyncAgentTraceRun(
+    client = AsyncLaneTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    run = AsyncLaneTraceRun(
         "test run",
         client=client,
         phrases={
@@ -114,8 +114,8 @@ async def test_custom_phrases_override_default_labels(post):
 
 
 async def test_tool_server_callback_enriches_payload(post):
-    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
-    run = AsyncAgentTraceRun("test run", client=client, tool_server=lambda name: "iam-mcp")
+    client = AsyncLaneTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    run = AsyncLaneTraceRun("test run", client=client, tool_server=lambda name: "iam-mcp")
     run.on_stream_event("tool_call", "main", {"id": "1", "name": "iam_list_users", "args": {}})
     await run.aclose(timeout=2.0)
 
@@ -147,8 +147,8 @@ async def test_anonymizer_applied_to_every_payload_label_and_run_name(post):
             return value.replace("Jane Doe", "<name>")
         return {"masked": True}
 
-    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
-    run = AsyncAgentTraceRun("chat with Jane Doe", client=client, anonymizer=scrub)
+    client = AsyncLaneTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    run = AsyncLaneTraceRun("chat with Jane Doe", client=client, anonymizer=scrub)
     run.on_user_message("Jane Doe, SSN 123")
     run.on_stream_event("agent_start", "researcher", {"scope": "subagent", "label": "look up Jane Doe"})
     run.on_stream_event("final", "main", {"message": "Jane Doe is fine"})
@@ -167,8 +167,8 @@ async def test_failing_anonymizer_fails_closed_and_warns_once(post, caplog):
     def broken(value):
         raise RuntimeError("scrubber down for Jane Doe")
 
-    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
-    run = AsyncAgentTraceRun("run for Jane Doe", client=client, anonymizer=broken)
+    client = AsyncLaneTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    run = AsyncLaneTraceRun("run for Jane Doe", client=client, anonymizer=broken)
     run.on_user_message("Jane Doe, SSN 123")
     run.on_stream_event("final", "main", {"message": "Jane Doe is fine"})
     queued = list(run._queue._queue)  # what was actually enqueued
@@ -216,10 +216,10 @@ def assert_no_token_fragment(data):
 
 
 async def test_anonymizer_sees_full_values_before_truncation(post):
-    from agenttrace.tracking.run import ANSWER_LIMIT, LABEL_LIMIT, PAYLOAD_LIMIT, RESULT_LIMIT
+    from lanetrace.tracking.run import ANSWER_LIMIT, LABEL_LIMIT, PAYLOAD_LIMIT, RESULT_LIMIT
 
-    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
-    run = AsyncAgentTraceRun(_straddle(120), client=client, anonymizer=_scrub)
+    client = AsyncLaneTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    run = AsyncLaneTraceRun(_straddle(120), client=client, anonymizer=_scrub)
     run.on_user_message(_straddle(LABEL_LIMIT) + "y" * PAYLOAD_LIMIT)  # label cut
     run.on_user_message(_straddle(PAYLOAD_LIMIT))  # payload cut
     run.on_stream_event("tool_call", "main", {"id": "1", "name": "t", "args": _straddle(60)})
@@ -244,7 +244,7 @@ async def test_anonymizer_sees_full_values_before_truncation(post):
 
 
 async def test_without_anonymizer_payloads_are_still_bounded(run, post):
-    from agenttrace.tracking.run import LABEL_LIMIT, PAYLOAD_LIMIT
+    from lanetrace.tracking.run import LABEL_LIMIT, PAYLOAD_LIMIT
 
     run.on_user_message("z" * 5000)
     run.on_stream_event("tool_call", "main", {"id": "1", "name": "t", "args": "a" * 5000})
@@ -269,8 +269,8 @@ async def test_non_json_objects_are_anonymized_not_stringified_unmasked(post):
     class Patient:
         name: str
 
-    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
-    run = AsyncAgentTraceRun("test run", client=client, anonymizer=scrub)
+    client = AsyncLaneTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    run = AsyncLaneTraceRun("test run", client=client, anonymizer=scrub)
     run.on_stream_event("approval_required", "main", {"action_requests": [Patient("Jane Doe")]})
     run.on_stream_event("tool_call", "main", {"id": "1", "name": "lookup", "args": {"who": Patient("Jane Doe")}})
     run.on_stream_event("tool_call", "main", {"id": "2", "name": "lookup", "args": Patient("Jane Doe")})
@@ -283,8 +283,8 @@ async def test_non_json_objects_are_anonymized_not_stringified_unmasked(post):
 
 
 async def test_non_str_anonymizer_result_for_text_fails_closed(post):
-    client = AsyncAgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
-    run = AsyncAgentTraceRun(
+    client = AsyncLaneTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    run = AsyncLaneTraceRun(
         "Jane Doe run", client=client, anonymizer=lambda v: 42 if isinstance(v, str) else v
     )
     run.on_user_message("Jane Doe")
@@ -296,7 +296,7 @@ async def test_non_str_anonymizer_result_for_text_fails_closed(post):
 
 
 async def test_subagent_error_message_is_bounded(run, post):
-    from agenttrace.tracking.run import PAYLOAD_LIMIT
+    from lanetrace.tracking.run import PAYLOAD_LIMIT
 
     run.on_stream_event("agent_end", "sub", {"scope": "subagent", "status": "failed", "error": "e" * 5000})
     run.on_stream_event("agent_end", "sub", {"scope": "subagent", "status": "completed"})
@@ -307,7 +307,7 @@ async def test_subagent_error_message_is_bounded(run, post):
     assert events[1]["payload"]["error"] is None
 
 
-# ----- keyless (`agenttrace ui --auth none`) -----
+# ----- keyless (`lanetrace ui --auth none`) -----
 
 
 @pytest.fixture
@@ -315,12 +315,12 @@ def local_server(monkeypatch):
     """An httpx MockTransport bridging into the real FastAPI app (keyless mode)."""
     from fastapi.testclient import TestClient
 
-    from agenttrace.server.app import app
+    from lanetrace.server.app import app
 
-    monkeypatch.setenv("AGENTTRACE_AUTH", "none")
-    monkeypatch.setenv("AGENTTRACE_ALLOWED_HOSTS", "testserver")
-    monkeypatch.setenv("AGENTTRACE_PROJECT", "async-keyless")
-    monkeypatch.delenv("AGENTTRACE_KEY", raising=False)
+    monkeypatch.setenv("LANETRACE_AUTH", "none")
+    monkeypatch.setenv("LANETRACE_ALLOWED_HOSTS", "testserver")
+    monkeypatch.setenv("LANETRACE_PROJECT", "async-keyless")
+    monkeypatch.delenv("LANETRACE_KEY", raising=False)
     with TestClient(app) as test_client:
         seen = []
 
@@ -337,8 +337,8 @@ def local_server(monkeypatch):
 async def test_keyless_run_posts_to_local_server(local_server):
     test_client, seen, transport = local_server
     async with httpx.AsyncClient(transport=transport) as http:
-        client = AsyncAgentTraceClient(url="http://testserver/api/events", client=http)
-        run = AsyncAgentTraceRun("keyless run", client=client)
+        client = AsyncLaneTraceClient(url="http://testserver/api/events", client=http)
+        run = AsyncLaneTraceRun("keyless run", client=client)
         run.on_user_message("hi")
         run.on_stream_event("final", "main", {"message": "done"})
         run.end("completed")
@@ -354,7 +354,7 @@ async def test_keyless_run_posts_to_local_server(local_server):
 
 
 async def test_keyless_401_disables_run_with_one_warning(caplog, monkeypatch):
-    monkeypatch.delenv("AGENTTRACE_KEY", raising=False)
+    monkeypatch.delenv("LANETRACE_KEY", raising=False)
     calls = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -362,8 +362,8 @@ async def test_keyless_401_disables_run_with_one_warning(caplog, monkeypatch):
         return httpx.Response(401, json={"error": "Invalid API key"})
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http:
-        client = AsyncAgentTraceClient(url="http://h/api/events", client=http)
-        run = AsyncAgentTraceRun("test run", client=client)
+        client = AsyncLaneTraceClient(url="http://h/api/events", client=http)
+        run = AsyncLaneTraceRun("test run", client=client)
         run.on_user_message("hi")
         run.on_error("boom")
         run.end("failed")
@@ -371,4 +371,4 @@ async def test_keyless_401_disables_run_with_one_warning(caplog, monkeypatch):
 
     assert len(calls) == 1  # disabled after the first 401
     warnings = [r for r in caplog.records if r.levelname == "WARNING"]
-    assert len(warnings) == 1 and "AGENTTRACE_KEY" in warnings[0].getMessage()
+    assert len(warnings) == 1 and "LANETRACE_KEY" in warnings[0].getMessage()

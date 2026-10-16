@@ -42,12 +42,35 @@ export const DETAIL_SIZE = { default: 320, min: 264, max: 560, rail: 44 }
 
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n))
 
+export const LAYOUT_STORAGE_KEY = "lanetrace-layout"
+/** The key before the AgentTrace -> LaneTrace rename, read (and copied over)
+ * when LAYOUT_STORAGE_KEY is missing. */
+export const LEGACY_LAYOUT_STORAGE_KEY = "agenttrace-layout"
+
+function withLegacyKey(storage: Storage): StateStorage {
+  return {
+    getItem: (key) => {
+      const value = storage.getItem(key)
+      if (value !== null || key !== LAYOUT_STORAGE_KEY) return value
+      const legacy = storage.getItem(LEGACY_LAYOUT_STORAGE_KEY)
+      if (legacy !== null) {
+        try {
+          storage.setItem(key, legacy)
+        } catch {}
+      }
+      return legacy
+    },
+    setItem: (key, value) => storage.setItem(key, value),
+    removeItem: (key) => storage.removeItem(key),
+  }
+}
+
 // localStorage can be missing or throw (blocked storage, some private modes).
 // Without a storage zustand drops the `persist` API and warns on every update,
 // so fall back to keeping the layout in memory for the session.
 function layoutStorage(): StateStorage {
   try {
-    return localStorage
+    return withLegacyKey(localStorage)
   } catch {
     const memory = new Map<string, string>()
     return {
@@ -82,7 +105,7 @@ export const useLayout = create<LayoutState>()(
       setDetailWidth: (w) => set({ detailWidth: clamp(w, DETAIL_SIZE.min, DETAIL_SIZE.max) }),
     }),
     {
-      name: "agenttrace-layout",
+      name: LAYOUT_STORAGE_KEY,
       storage: createJSONStorage(layoutStorage),
       // Avoid SSR/first-render hydration mismatch: start from defaults, then
       // rehydrate from localStorage after mount (see AppShell).

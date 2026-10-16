@@ -3,7 +3,7 @@ name: Docs
 # Builds the MkDocs site (mkdocs.yml, docs/) with --strict: broken links or
 # anchors fail the build. On main, `mkdocs gh-deploy` publishes it to the
 # gh-pages branch, which GitHub Pages serves at
-# https://coulibaly-b.github.io/agenttrace/ (Settings → Pages → Source:
+# https://coulibaly-b.github.io/lanetrace/ (Settings → Pages → Source:
 # "Deploy from a branch", gh-pages, / (root)).
 on:
   push:

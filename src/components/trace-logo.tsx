@@ -1,4 +1,4 @@
-/** The AgentTrace mark: a signal trace in a frame, drawn in `currentColor`. */
+/** The LaneTrace mark: a signal trace in a frame, drawn in `currentColor`. */
 export function TraceLogo({ size = 22, className }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" className={className} aria-hidden>

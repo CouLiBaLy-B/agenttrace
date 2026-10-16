@@ -15,29 +15,29 @@ def _fresh(name):
 
 def test_shim_reexports_and_warns():
     sys.modules.pop("agenttrace_langchain", None)
-    with pytest.warns(DeprecationWarning, match="agenttrace.langchain"):
+    with pytest.warns(DeprecationWarning, match="lanetrace.langchain"):
         shim = importlib.import_module("agenttrace_langchain")
-    from agenttrace.langchain import AgentTraceCallbackHandler as SyncHandler
-    from agenttrace.langchain.async_callback import AsyncAgentTraceCallbackHandler
-    from agenttrace.langchain.middleware import AgentTraceMiddleware
-    from agenttrace.tracking.async_http import AsyncHttpEventClient
-    from agenttrace.tracking.async_run import AsyncAgentTraceRun
-    from agenttrace.tracking.http import AgentTraceRun, HttpEventClient
+    from lanetrace.langchain import LaneTraceCallbackHandler as SyncHandler
+    from lanetrace.langchain.async_callback import AsyncLaneTraceCallbackHandler
+    from lanetrace.langchain.middleware import LaneTraceMiddleware
+    from lanetrace.tracking.async_http import AsyncHttpEventClient
+    from lanetrace.tracking.async_run import AsyncLaneTraceRun
+    from lanetrace.tracking.http import HttpEventClient, LaneTraceRun
 
-    assert shim.AgentTraceMiddleware is AgentTraceMiddleware
+    assert shim.AgentTraceMiddleware is LaneTraceMiddleware
     assert shim.AgentTraceClient is HttpEventClient
-    assert shim.AgentTraceRun is AgentTraceRun
+    assert shim.AgentTraceRun is LaneTraceRun
     assert shim.AsyncAgentTraceClient is AsyncHttpEventClient
-    assert shim.AsyncAgentTraceRun is AsyncAgentTraceRun
+    assert shim.AsyncAgentTraceRun is AsyncLaneTraceRun
     # 0.2.2 name/semantics: the async per-request handler, not the sync autolog one.
-    assert shim.AgentTraceCallbackHandler is AsyncAgentTraceCallbackHandler
+    assert shim.AgentTraceCallbackHandler is AsyncLaneTraceCallbackHandler
     assert shim.AgentTraceCallbackHandler is not SyncHandler
     assert "AgentTraceCallbackHandler" in shim.__all__
 
 
 def test_pre_0_2_submodules_still_import():
-    from agenttrace.langchain import middleware as new_middleware
-    from agenttrace.tracking import async_http, async_run, http, run
+    from lanetrace.langchain import middleware as new_middleware
+    from lanetrace.tracking import async_http, async_run, http, run
 
     client = _fresh("agenttrace_langchain.client")
     assert client.AgentTraceClient is http.HttpEventClient
@@ -47,19 +47,19 @@ def test_pre_0_2_submodules_still_import():
     assert _fresh("agenttrace_langchain.async_client").AsyncAgentTraceClient is async_http.AsyncHttpEventClient
 
     old_run = _fresh("agenttrace_langchain.run")
-    assert old_run.AgentTraceRun is http.AgentTraceRun
+    assert old_run.AgentTraceRun is http.LaneTraceRun
     for name in ("truncate", "compact", "LABEL_LIMIT", "PAYLOAD_LIMIT", "RESULT_LIMIT", "ANSWER_LIMIT"):
         assert getattr(old_run, name) is getattr(run, name)
 
-    assert _fresh("agenttrace_langchain.async_run").AsyncAgentTraceRun is async_run.AsyncAgentTraceRun
-    assert _fresh("agenttrace_langchain.middleware").AgentTraceMiddleware is new_middleware.AgentTraceMiddleware
+    assert _fresh("agenttrace_langchain.async_run").AsyncAgentTraceRun is async_run.AsyncLaneTraceRun
+    assert _fresh("agenttrace_langchain.middleware").AgentTraceMiddleware is new_middleware.LaneTraceMiddleware
 
 
 def test_0_2_2_submodules_still_import():
-    from agenttrace.langchain import projection
-    from agenttrace.langchain.async_callback import AsyncAgentTraceCallbackHandler
+    from lanetrace.langchain import projection
+    from lanetrace.langchain.async_callback import AsyncLaneTraceCallbackHandler
 
-    assert _fresh("agenttrace_langchain.callback").AgentTraceCallbackHandler is AsyncAgentTraceCallbackHandler
+    assert _fresh("agenttrace_langchain.callback").AgentTraceCallbackHandler is AsyncLaneTraceCallbackHandler
     old_projection = _fresh("agenttrace_langchain.projection")
     for name in old_projection.__all__:
         assert getattr(old_projection, name) is getattr(projection, name)
@@ -96,6 +96,7 @@ async def test_0_2_2_keyless_with_injected_httpx_client_and_masking(monkeypatch)
 
     import httpx
 
+    monkeypatch.delenv("LANETRACE_KEY", raising=False)
     monkeypatch.delenv("AGENTTRACE_KEY", raising=False)
     sent = []
 

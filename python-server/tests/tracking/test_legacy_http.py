@@ -2,13 +2,13 @@ import time
 
 import pytest
 
-from agenttrace.tracking.http import VALID_EVENT_TYPES, AgentTraceRun, HttpEventClient as AgentTraceClient
-from agenttrace.tracking.run import compact, truncate
+from lanetrace.tracking.http import VALID_EVENT_TYPES, LaneTraceRun, HttpEventClient as LaneTraceClient
+from lanetrace.tracking.run import compact, truncate
 
 
 @pytest.fixture
 def client():
-    return AgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test_key")
+    return LaneTraceClient(url="http://localhost:3000/api/events", api_key="atr_test_key")
 
 
 def test_start_run_posts_null_run_id(client, mocker):
@@ -67,7 +67,7 @@ def test_end_run_defaults_to_completed(client, mocker):
 
 
 def test_emit_without_api_key_raises():
-    client = AgentTraceClient(url="http://localhost:3000/api/events", api_key=None)
+    client = LaneTraceClient(url="http://localhost:3000/api/events", api_key=None)
     with pytest.raises(RuntimeError):
         client.emit({"runId": None, "name": "x"})
 
@@ -114,9 +114,9 @@ def test_compact_truncates_large_payload():
 
 def test_disabled_without_api_key_never_calls_network(mocker):
     post = mocker.patch("requests.post")
-    client = AgentTraceClient(url="http://localhost:3000/api/events", api_key=None)
+    client = LaneTraceClient(url="http://localhost:3000/api/events", api_key=None)
 
-    run = AgentTraceRun("test run", client=client)
+    run = LaneTraceRun("test run", client=client)
     run.emit(source="Orchestrator", target="LLM", type="llm_call")
     run.end("completed")
     run.close(timeout=2.0)
@@ -131,9 +131,9 @@ def test_emits_events_in_order_via_background_worker(mocker):
         {"runId": "run_1", "event": {}},
         {"runId": "run_1", "closed": True, "status": "completed"},
     ]
-    client = AgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    client = LaneTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
 
-    run = AgentTraceRun("test run", client=client)
+    run = LaneTraceRun("test run", client=client)
     run.emit(source="Orchestrator", target="LLM", type="llm_call", label="step")
     run.end("completed")
     run.close(timeout=2.0)
@@ -148,9 +148,9 @@ def test_emits_events_in_order_via_background_worker(mocker):
 def test_network_failure_disables_run_without_raising(mocker):
     post = mocker.patch("requests.post")
     post.side_effect = ConnectionError("boom")
-    client = AgentTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
+    client = LaneTraceClient(url="http://localhost:3000/api/events", api_key="atr_test")
 
-    run = AgentTraceRun("test run", client=client)
+    run = LaneTraceRun("test run", client=client)
     run.emit(source="Orchestrator", target="LLM", type="llm_call")  # never raises
     _wait_until(lambda: run._failed)
 
@@ -166,7 +166,7 @@ def test_network_failure_disables_run_without_raising(mocker):
     ["http://host:3000", "http://host:3000/", "http://host:3000/api/events", "http://host:3000/api/events/"],
 )
 def test_clients_accept_base_or_events_url(url):
-    from agenttrace.langchain import AsyncHttpEventClient
+    from lanetrace.langchain import AsyncHttpEventClient
 
-    assert AgentTraceClient(url=url).url == "http://host:3000/api/events"
+    assert LaneTraceClient(url=url).url == "http://host:3000/api/events"
     assert AsyncHttpEventClient(url=url).url == "http://host:3000/api/events"

@@ -1,4 +1,4 @@
-# AgentTrace — .dockerignore
+# LaneTrace — .dockerignore
 # Keep build context lean so Docker cache + build are fast.
 
 # deps & build artifacts
@@ -22,7 +22,7 @@ python-server/.venv
 .mypy_cache
 
 # bundled UI is rebuilt in the `ui` stage
-python-server/agenttrace/server/static
+python-server/lanetrace/server/static
 
 # logs & local state
 *.log

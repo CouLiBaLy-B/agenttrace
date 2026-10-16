@@ -1,4 +1,4 @@
-"""End-to-end tests: run a real `agenttrace ui` (with the built bundle)
+"""End-to-end tests: run a real `lanetrace ui` (with the built bundle)
 and drive the dashboard with Playwright. Needs the `e2e` extra and
 `playwright install chromium`; skipped when the bundle isn't built."""
 
@@ -13,7 +13,8 @@ from pathlib import Path
 import pytest
 import requests
 
-import agenttrace.server.app as server_app
+import lanetrace.server.app as server_app
+from lanetrace import _env
 
 BUNDLE = Path(server_app.__file__).parent / "static" / "index.html"
 
@@ -37,9 +38,10 @@ def _free_port() -> int:
 def _start(tmp_path: Path, auth: str):
     port = _free_port()
     db_url = f"sqlite:///{tmp_path}/e2e-{auth}.db"
-    env = {**os.environ, "DATABASE_URL": db_url, "AGENTTRACE_SECRET": "e2e-secret"}
-    env.pop("AGENTTRACE_AUTH", None)
-    cli = [sys.executable, "-m", "agenttrace.cli"]
+    env = {**os.environ, "DATABASE_URL": db_url, "LANETRACE_SECRET": "e2e-secret"}
+    for var in ("LANETRACE_AUTH", "AGENTTRACE_AUTH"):  # AGENTTRACE_*: pre-rename fallback
+        env.pop(var, None)
+    cli = [sys.executable, "-m", "lanetrace.cli"]
     if auth == "none":
         subprocess.run([*cli, "demo", "--database-url", db_url], check=True, env=env)
     proc = subprocess.Popen([*cli, "ui", "--port", str(port), "--auth", auth], env=env)
@@ -48,7 +50,7 @@ def _start(tmp_path: Path, auth: str):
     while True:
         code = proc.poll()
         if code is not None:
-            raise RuntimeError(f"agenttrace ui exited during startup (code {code})")
+            raise RuntimeError(f"lanetrace ui exited during startup (code {code})")
         try:
             if requests.get(f"{base}/api/auth/session", timeout=1).ok:
                 break
@@ -56,7 +58,7 @@ def _start(tmp_path: Path, auth: str):
             pass
         if time.monotonic() > deadline:
             _stop(proc)
-            raise RuntimeError("agenttrace ui did not start within 30 s")
+            raise RuntimeError("lanetrace ui did not start within 30 s")
         time.sleep(0.1)
     return proc, base, db_url
 
@@ -88,7 +90,7 @@ def password_server(tmp_path):
 
 THEMES = ("phosphore", "cyanotype", "studio")
 THEME_LABELS = {"phosphore": "Phosphore", "cyanotype": "Cyanotype", "studio": "Studio"}
-THEME_STORAGE_KEY = "agenttrace-theme"
+THEME_STORAGE_KEY = "lanetrace-theme"
 # A theme switch plays a ~450 ms reveal during which Chromium keeps the page
 # inert; give it this long before the next click.
 THEME_REVEAL_MS = 500
@@ -143,6 +145,6 @@ def arrow(diagram, label: str):
 
 
 def screenshot_dir() -> Path:
-    path = Path(os.environ.get("AGENTTRACE_SCREENSHOT_DIR") or Path(__file__).parent / "artifacts")
+    path = Path(_env.getenv("SCREENSHOT_DIR") or Path(__file__).parent / "artifacts")
     path.mkdir(parents=True, exist_ok=True)
     return path

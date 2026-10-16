@@ -13,7 +13,9 @@ export interface LiveHandlers {
 const MAX_BACKOFF_MS = 15_000
 
 export function liveUrl(): string {
-  const override = process.env.NEXT_PUBLIC_AGENTTRACE_WS_URL
+  // NEXT_PUBLIC_AGENTTRACE_WS_URL: the pre-rename name, still read (dev only;
+  // both are inlined at build time, so each is spelled out).
+  const override = process.env.NEXT_PUBLIC_LANETRACE_WS_URL || process.env.NEXT_PUBLIC_AGENTTRACE_WS_URL
   if (override) return override
   const proto = window.location.protocol === "https:" ? "wss" : "ws"
   return `${proto}://${window.location.host}/ws`

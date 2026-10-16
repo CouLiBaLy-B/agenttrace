@@ -1,6 +1,6 @@
 """Deprecated alias: 0.2.2 `agenttrace_langchain.callback` — use
-`agenttrace.langchain.AsyncAgentTraceCallbackHandler`."""
+`lanetrace.langchain.AsyncLaneTraceCallbackHandler`."""
 
-from agenttrace.langchain.async_callback import AsyncAgentTraceCallbackHandler as AgentTraceCallbackHandler
+from lanetrace.langchain.async_callback import AsyncLaneTraceCallbackHandler as AgentTraceCallbackHandler
 
 __all__ = ["AgentTraceCallbackHandler"]

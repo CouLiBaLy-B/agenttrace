@@ -6,8 +6,8 @@ from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableLambda
 from langchain_core.tools import tool
 
-import agenttrace
-from agenttrace.langchain import AgentTraceCallbackHandler
+import lanetrace
+from lanetrace.langchain import LaneTraceCallbackHandler
 from tests.conftest import read_runs
 
 
@@ -37,7 +37,7 @@ def _pipeline(model):
 
 
 def test_handler_maps_a_root_invocation_to_one_run(tracking_db):
-    handler = AgentTraceCallbackHandler()
+    handler = LaneTraceCallbackHandler()
     _pipeline(_model()).invoke("sum?", config={"callbacks": [handler]})
     [run] = read_runs(tracking_db)
     assert run["name"] == "pipeline" and run["status"] == "completed"
@@ -52,16 +52,16 @@ def test_handler_maps_a_root_invocation_to_one_run(tracking_db):
 def test_tool_error_is_recorded_and_root_failure_fails_run(tracking_db):
     chain = RunnableLambda(lambda x: explode.invoke({"x": x}), name="failing")
     with pytest.raises(ValueError):
-        chain.invoke(1, config={"callbacks": [AgentTraceCallbackHandler()]})
+        chain.invoke(1, config={"callbacks": [LaneTraceCallbackHandler()]})
     [run] = read_runs(tracking_db)
     assert run["status"] == "failed"
     assert [e["type"] for e in run["events"]] == ["tool_call", "error"]
 
 
 def test_reuses_active_fluent_run_without_closing_it(tracking_db):
-    with agenttrace.start_run("outer"):
-        _pipeline(_model()).invoke("sum?", config={"callbacks": [AgentTraceCallbackHandler()]})
-        agenttrace.log_event(source="me", target="you", type="tool_call")
+    with lanetrace.start_run("outer"):
+        _pipeline(_model()).invoke("sum?", config={"callbacks": [LaneTraceCallbackHandler()]})
+        lanetrace.log_event(source="me", target="you", type="tool_call")
     [run] = read_runs(tracking_db)
     assert run["name"] == "outer"
     assert [e["type"] for e in run["events"]][-1] == "tool_call"  # still open after the chain ended
@@ -74,23 +74,23 @@ def test_handoff_tool_emits_handoff(tracking_db):
         return "ok"
 
     chain = RunnableLambda(lambda x: handoff_to_researcher.invoke({"to": "Researcher"}), name="delegating")
-    chain.invoke(None, config={"callbacks": [AgentTraceCallbackHandler()]})
+    chain.invoke(None, config={"callbacks": [LaneTraceCallbackHandler()]})
     events = read_runs(tracking_db)[0]["events"]
     assert ("handoff", "Researcher") in [(e["type"], e["target"]) for e in events]
 
 
 def test_handler_errors_never_propagate(tracking_db, monkeypatch):
-    handler = AgentTraceCallbackHandler()
+    handler = LaneTraceCallbackHandler()
     monkeypatch.setattr(handler, "_root_state", lambda *a, **k: 1 / 0)
     assert _pipeline(_model()).invoke("sum?", config={"callbacks": [handler]})["messages"]
 
 
 def test_never_joins_the_implicit_fluent_run(tracking_db):
-    agenttrace.log_event(source="me", target="you", type="tool_call")  # creates the implicit run
-    handler = AgentTraceCallbackHandler()
+    lanetrace.log_event(source="me", target="you", type="tool_call")  # creates the implicit run
+    handler = LaneTraceCallbackHandler()
     RunnableLambda(lambda x: add.invoke({"a": 1, "b": 2}), name="first").invoke(None, config={"callbacks": [handler]})
     RunnableLambda(lambda x: add.invoke({"a": 3, "b": 4}), name="second").invoke(None, config={"callbacks": [handler]})
-    agenttrace.end_run()
+    lanetrace.end_run()
     runs = {r["name"]: [e["type"] for e in r["events"]] for r in read_runs(tracking_db)}
     assert runs.pop("first") == runs.pop("second") == ["tool_call", "tool_result", "final_answer"]
     [implicit] = runs.values()
@@ -98,7 +98,7 @@ def test_never_joins_the_implicit_fluent_run(tracking_db):
 
 
 def test_concurrent_roots_on_one_handler_stay_separate(tracking_db):
-    handler = AgentTraceCallbackHandler()
+    handler = LaneTraceCallbackHandler()
     barrier = threading.Barrier(2, timeout=10)
 
     def chain(name, a):

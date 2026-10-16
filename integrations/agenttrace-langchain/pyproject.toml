@@ -1,7 +1,7 @@
 [project]
 name = "agenttrace-langchain"
-version = "0.3.0"
-description = "Deprecated shim — use deepagents-trace[langchain] (import agenttrace.langchain)"
+version = "0.4.0"
+description = "Deprecated shim — use lanetrace[langchain] (import lanetrace.langchain)"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
@@ -17,16 +17,16 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
     "Framework :: AsyncIO",
 ]
-dependencies = ["deepagents-trace[langchain]>=0.2.0"]
+dependencies = ["lanetrace[langchain]>=0.3.0"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "pytest-mock>=3.14", "pytest-asyncio>=0.24"]
 
 [project.urls]
-Homepage = "https://github.com/CouLiBaLy-B/agenttrace"
-Documentation = "https://coulibaly-b.github.io/agenttrace/"
-Repository = "https://github.com/CouLiBaLy-B/agenttrace"
-Issues = "https://github.com/CouLiBaLy-B/agenttrace/issues"
+Homepage = "https://github.com/CouLiBaLy-B/lanetrace"
+Documentation = "https://coulibaly-b.github.io/lanetrace/"
+Repository = "https://github.com/CouLiBaLy-B/lanetrace"
+Issues = "https://github.com/CouLiBaLy-B/lanetrace/issues"
 
 [build-system]
 requires = ["setuptools>=68"]

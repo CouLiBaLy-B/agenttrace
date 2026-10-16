@@ -4,7 +4,7 @@ import time
 import requests
 from playwright.sync_api import Page, Route, WebSocket, WebSocketRoute, expect
 
-from agenttrace import AgentTraceClient
+from lanetrace import LaneTraceClient
 
 
 def test_local_mode_dashboard_and_live_event(page: Page, local_server):
@@ -16,7 +16,7 @@ def test_local_mode_dashboard_and_live_event(page: Page, local_server):
     expect(page.get_by_text("Research Assistant", exact=True).first).to_be_visible()
     expect(page.get_by_text("Code Review Bot", exact=True).first).to_be_visible()
 
-    client = AgentTraceClient(db_url)
+    client = LaneTraceClient(db_url)
     run_id = client.create_run("e2e live run", project="Customer Support Agent")
     client.log_event(run_id, source="Orchestrator", target="LLM", type="llm_call", label="first step")
 
@@ -50,7 +50,7 @@ def test_local_mode_dashboard_and_live_event(page: Page, local_server):
 
 def test_polling_fallback_when_websocket_is_blocked(page: Page, local_server):
     base, db_url = local_server
-    client = AgentTraceClient(db_url)
+    client = LaneTraceClient(db_url)
     run_id = client.create_run("e2e polled run", project="Customer Support Agent")
     client.log_event(run_id, source="Orchestrator", target="LLM", type="llm_call", label="polled first")
 

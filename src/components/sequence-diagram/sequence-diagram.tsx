@@ -15,11 +15,14 @@ import { scrubberPositions } from "./scrubber"
 import { useMediaQuery } from "@/lib/hooks"
 
 // Hidden event types last for the browser session (across runs), not longer.
-const HIDDEN_TYPES_KEY = "agenttrace-hidden-types"
+const HIDDEN_TYPES_KEY = "lanetrace-hidden-types"
+// Before the AgentTrace -> LaneTrace rename (a tab open across the upgrade).
+const LEGACY_HIDDEN_TYPES_KEY = "agenttrace-hidden-types"
 
 function readHiddenTypes(): Set<EventType> {
   try {
-    const stored: unknown = JSON.parse(sessionStorage.getItem(HIDDEN_TYPES_KEY) ?? "[]")
+    const raw = sessionStorage.getItem(HIDDEN_TYPES_KEY) ?? sessionStorage.getItem(LEGACY_HIDDEN_TYPES_KEY)
+    const stored: unknown = JSON.parse(raw ?? "[]")
     return new Set(Array.isArray(stored) ? stored.filter((t): t is EventType => t in EVENT_COLORS) : [])
   } catch {
     return new Set()

@@ -1,6 +1,6 @@
 import uuid
 
-from agenttrace.server.routes import timeline as timeline_route
+from lanetrace.server.routes import timeline as timeline_route
 
 import os
 from datetime import datetime, timedelta, timezone
@@ -8,16 +8,16 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from fastapi.testclient import TestClient
 
-from agenttrace.server.app import app
-from agenttrace.store import db as store_db
-from agenttrace.store import events as store_events
-from agenttrace.store import local, models
+from lanetrace.server.app import app
+from lanetrace.store import db as store_db
+from lanetrace.store import events as store_events
+from lanetrace.store import local, models
 
 
 @pytest.fixture
 def local_client(monkeypatch):
-    monkeypatch.setenv("AGENTTRACE_AUTH", "none")
-    monkeypatch.setenv("AGENTTRACE_ALLOWED_HOSTS", "testserver")
+    monkeypatch.setenv("LANETRACE_AUTH", "none")
+    monkeypatch.setenv("LANETRACE_ALLOWED_HOSTS", "testserver")
     with TestClient(app) as c:
         yield c
 
@@ -81,7 +81,7 @@ def test_project_filter_and_bounds(local_client):
 
 
 def test_requires_login_in_password_mode(monkeypatch):
-    monkeypatch.delenv("AGENTTRACE_AUTH", raising=False)
+    monkeypatch.delenv("LANETRACE_AUTH", raising=False)
     from fastapi.testclient import TestClient as TC
     with TC(app) as c:
         assert c.get("/api/timeline").status_code == 401

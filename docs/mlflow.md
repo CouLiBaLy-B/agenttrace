@@ -2,16 +2,16 @@
 
 The tracking API follows MLflow's, so most names carry over.
 
-| MLflow | AgentTrace |
+| MLflow | LaneTrace |
 | --- | --- |
-| `mlflow.set_tracking_uri()` / `MLFLOW_TRACKING_URI` | `agenttrace.set_tracking_uri()` / `AGENTTRACE_TRACKING_URI` |
-| `mlflow.get_tracking_uri()` | `agenttrace.get_tracking_uri()` |
-| `mlflow.set_experiment()` / `MLFLOW_EXPERIMENT_NAME` | `agenttrace.set_project()` / `AGENTTRACE_PROJECT` |
+| `mlflow.set_tracking_uri()` / `MLFLOW_TRACKING_URI` | `lanetrace.set_tracking_uri()` / `LANETRACE_TRACKING_URI` |
+| `mlflow.get_tracking_uri()` | `lanetrace.get_tracking_uri()` |
+| `mlflow.set_experiment()` / `MLFLOW_EXPERIMENT_NAME` | `lanetrace.set_project()` / `LANETRACE_PROJECT` |
 | `mlflow.start_run()` / `active_run()` / `end_run()` | the same names |
-| `@mlflow.trace` | `@agenttrace.trace` |
-| `mlflow.langchain.autolog()` | `agenttrace.langchain.autolog()` |
-| `MlflowClient` | `agenttrace.AgentTraceClient` |
-| `mlflow ui` | `agenttrace ui` |
+| `@mlflow.trace` | `@lanetrace.trace` |
+| `mlflow.langchain.autolog()` | `lanetrace.langchain.autolog()` |
+| `MlflowClient` | `lanetrace.LaneTraceClient` |
+| `mlflow ui` | `lanetrace ui` |
 
 ## What differs
 
@@ -21,12 +21,12 @@ The tracking API follows MLflow's, so most names carry over.
   optionally a `label`, a JSON `payload`, a duration and a status. See the
   [event contract](events.md).
 - A **project** plays the experiment's part. Projects are created on first use,
-  by name; without `set_project()` or `AGENTTRACE_PROJECT`, runs go to
+  by name; without `set_project()` or `LANETRACE_PROJECT`, runs go to
   `Default`.
 - `start_run()` returns the run, which is a context manager: leaving the block
   ends it `completed`, or `failed` if an exception escaped. `end_run(status)`
   ends the current run.
-- `log_event()` and `@agenttrace.trace` don't block and don't raise (except a
+- `log_event()` and `@lanetrace.trace` don't block and don't raise (except a
   `ValueError` for an unknown event type): each run writes from its own
   background thread, and a storage error turns tracing off for that run.
   Ending a run, with `end_run()` or by leaving the `start_run()` block, waits
@@ -37,32 +37,32 @@ The tracking API follows MLflow's, so most names carry over.
 
 The tracking URI is the first of:
 
-1. `agenttrace.set_tracking_uri(uri)`;
-2. `AGENTTRACE_TRACKING_URI`;
-3. `AGENTTRACE_URL`, the pre-0.2 variable: a full `.../api/events` URL, of
+1. `lanetrace.set_tracking_uri(uri)`;
+2. `LANETRACE_TRACKING_URI`;
+3. `LANETRACE_URL`, the pre-0.2 variable: a full `.../api/events` URL, of
    which the server part is used;
-4. `http://localhost:3000`, when only `AGENTTRACE_KEY` is set (the pre-0.2
+4. `http://localhost:3000`, when only `LANETRACE_KEY` is set (the pre-0.2
    default server; a warning says so once);
-5. `sqlite:///./agenttrace.db`.
+5. `sqlite:///./lanetrace.db`.
 
 | Tracking URI | Runs go to |
 | --- | --- |
-| `sqlite:///./agenttrace.db` (the default) or another SQLite file | that file, written directly; `agenttrace ui` reads it (`--database-url` for another file) |
+| `sqlite:///./lanetrace.db` (the default) or another SQLite file | that file, written directly; `lanetrace ui` reads it (`--database-url` for another file) |
 | another SQLAlchemy URL, such as `postgresql+psycopg://...` | that database, written directly; the tables are created on the first write |
-| `http://host:port` or `https://...` | a running `agenttrace ui`, through `POST /api/events` |
+| `http://host:port` or `https://...` | a running `lanetrace ui`, through `POST /api/events` |
 
-Over HTTP, `AGENTTRACE_KEY` is sent when it is set: the run then goes to that
+Over HTTP, `LANETRACE_KEY` is sent when it is set: the run then goes to that
 key's project, and `set_project()` is ignored. Without a key, each run names its
 project, which only a server running with `--auth none` accepts.
 
 ## The explicit client
 
-Like `MlflowClient`, `AgentTraceClient` is synchronous and raises on any error:
+Like `MlflowClient`, `LaneTraceClient` is synchronous and raises on any error:
 
 ```python
-from agenttrace import AgentTraceClient
+from lanetrace import LaneTraceClient
 
-client = AgentTraceClient()  # or AgentTraceClient("postgresql+psycopg://...")
+client = LaneTraceClient()   # or LaneTraceClient("postgresql+psycopg://...")
 run_id = client.create_run("nightly eval", project="evals")
 client.log_event(run_id, source="Orchestrator", target="LLM", type="llm_call")
 client.end_run(run_id, "completed")

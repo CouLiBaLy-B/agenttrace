@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from agenttrace.server.serializers import _iso
+from lanetrace.server.serializers import _iso
 
 
 def test_naive_datetimes_are_treated_as_utc():

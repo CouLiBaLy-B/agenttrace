@@ -58,7 +58,7 @@ server.log
 .venv/
 
 # bundled UI
-python-server/agenttrace/server/static/
+python-server/lanetrace/server/static/
 
 # Brainstorm mockups / SDD workspaces (superpowers)
 .superpowers/

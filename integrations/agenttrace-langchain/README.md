@@ -1,28 +1,33 @@
 > **Deprecated.** This package is now a thin shim. Use
-> `pip install 'deepagents-trace[langchain]'` and `import agenttrace.langchain`
-> (or `agenttrace.langchain.autolog()`). Existing top-level imports keep
+> `pip install 'lanetrace[langchain]'` and `import lanetrace.langchain`
+> (or `lanetrace.langchain.autolog()`). Existing top-level imports keep
 > working and emit a `DeprecationWarning`, as do the old submodule paths
 > (`agenttrace_langchain.client`, `.async_client`, `.run`, `.async_run`,
 > `.middleware`, `.callback`, `.projection`), which are now aliases.
 >
 > | `agenttrace_langchain` | New import |
 > | --- | --- |
-> | `AgentTraceMiddleware` | `agenttrace.langchain.AgentTraceMiddleware` |
-> | `AgentTraceCallbackHandler` (0.2.2, async) | `agenttrace.langchain.AsyncAgentTraceCallbackHandler` |
-> | `AgentTraceClient` | `agenttrace.tracking.http.HttpEventClient` |
-> | `AgentTraceRun` | `agenttrace.tracking.http.AgentTraceRun` |
-> | `AsyncAgentTraceClient` | `agenttrace.tracking.async_http.AsyncHttpEventClient` |
-> | `AsyncAgentTraceRun` | `agenttrace.tracking.async_run.AsyncAgentTraceRun` |
+> | `AgentTraceMiddleware` | `lanetrace.langchain.LaneTraceMiddleware` |
+> | `AgentTraceCallbackHandler` (0.2.2, async) | `lanetrace.langchain.AsyncLaneTraceCallbackHandler` |
+> | `AgentTraceClient` | `lanetrace.tracking.http.HttpEventClient` |
+> | `AgentTraceRun` | `lanetrace.tracking.http.LaneTraceRun` |
+> | `AsyncAgentTraceClient` | `lanetrace.tracking.async_http.AsyncHttpEventClient` |
+> | `AsyncAgentTraceRun` | `lanetrace.tracking.async_run.AsyncLaneTraceRun` |
 >
-> Note: `agenttrace.langchain.AgentTraceCallbackHandler` (no `Async`) is the
+> Note: `lanetrace.langchain.LaneTraceCallbackHandler` (no `Async`) is the
 > sync handler used by `autolog()`, not the 0.2.2 class.
+>
+> 0.4.0 depends on `lanetrace` (AgentTrace / `deepagents-trace` was renamed
+> LaneTrace in 0.3.0); the `agenttrace_langchain` names are unchanged.
+> `AGENTTRACE_URL` / `AGENTTRACE_KEY` still work as fallbacks for the
+> `LANETRACE_*` variables below.
 
 ## Upgrading from 0.2.x
 
 - **No API key now posts keylessly.** An `AsyncAgentTraceClient` with no key
-  (`api_key=None` and no `AGENTTRACE_KEY`) used to disable tracing; it now
+  (`api_key=None` and no `LANETRACE_KEY`) used to disable tracing; it now
   sends without an `Authorization` header, for a local
-  `agenttrace ui --auth none`. A server that wants a key answers 401, and the
+  `lanetrace ui --auth none`. A server that wants a key answers 401, and the
   run is then disabled with one warning. If you relied on a missing key as an
   off switch, gate tracing in your app (don't attach the handler).
 - **The anonymizer also receives strings.** It is called with every payload
@@ -36,12 +41,12 @@
 
 `AgentTraceMiddleware` — an `AgentMiddleware` for LangChain's `create_agent` /
 deepagents' `create_deep_agent` that streams a run to an
-[AgentTrace](../../README.md) instance as a live sequence diagram.
+[LaneTrace](../../README.md) instance as a live sequence diagram.
 
 ## Install
 
 ```bash
-pip install 'deepagents-trace[langchain]'
+pip install 'lanetrace[langchain]'
 ```
 
 This shim package stays installable (`pip install -e integrations/agenttrace-langchain`)
@@ -64,17 +69,17 @@ agent.invoke({"messages": [{"role": "user", "content": "..."}]})
 Works the same with `await agent.ainvoke(...)` — the middleware's async hooks
 fire automatically. See [`examples/`](examples) for full sync and async
 runnable projects, and the offline notebooks in
-[`python-server/examples/notebooks/`](https://github.com/CouLiBaLy-B/agenttrace/tree/main/python-server/examples/notebooks)
-(written for the new `agenttrace.langchain` imports).
+[`python-server/examples/notebooks/`](https://github.com/CouLiBaLy-B/lanetrace/tree/main/python-server/examples/notebooks)
+(written for the new `lanetrace.langchain` imports).
 
-Configure the target instance and project API key (from the AgentTrace
+Configure the target instance and project API key (from the LaneTrace
 Integration tab, prefixed `atr_`) via environment variables, or pass them
 explicitly to the middleware:
 
 | Env var | Default | Purpose |
 | --- | --- | --- |
-| `AGENTTRACE_URL` | `http://localhost:3000/api/events` | Ingestion endpoint |
-| `AGENTTRACE_KEY` | — | Project API key |
+| `LANETRACE_URL` | `http://localhost:3000/api/events` | Ingestion endpoint |
+| `LANETRACE_KEY` | — | Project API key |
 
 ```python
 middleware = AgentTraceMiddleware(
@@ -91,7 +96,7 @@ The middleware is built to never affect the agent it instruments:
 
 - **Non-blocking** — every event is pushed onto a queue drained by a
   background thread; `wrap_model_call`/`wrap_tool_call` never wait on the
-  AgentTrace HTTP call.
+  LaneTrace HTTP call.
 - **Never fatal** — a missing API key or the first network/HTTP failure
   disables tracing for that run (one warning logged via the standard
   `logging` module), the agent keeps running normally.
@@ -122,14 +127,14 @@ non-blocking/never-fatal guarantees on top.
 middleware=[...])` **build** time. If your server compiles the agent once and
 reuses it across many requests (e.g. a per-user compiled-graph cache with a
 TTL), a single middleware instance would span multiple runs — the first
-run's `after_agent` closes the AgentTrace run, and every later request on that
+run's `after_agent` closes the LaneTrace run, and every later request on that
 cached agent silently traces into an already-closed run. The middleware is
 only correct when the agent is (re)built per invocation.
 
 The least-code option is one `AgentTraceCallbackHandler` (0.2.2 API, now
-`agenttrace.langchain.AsyncAgentTraceCallbackHandler`) per request, attached via
+`lanetrace.langchain.AsyncLaneTraceCallbackHandler`) per request, attached via
 `config={"callbacks": [handler]}`; see "Async servers" in the
-[deepagents-trace README](../../python-server/README.md).
+[lanetrace README](../../python-server/README.md).
 
 Lower-level: create one `AsyncAgentTraceRun` **per request**
 instead, independent of the agent build, and feed it events from your own

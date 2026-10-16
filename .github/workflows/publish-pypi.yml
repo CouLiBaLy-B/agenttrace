@@ -1,12 +1,14 @@
-name: Publish deepagents-trace to PyPI
+name: Publish lanetrace to PyPI
 
 # Trusted Publishing (OIDC) — no API token stored in GitHub secrets.
 # One-time setup required on pypi.org before the first run (see
 # python-server/README.md#publishing): register this repo/workflow as a
-# "trusted publisher" for the `deepagents-trace` project.
+# "trusted publisher" for the `lanetrace` project.
 #
-# Release: push a `v<version>` tag (e.g. v0.2.0), before the
-# agenttrace-langchain shim that depends on it.
+# Release: push a `v<version>` tag (e.g. v0.3.0), before the
+# deepagents-trace and agenttrace-langchain shims that depend on it
+# (their tags, deepagents-trace-v* and agenttrace-langchain-v*, don't
+# match `v*`: tag filters match from the start of the tag name).
 on:
   release:
     types: [published]
@@ -27,7 +29,8 @@ concurrency:
 
 jobs:
   build:
-    # A release of the shim's agenttrace-langchain-v* tag is not this package.
+    # A release of a shim's tag (deepagents-trace-v*, agenttrace-langchain-v*)
+    # is not this package.
     if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'v')
     runs-on: ubuntu-latest
     defaults:
@@ -41,8 +44,8 @@ jobs:
       - name: Version is consistent and matches the tag
         run: |
           version=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
-          if ! grep -qxF "__version__ = \"$version\"" agenttrace/__init__.py; then
-            echo "::error::agenttrace/__init__.py __version__ differs from pyproject.toml ($version)"
+          if ! grep -qxF "__version__ = \"$version\"" lanetrace/__init__.py; then
+            echo "::error::lanetrace/__init__.py __version__ differs from pyproject.toml ($version)"
             exit 1
           fi
           if [ "$GITHUB_REF_TYPE" = tag ] && [ "$GITHUB_REF_NAME" != "v$version" ]; then

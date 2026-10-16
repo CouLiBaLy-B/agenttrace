@@ -1,6 +1,6 @@
-# AgentTrace — Mode d'emploi
+# LaneTrace — Mode d'emploi
 
-> **Note** : ce document décrit le déploiement antérieur à la version 0.2 (Next.js). Là où il mentionne NextAuth, Prisma, Socket.IO ou `bun run dev`, ces éléments ont été remplacés par le serveur Python FastAPI qui embarque l'interface (`pip install 'deepagents-trace[server]'`, `agenttrace ui`). Voir le [README](../README.md) pour l'installation et l'utilisation actuelles.
+> **Note** : ce document décrit le déploiement antérieur à la version 0.2 (Next.js). Là où il mentionne NextAuth, Prisma, Socket.IO ou `bun run dev`, ces éléments ont été remplacés par le serveur Python FastAPI qui embarque l'interface (`pip install 'lanetrace[server]'`, `lanetrace ui`). Voir le [README](../README.md) pour l'installation et l'utilisation actuelles.
 
 > Guide pratique pour démarrer, utiliser au quotidien et instrumenter vos agents.
 
@@ -40,7 +40,7 @@ Ouvrez l'application dans le panneau de preview (à droite). Vous arrivez sur l'
 
 #### Option A — Explorer la démo (recommandé pour découvrir)
 
-Cliquez le bouton **"Explore the live demo"** en bas du formulaire. Cela crée (ou réutilise) un compte `demo@agenttrace.dev` **préchargé avec 3 projets de démonstration** :
+Cliquez le bouton **"Explore the live demo"** en bas du formulaire. Cela crée (ou réutilise) un compte `demo@lanetrace.dev` **préchargé avec 3 projets de démonstration** :
 
 1. **Customer Support Agent** — flux de remboursement avec retry sur timeout de passerelle
 2. **Research Assistant** — délégation à un sous-agent "Web Search" (web_search + 3 fetch_page parallèles)
@@ -317,13 +317,13 @@ Le plus simple pour démarrer. Copiez l'onglet **Python** :
 ```python
 import requests
 
-AGENTTRACE_URL = "http://localhost:3000/api/events"  # votre URL de déploiement
+LANETRACE_URL = "http://localhost:3000/api/events"   # votre URL de déploiement
 API_KEY = "atr_votre_clé"                             # depuis la page Integration
 
 headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
 
 def emit(event: dict) -> dict:
-    r = requests.post(AGENTTRACE_URL, json=event, headers=headers)
+    r = requests.post(LANETRACE_URL, json=event, headers=headers)
     r.raise_for_status()
     return r.json()
 
@@ -360,7 +360,7 @@ emit({"runId": run_id, "source": "Orchestrator", "target": "User",
 emit({"runId": run_id, "endRun": "completed"})
 ```
 
-Ouvrez le run dans AgentTrace **avant** de lancer le script : vous verrez chaque flèche apparaître en direct.
+Ouvrez le run dans LaneTrace **avant** de lancer le script : vous verrez chaque flèche apparaître en direct.
 
 ### 9.2 TypeScript
 
@@ -368,7 +368,7 @@ Même logique avec `fetch`. Onglet **TypeScript** de la page Integration. Idéal
 
 ### 9.3 DeepAgents (LangChain)
 
-C'est l'intégration la plus puissante. L'onglet **DeepAgents** fournit un `BaseCallbackHandler` complet (`AgentTraceCallback`) à déposer dans votre codebase.
+C'est l'intégration la plus puissante. L'onglet **DeepAgents** fournit un `BaseCallbackHandler` complet (`LaneTraceCallback`) à déposer dans votre codebase.
 
 #### Installation
 
@@ -379,7 +379,7 @@ pip install langchain langchain-openai langchain-deepagents requests
 #### Utilisation
 
 ```python
-from agenttrace_callback import AgentTraceCallback
+from lanetrace_callback import LaneTraceCallback
 from deepagents import create_deep_agent
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
@@ -400,8 +400,8 @@ agent = create_deep_agent(
     system_prompt="You are a research assistant.",
 )
 
-# 👇 UNE instance de callback = UN run AgentTrace
-trace = AgentTraceCallback(run_name="research — Rust frameworks")
+# 👇 UNE instance de callback = UN run LaneTrace
+trace = LaneTraceCallback(run_name="research — Rust frameworks")
 
 result = agent.invoke(
     {"messages": [{"role": "user", "content": "State of Rust web frameworks?"}]},
@@ -411,7 +411,7 @@ result = agent.invoke(
 
 #### Ce que le callback capture automatiquement
 
-| Callback LangChain | Événement AgentTrace | Flèche dans le diagramme |
+| Callback LangChain | Événement LaneTrace | Flèche dans le diagramme |
 |---|---|---|
 | `on_llm_start` / `on_llm_end` / `on_chat_model_start` | `llm_call` | Orchestrator → LLM (+ tokens, output preview) |
 | `on_tool_start` | `tool_call` | Orchestrator → tool |
@@ -425,12 +425,12 @@ Vous n'avez **rien à coder de plus** : tout agent LangChain qui supporte les ca
 #### Variables d'environnement
 
 Le callback lit :
-- `AGENTTRACE_URL` (défaut : `http://localhost:3000/api/events`)
-- `AGENTTRACE_KEY` (défaut : `atr_YOUR_API_KEY` — remplacez par votre clé)
+- `LANETRACE_URL` (défaut : `http://localhost:3000/api/events`)
+- `LANETRACE_KEY` (défaut : `atr_YOUR_API_KEY` — remplacez par votre clé)
 
 ```bash
-export AGENTTRACE_URL=https://votre-deploiement/api/events
-export AGENTTRACE_KEY=atr_votre_clé
+export LANETRACE_URL=https://votre-deploiement/api/events
+export LANETRACE_KEY=atr_votre_clé
 python votre_agent.py
 ```
 
@@ -502,7 +502,7 @@ Deux conteneurs démarrent :
 - `web` sur le port 3000 (Next.js + Prisma)
 - `socket` sur le port 3003 (Socket.IO)
 
-La base SQLite est persistée dans un volume nommé `agenttrace-data`.
+La base SQLite est persistée dans un volume nommé `lanetrace-data`.
 
 ### 12.2 Configuration
 
@@ -511,14 +511,14 @@ Créez un `.env` (ou passez les vars au compose) :
 ```env
 NEXTAUTH_SECRET=<openssl rand -base64 32>
 NEXTAUTH_URL=https://votre-domaine.com
-DATABASE_URL=file:/app/data/agenttrace.db    # ou postgresql://...
+DATABASE_URL=file:/app/data/lanetrace.db     # ou postgresql://...
 SOCKET_SERVICE_URL=http://socket:3003
 ```
 
 ### 12.3 Production avec Postgres
 
 1. Dans `prisma/schema.prisma`, changez `provider = "sqlite"` → `provider = "postgresql"`
-2. `DATABASE_URL=postgresql://user:pass@host:5432/agenttrace`
+2. `DATABASE_URL=postgresql://user:pass@host:5432/lanetrace`
 3. `bun run db:push` (ou `db:migrate`) pour créer le schéma
 4. Redémarrez le conteneur `web`
 

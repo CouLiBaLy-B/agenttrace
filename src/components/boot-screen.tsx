@@ -82,7 +82,7 @@ function Mark() {
   return (
     <div className="flex flex-col items-center gap-3">
       <TraceLogo size={44} className="text-primary" />
-      <span className="text-lg font-semibold tracking-tight">AgentTrace</span>
+      <span className="text-lg font-semibold tracking-tight">LaneTrace</span>
       <span className="font-mono text-xs text-(--ink-2)">Loading</span>
     </div>
   )
@@ -163,7 +163,7 @@ function CyanotypeBoot() {
         >
           <div className="flex items-center gap-3 px-5 py-4">
             <TraceLogo size={32} className="text-primary" />
-            <span className="text-lg font-bold tracking-tight">AgentTrace</span>
+            <span className="text-lg font-bold tracking-tight">LaneTrace</span>
           </div>
           <div className="grid grid-cols-[auto_1fr] border-t border-(--line-strong) font-mono text-[11px]">
             <span className="border-r border-(--line-strong) px-5 py-1.5 text-(--ink-2)">Sheet 1</span>

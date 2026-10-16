@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from agenttrace.store import db as store_db
-from agenttrace.store import events, local, models
+from lanetrace.store import db as store_db
+from lanetrace.store import events, local, models
 
 
 @pytest.fixture

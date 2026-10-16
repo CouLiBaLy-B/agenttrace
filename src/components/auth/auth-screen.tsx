@@ -50,7 +50,7 @@ export function AuthScreen() {
         <div className="w-full max-w-sm">
           <div className="mb-10 flex items-center gap-2">
             <TraceLogo className="text-primary" />
-            <span className="text-base font-semibold tracking-tight">AgentTrace</span>
+            <span className="text-base font-semibold tracking-tight">LaneTrace</span>
           </div>
 
           <h1 className="text-2xl font-semibold tracking-tight">

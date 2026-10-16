@@ -1,18 +1,18 @@
 name: Publish agenttrace-langchain to PyPI
 
 # The deprecated agenttrace-langchain shim (integrations/agenttrace-langchain),
-# a thin re-export over deepagents-trace[langchain].
+# a thin re-export over lanetrace[langchain].
 #
 # Trusted Publishing (OIDC) — no API token stored in GitHub secrets.
 # One-time setup on pypi.org (see python-server/README.md#publishing): a
 # trusted publisher for the `agenttrace-langchain` project with
-#   Owner: CouLiBaLy-B, Repository: agenttrace
+#   Owner: CouLiBaLy-B, Repository: lanetrace
 #   Workflow filename: publish-agenttrace-langchain.yml
 #   Environment name: pypi-agenttrace-langchain
 #
 # Release: push an `agenttrace-langchain-v<version>` tag (e.g.
-# agenttrace-langchain-v0.3.0) once the deepagents-trace version it requires
-# is on PyPI; the wheel check below installs that dependency from PyPI.
+# agenttrace-langchain-v0.4.0) once the lanetrace version it requires is on
+# PyPI; the wheel check below installs that dependency from PyPI.
 on:
   push:
     tags:
@@ -55,7 +55,7 @@ jobs:
         run: |
           python -m venv wheel-check
           wheel-check/bin/pip install "$GITHUB_WORKSPACE"/integrations/agenttrace-langchain/dist/*.whl
-          wheel-check/bin/python -c "from agenttrace_langchain import AgentTraceCallbackHandler, AgentTraceMiddleware"
+          wheel-check/bin/python -c "import lanetrace; from agenttrace_langchain import AgentTraceCallbackHandler, AgentTraceMiddleware"
       - uses: actions/upload-artifact@v4
         with:
           name: dist

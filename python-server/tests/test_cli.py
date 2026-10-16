@@ -5,7 +5,7 @@ import re
 import pytest
 from click.testing import CliRunner
 
-from agenttrace import cli
+from lanetrace import cli
 
 
 def test_ui_without_server_extra_exits_with_install_hint(monkeypatch):
@@ -15,7 +15,7 @@ def test_ui_without_server_extra_exits_with_install_hint(monkeypatch):
     )
     result = CliRunner().invoke(cli.main, ["ui"])
     assert result.exit_code == 1
-    assert "pip install 'deepagents-trace[server]'" in result.output
+    assert "pip install 'lanetrace[server]'" in result.output
 
 
 @pytest.fixture
@@ -25,8 +25,8 @@ def fake_uvicorn(monkeypatch):
     calls = []
     monkeypatch.setattr(uvicorn, "run", lambda *a, **k: calls.append((a, k)))
     # ui() sets these in os.environ directly: register their restore first.
-    monkeypatch.setenv("AGENTTRACE_AUTH", "password")
-    monkeypatch.delenv("AGENTTRACE_AUTH")
+    monkeypatch.setenv("LANETRACE_AUTH", "password")
+    monkeypatch.delenv("LANETRACE_AUTH")
     monkeypatch.setenv("DATABASE_URL", os.environ["DATABASE_URL"])
     monkeypatch.delenv("NO_COLOR", raising=False)
     return calls
@@ -39,30 +39,30 @@ def fake_uvicorn(monkeypatch):
 def test_ui_auth_defaults(fake_uvicorn, monkeypatch, args, expected):
     result = CliRunner().invoke(cli.main, ["ui", *args])
     assert result.exit_code == 0, result.output
-    assert os.environ["AGENTTRACE_AUTH"] == expected
+    assert os.environ["LANETRACE_AUTH"] == expected
     assert len(fake_uvicorn) == 1
 
 
 def test_ui_warns_on_public_host_without_auth(fake_uvicorn, monkeypatch):
-    monkeypatch.delenv("AGENTTRACE_ALLOWED_HOSTS", raising=False)
+    monkeypatch.delenv("LANETRACE_ALLOWED_HOSTS", raising=False)
     result = CliRunner().invoke(cli.main, ["ui", "--host", "0.0.0.0", "--auth", "none"])
     assert result.exit_code == 0
     assert "WARNING" in result.output
-    assert "set AGENTTRACE_ALLOWED_HOSTS=<server-address>" in result.output
+    assert "set LANETRACE_ALLOWED_HOSTS=<server-address>" in result.output
 
 
 def test_ui_auth_none_warning_names_the_exact_allowed_hosts_value(fake_uvicorn, monkeypatch):
-    monkeypatch.delenv("AGENTTRACE_ALLOWED_HOSTS", raising=False)
+    monkeypatch.delenv("LANETRACE_ALLOWED_HOSTS", raising=False)
     result = CliRunner().invoke(cli.main, ["ui", "--host", "192.168.1.10", "--auth", "none"])
     assert result.exit_code == 0, result.output
-    assert "to open it as 192.168.1.10, set AGENTTRACE_ALLOWED_HOSTS=192.168.1.10" in result.output
+    assert "to open it as 192.168.1.10, set LANETRACE_ALLOWED_HOSTS=192.168.1.10" in result.output
 
 
 def test_ui_auth_none_warning_shows_the_allowed_hosts_already_set(fake_uvicorn, monkeypatch):
-    monkeypatch.setenv("AGENTTRACE_ALLOWED_HOSTS", "traces.example.com")
+    monkeypatch.setenv("LANETRACE_ALLOWED_HOSTS", "traces.example.com")
     result = CliRunner().invoke(cli.main, ["ui", "--host", "0.0.0.0", "--auth", "none"])
     assert result.exit_code == 0, result.output
-    assert "accepted besides loopback: AGENTTRACE_ALLOWED_HOSTS=traces.example.com" in result.output
+    assert "accepted besides loopback: LANETRACE_ALLOWED_HOSTS=traces.example.com" in result.output
     assert "<server-address>, set" not in result.output
 
 
@@ -73,7 +73,7 @@ def test_db_init_works_without_server_extra(monkeypatch, tmp_path):
     monkeypatch.setattr(
         importlib.util, "find_spec", lambda name, *a: None if name == "fastapi" else real_find_spec(name, *a)
     )
-    for mod in [m for m in sys.modules if m == "fastapi" or m.startswith(("fastapi.", "agenttrace.server"))]:
+    for mod in [m for m in sys.modules if m == "fastapi" or m.startswith(("fastapi.", "lanetrace.server"))]:
         monkeypatch.delitem(sys.modules, mod)
     monkeypatch.setitem(sys.modules, "fastapi", None)  # `import fastapi` -> ImportError
     url = f"sqlite:///{tmp_path}/init.db"
@@ -81,31 +81,31 @@ def test_db_init_works_without_server_extra(monkeypatch, tmp_path):
     assert result.exit_code == 0, result.output
     from sqlalchemy import inspect
 
-    from agenttrace.store.db import get_engine
+    from lanetrace.store.db import get_engine
 
     assert "runs" in inspect(get_engine(url)).get_table_names()
 
 
-def test_ui_honours_agenttrace_auth_env_on_localhost(fake_uvicorn, monkeypatch):
-    monkeypatch.setenv("AGENTTRACE_AUTH", "password")
+def test_ui_honours_lanetrace_auth_env_on_localhost(fake_uvicorn, monkeypatch):
+    monkeypatch.setenv("LANETRACE_AUTH", "password")
     result = CliRunner().invoke(cli.main, ["ui"])
     assert result.exit_code == 0, result.output
-    assert os.environ["AGENTTRACE_AUTH"] == "password"
+    assert os.environ["LANETRACE_AUTH"] == "password"
     assert re.search(r"^  Auth +password ", result.output, re.MULTILINE)
 
 
 def test_ui_auth_flag_overrides_env(fake_uvicorn, monkeypatch):
-    monkeypatch.setenv("AGENTTRACE_AUTH", "password")
+    monkeypatch.setenv("LANETRACE_AUTH", "password")
     result = CliRunner().invoke(cli.main, ["ui", "--auth", "none"])
     assert result.exit_code == 0, result.output
-    assert os.environ["AGENTTRACE_AUTH"] == "none"
+    assert os.environ["LANETRACE_AUTH"] == "none"
 
 
 def test_ui_warns_on_public_host_with_env_auth_none(fake_uvicorn, monkeypatch):
-    monkeypatch.setenv("AGENTTRACE_AUTH", "none")
+    monkeypatch.setenv("LANETRACE_AUTH", "none")
     result = CliRunner().invoke(cli.main, ["ui", "--host", "0.0.0.0"])
     assert result.exit_code == 0, result.output
-    assert os.environ["AGENTTRACE_AUTH"] == "none"
+    assert os.environ["LANETRACE_AUTH"] == "none"
     assert "WARNING" in result.output
 
 
@@ -120,20 +120,20 @@ def test_ui_banner_shows_version_url_auth_database_and_tracking_hint(fake_uvicor
 
     result = CliRunner().invoke(cli.main, ["ui", "--port", "3210", "--database-url", "sqlite:////srv/at/banner.db"])
     assert result.exit_code == 0, result.output
-    assert f"AgentTrace {version('deepagents-trace')}" in result.output
+    assert f"LaneTrace {version('lanetrace')}" in result.output
     assert _banner_row(result.output, "Dashboard") == "http://127.0.0.1:3210"
     assert _banner_row(result.output, "Auth").startswith("none ")
     assert _banner_row(result.output, "Database") == "sqlite:////srv/at/banner.db"
-    assert _banner_row(result.output, "Tracking") == "AGENTTRACE_TRACKING_URI=http://127.0.0.1:3210"
+    assert _banner_row(result.output, "Tracking") == "LANETRACE_TRACKING_URI=http://127.0.0.1:3210"
     assert _banner_row(result.output, "Docs") == cli.DOCS_URL
     assert fake_uvicorn[0][1]["port"] == 3210
 
 
 def test_ui_banner_resolves_a_relative_sqlite_file(fake_uvicorn, tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    result = CliRunner().invoke(cli.main, ["ui", "--database-url", "sqlite:///./agenttrace.db"])
+    result = CliRunner().invoke(cli.main, ["ui", "--database-url", "sqlite:///./lanetrace.db"])
     assert result.exit_code == 0, result.output
-    expected = f"sqlite:///./agenttrace.db  ({(tmp_path / 'agenttrace.db').resolve()})"
+    expected = f"sqlite:///./lanetrace.db  ({(tmp_path / 'lanetrace.db').resolve()})"
     assert _banner_row(result.output, "Database") == expected
 
 
@@ -143,8 +143,8 @@ def test_ui_banner_on_all_interfaces_in_password_mode(fake_uvicorn):
     # A browser can't open 0.0.0.0; remote agents need this machine's address.
     assert _banner_row(result.output, "Dashboard") == "http://localhost:8080"
     assert _banner_row(result.output, "Auth").startswith("password ")
-    assert _banner_row(result.output, "Tracking") == "AGENTTRACE_TRACKING_URI=http://<server-address>:8080"
-    assert "AGENTTRACE_KEY=atr_" in result.output
+    assert _banner_row(result.output, "Tracking") == "LANETRACE_TRACKING_URI=http://<server-address>:8080"
+    assert "LANETRACE_KEY=atr_" in result.output
 
 
 def test_ui_banner_masks_the_database_password(fake_uvicorn):
@@ -218,8 +218,8 @@ def test_ui_banner_masks_a_password_from_database_url_env(fake_uvicorn, monkeypa
         # no password: printed as is
         ("postgresql://user@host:5432/db", "postgresql://user@host:5432/db"),
         ("postgresql://host/db?x=a@b", "postgresql://host/db?x=a@b"),
-        ("sqlite:///./agenttrace.db", "sqlite:///./agenttrace.db"),
-        ("sqlite:////home/me/p@th/agenttrace.db", "sqlite:////home/me/p@th/agenttrace.db"),
+        ("sqlite:///./lanetrace.db", "sqlite:///./lanetrace.db"),
+        ("sqlite:////home/me/p@th/lanetrace.db", "sqlite:////home/me/p@th/lanetrace.db"),
     ],
 )
 def test_mask_db_url(url, masked):
@@ -241,9 +241,9 @@ def test_ui_banner_is_plain_text_off_a_terminal_or_with_no_color(fake_uvicorn):
 def test_demo_masks_the_database_password(monkeypatch):
     import contextlib
 
-    from agenttrace.server import demo as server_demo
-    from agenttrace.store import db as store_db
-    from agenttrace.store import local
+    from lanetrace.server import demo as server_demo
+    from lanetrace.store import db as store_db
+    from lanetrace.store import local
 
     monkeypatch.setattr(store_db, "init_db", lambda url: None)
     monkeypatch.setattr(store_db, "get_sessionmaker", lambda url: contextlib.nullcontext)

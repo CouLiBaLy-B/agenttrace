@@ -15,8 +15,8 @@ export default function Home() {
     return (
       <div role="alert" className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background p-6 text-center">
         <p className="max-w-sm text-sm text-[var(--ink-2)]">
-          Can&apos;t reach the AgentTrace server. Check that{" "}
-          <code className="font-mono text-[var(--ink)]">agenttrace ui</code> is running, then retry.
+          Can&apos;t reach the LaneTrace server. Check that{" "}
+          <code className="font-mono text-[var(--ink)]">lanetrace ui</code> is running, then retry.
         </p>
         <Button variant="outline" onClick={() => retry()}>
           Retry
