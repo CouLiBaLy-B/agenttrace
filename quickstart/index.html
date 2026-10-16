@@ -6,11 +6,11 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Live sequence diagrams for AI agents. An MLflow-style tracking SDK, a LangChain / deepagents integration, and a dashboard served by `agenttrace ui`.">
+        <meta name="description" content="Live sequence diagrams for AI agents. An MLflow-style tracking SDK, a LangChain / deepagents integration, and a dashboard served by `lanetrace ui`.">
       
       
       
-        <link rel="canonical" href="https://coulibaly-b.github.io/agenttrace/quickstart/">
+        <link rel="canonical" href="https://coulibaly-b.github.io/lanetrace/quickstart/">
       
       
         <link rel="prev" href="../install/">
@@ -27,7 +27,7 @@
     
     
       
-        <title>Quickstart - AgentTrace</title>
+        <title>Quickstart - LaneTrace</title>
       
     
     
@@ -94,7 +94,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="AgentTrace" class="md-header__button md-logo" aria-label="AgentTrace" data-md-component="logo">
+    <a href=".." title="LaneTrace" class="md-header__button md-logo" aria-label="LaneTrace" data-md-component="logo">
       
   <img src="../assets/logo.svg" alt="logo">
 
@@ -107,7 +107,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            AgentTrace
+            LaneTrace
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -195,13 +195,13 @@
     
     
       <div class="md-header__source">
-        <a href="https://github.com/CouLiBaLy-B/agenttrace" title="Go to repository" class="md-source" data-md-component="source">
+        <a href="https://github.com/CouLiBaLy-B/lanetrace" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    CouLiBaLy-B/agenttrace
+    CouLiBaLy-B/lanetrace
   </div>
 </a>
       </div>
@@ -231,22 +231,22 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="AgentTrace" class="md-nav__button md-logo" aria-label="AgentTrace" data-md-component="logo">
+    <a href=".." title="LaneTrace" class="md-nav__button md-logo" aria-label="LaneTrace" data-md-component="logo">
       
   <img src="../assets/logo.svg" alt="logo">
 
     </a>
-    AgentTrace
+    LaneTrace
   </label>
   
     <div class="md-nav__source">
-      <a href="https://github.com/CouLiBaLy-B/agenttrace" title="Go to repository" class="md-source" data-md-component="source">
+      <a href="https://github.com/CouLiBaLy-B/lanetrace" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    CouLiBaLy-B/agenttrace
+    CouLiBaLy-B/lanetrace
   </div>
 </a>
     </div>
@@ -1062,39 +1062,38 @@
 
 <h1 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h1>
 <h2 id="1-start-the-dashboard">1. Start the dashboard<a class="headerlink" href="#1-start-the-dashboard" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">'deepagents-trace[langchain,server]'</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>agenttrace<span class="w"> </span>demo<span class="w">   </span><span class="c1"># optional: three sample projects with their runs</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>agenttrace<span class="w"> </span>ui
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">'lanetrace[langchain,server]'</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>lanetrace<span class="w"> </span>demo<span class="w">    </span><span class="c1"># optional: three sample projects with their runs</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>lanetrace<span class="w"> </span>ui
 </code></pre></div>
-<p><code>agenttrace ui</code> prints where everything is, then serves the dashboard:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>    ___                    __ ______
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>   /   | ____ ____  ____  / //_  __/________ _________
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>  / /| |/ __ `/ _ \/ __ \/ __/ / / / ___/ __ `/ ___/ _ \
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a> / ___ / /_/ /  __/ / / / /_  / / / /  / /_/ / /__/  __/
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>/_/  |_\__, /\___/_/ /_/\__/ /_/ /_/   \__,_/\___/\___/
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>      /____/
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>  AgentTrace 0.2.0
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>  observability for AI agents
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>  Dashboard   http://127.0.0.1:3000
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>  Auth        none (no login, no API key)
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>  Database    sqlite:///./agenttrace.db  (/home/you/my-agent/agenttrace.db)
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>  Tracking    AGENTTRACE_TRACKING_URI=http://127.0.0.1:3000
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>              set it where your agents run to send their traces here
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>  Docs        https://coulibaly-b.github.io/agenttrace/
+<p><code>lanetrace ui</code> prints where everything is, then serves the dashboard:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>    __                   ______
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>   / /   ____ _____  ___/_  __/________ _________
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>  / /   / __ `/ __ \/ _ \/ / / ___/ __ `/ ___/ _ \
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a> / /___/ /_/ / / / /  __/ / / /  / /_/ / /__/  __/
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>/_____/\__,_/_/ /_/\___/_/ /_/   \__,_/\___/\___/
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>  LaneTrace 0.3.0
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>  observability for AI agents
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>  Dashboard   http://127.0.0.1:3000
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>  Auth        none (no login, no API key)
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>  Database    sqlite:///./lanetrace.db  (/home/you/my-agent/lanetrace.db)
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>  Tracking    LANETRACE_TRACKING_URI=http://127.0.0.1:3000
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>              set it where your agents run to send their traces here
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>  Docs        https://coulibaly-b.github.io/lanetrace/
 </code></pre></div>
 <p>Open the dashboard URL. On localhost there is no login: everything belongs to
 one local user. The <strong>Database</strong> line shows the file the dashboard reads. The
-SDK writes to <code>./agenttrace.db</code> too, relative to the directory your agent runs
+SDK writes to <code>./lanetrace.db</code> too, relative to the directory your agent runs
 in: run the agent from the same directory, or send its runs over HTTP
 (<a href="#4-send-runs-from-elsewhere">step 4</a>).</p>
 <h2 id="2-trace-a-langchain-or-deepagents-agent">2. Trace a LangChain or deepagents agent<a class="headerlink" href="#2-trace-a-langchain-or-deepagents-agent" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">agenttrace</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">agenttrace.langchain</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">lanetrace</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">lanetrace.langchain</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">agenttrace</span><span class="o">.</span><span class="n">set_project</span><span class="p">(</span><span class="s2">"support-bot"</span><span class="p">)</span>  <span class="c1"># like mlflow.set_experiment()</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">agenttrace</span><span class="o">.</span><span class="n">langchain</span><span class="o">.</span><span class="n">autolog</span><span class="p">()</span>  <span class="c1"># like mlflow.langchain.autolog()</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">lanetrace</span><span class="o">.</span><span class="n">set_project</span><span class="p">(</span><span class="s2">"support-bot"</span><span class="p">)</span>   <span class="c1"># like mlflow.set_experiment()</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">lanetrace</span><span class="o">.</span><span class="n">langchain</span><span class="o">.</span><span class="n">autolog</span><span class="p">()</span>   <span class="c1"># like mlflow.langchain.autolog()</span>
 <a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">agent</span><span class="o">.</span><span class="n">invoke</span><span class="p">({</span><span class="s2">"messages"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Where's my order?"</span><span class="p">}]})</span>
 </code></pre></div>
@@ -1103,32 +1102,32 @@ in the dashboard while the agent runs and watch the arrows arrive. The
 <a href="../integration-callback/">callback handlers</a> page covers what is recorded, and
 the <a href="../integration-middleware/">middleware</a> is the explicit alternative.</p>
 <h2 id="3-trace-anything-else">3. Trace anything else<a class="headerlink" href="#3-trace-anything-else" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">agenttrace</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">lanetrace</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">agenttrace</span><span class="o">.</span><span class="n">set_project</span><span class="p">(</span><span class="s2">"support-bot"</span><span class="p">)</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">lanetrace</span><span class="o">.</span><span class="n">set_project</span><span class="p">(</span><span class="s2">"support-bot"</span><span class="p">)</span>
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="nd">@agenttrace</span><span class="o">.</span><span class="n">trace</span>  <span class="c1"># a tool_call, then its tool_result (or an error)</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="nd">@lanetrace</span><span class="o">.</span><span class="n">trace</span>   <span class="c1"># a tool_call, then its tool_result (or an error)</span>
 <a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">web_search</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="o">...</span>
 <a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
 <a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
-<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="k">with</span> <span class="n">agenttrace</span><span class="o">.</span><span class="n">start_run</span><span class="p">(</span><span class="s2">"triage"</span><span class="p">):</span>
-<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="n">agenttrace</span><span class="o">.</span><span class="n">log_event</span><span class="p">(</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="k">with</span> <span class="n">lanetrace</span><span class="o">.</span><span class="n">start_run</span><span class="p">(</span><span class="s2">"triage"</span><span class="p">):</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="n">lanetrace</span><span class="o">.</span><span class="n">log_event</span><span class="p">(</span>
 <a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>        <span class="n">source</span><span class="o">=</span><span class="s2">"User"</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s2">"Orchestrator"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">"handoff"</span><span class="p">,</span>
 <a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>        <span class="n">label</span><span class="o">=</span><span class="s2">"Where is my order?"</span><span class="p">,</span>
 <a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    <span class="p">)</span>
-<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>    <span class="n">agenttrace</span><span class="o">.</span><span class="n">log_event</span><span class="p">(</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>    <span class="n">lanetrace</span><span class="o">.</span><span class="n">log_event</span><span class="p">(</span>
 <a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>        <span class="n">source</span><span class="o">=</span><span class="s2">"Orchestrator"</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s2">"LLM"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">"llm_call"</span><span class="p">,</span> <span class="n">duration_ms</span><span class="o">=</span><span class="mi">480</span>
 <a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>    <span class="p">)</span>
 <a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>    <span class="n">web_search</span><span class="p">(</span><span class="s2">"order 4521"</span><span class="p">)</span>
-<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>    <span class="n">agenttrace</span><span class="o">.</span><span class="n">log_event</span><span class="p">(</span>
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>    <span class="n">lanetrace</span><span class="o">.</span><span class="n">log_event</span><span class="p">(</span>
 <a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>        <span class="n">source</span><span class="o">=</span><span class="s2">"Orchestrator"</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s2">"User"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">"final_answer"</span><span class="p">,</span>
 <a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>        <span class="n">label</span><span class="o">=</span><span class="s2">"It shipped yesterday."</span><span class="p">,</span>
 <a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>    <span class="p">)</span>
 </code></pre></div>
-<p>Outside a <code>start_run()</code> block, <code>log_event()</code> and <code>@agenttrace.trace</code> use one
-implicit run per process, ended by <code>agenttrace.end_run()</code> or when the process
+<p>Outside a <code>start_run()</code> block, <code>log_event()</code> and <code>@lanetrace.trace</code> use one
+implicit run per process, ended by <code>lanetrace.end_run()</code> or when the process
 exits. Tracing never raises into your code, except a <code>ValueError</code> for an
 unknown event type: events are written from a background thread, and a storage
 error turns tracing off for that run, with one logged warning.</p>
@@ -1136,16 +1135,16 @@ error turns tracing off for that run, with one logged warning.</p>
 <p>When the agent runs on another machine, in a container or from another
 directory, send its runs to the dashboard over HTTP:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># the banner's Tracking line; the key only for a server with --auth password</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">AGENTTRACE_TRACKING_URI</span><span class="o">=</span>http://127.0.0.1:3000
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">AGENTTRACE_KEY</span><span class="o">=</span>atr_...
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">LANETRACE_TRACKING_URI</span><span class="o">=</span>http://127.0.0.1:3000
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">LANETRACE_KEY</span><span class="o">=</span>atr_...
 </code></pre></div>
-<p><code>agenttrace ui</code> uses password mode by default when it listens on an address
+<p><code>lanetrace ui</code> uses password mode by default when it listens on an address
 other than localhost. Sign up in the browser; on the <strong>Integration</strong> page,
 <strong>Regenerate key</strong> creates a project key and shows it once.</p>
 <h2 id="notebooks">Notebooks<a class="headerlink" href="#notebooks" title="Permanent link">&para;</a></h2>
 <p>Two notebooks run all of the above offline, with scripted models and a
 temporary SQLite file:
-<a href="https://github.com/CouLiBaLy-B/agenttrace/tree/main/python-server/examples/notebooks"><code>python-server/examples/notebooks/</code></a>.</p>
+<a href="https://github.com/CouLiBaLy-B/lanetrace/tree/main/python-server/examples/notebooks"><code>python-server/examples/notebooks/</code></a>.</p>
 
 
 

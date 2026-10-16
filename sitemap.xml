@@ -1,47 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://coulibaly-b.github.io/agenttrace/</loc>
-         <lastmod>2026-10-14</lastmod>
+         <loc>https://coulibaly-b.github.io/lanetrace/</loc>
+         <lastmod>2026-10-16</lastmod>
     </url>
     <url>
-         <loc>https://coulibaly-b.github.io/agenttrace/cli/</loc>
-         <lastmod>2026-10-14</lastmod>
+         <loc>https://coulibaly-b.github.io/lanetrace/cli/</loc>
+         <lastmod>2026-10-16</lastmod>
     </url>
     <url>
-         <loc>https://coulibaly-b.github.io/agenttrace/deployment/</loc>
-         <lastmod>2026-10-14</lastmod>
+         <loc>https://coulibaly-b.github.io/lanetrace/deployment/</loc>
+         <lastmod>2026-10-16</lastmod>
     </url>
     <url>
-         <loc>https://coulibaly-b.github.io/agenttrace/events/</loc>
-         <lastmod>2026-10-14</lastmod>
+         <loc>https://coulibaly-b.github.io/lanetrace/events/</loc>
+         <lastmod>2026-10-16</lastmod>
     </url>
     <url>
-         <loc>https://coulibaly-b.github.io/agenttrace/install/</loc>
-         <lastmod>2026-10-14</lastmod>
+         <loc>https://coulibaly-b.github.io/lanetrace/install/</loc>
+         <lastmod>2026-10-16</lastmod>
     </url>
     <url>
-         <loc>https://coulibaly-b.github.io/agenttrace/integration-callback/</loc>
-         <lastmod>2026-10-14</lastmod>
+         <loc>https://coulibaly-b.github.io/lanetrace/integration-callback/</loc>
+         <lastmod>2026-10-16</lastmod>
     </url>
     <url>
-         <loc>https://coulibaly-b.github.io/agenttrace/integration-middleware/</loc>
-         <lastmod>2026-10-14</lastmod>
+         <loc>https://coulibaly-b.github.io/lanetrace/integration-middleware/</loc>
+         <lastmod>2026-10-16</lastmod>
     </url>
     <url>
-         <loc>https://coulibaly-b.github.io/agenttrace/mlflow/</loc>
-         <lastmod>2026-10-14</lastmod>
+         <loc>https://coulibaly-b.github.io/lanetrace/mlflow/</loc>
+         <lastmod>2026-10-16</lastmod>
     </url>
     <url>
-         <loc>https://coulibaly-b.github.io/agenttrace/quickstart/</loc>
-         <lastmod>2026-10-14</lastmod>
+         <loc>https://coulibaly-b.github.io/lanetrace/quickstart/</loc>
+         <lastmod>2026-10-16</lastmod>
     </url>
     <url>
-         <loc>https://coulibaly-b.github.io/agenttrace/themes/</loc>
-         <lastmod>2026-10-14</lastmod>
+         <loc>https://coulibaly-b.github.io/lanetrace/themes/</loc>
+         <lastmod>2026-10-16</lastmod>
     </url>
     <url>
-         <loc>https://coulibaly-b.github.io/agenttrace/upgrading/</loc>
-         <lastmod>2026-10-14</lastmod>
+         <loc>https://coulibaly-b.github.io/lanetrace/upgrading/</loc>
+         <lastmod>2026-10-16</lastmod>
     </url>
 </urlset>

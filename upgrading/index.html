@@ -6,11 +6,11 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Live sequence diagrams for AI agents. An MLflow-style tracking SDK, a LangChain / deepagents integration, and a dashboard served by `agenttrace ui`.">
+        <meta name="description" content="Live sequence diagrams for AI agents. An MLflow-style tracking SDK, a LangChain / deepagents integration, and a dashboard served by `lanetrace ui`.">
       
       
       
-        <link rel="canonical" href="https://coulibaly-b.github.io/agenttrace/upgrading/">
+        <link rel="canonical" href="https://coulibaly-b.github.io/lanetrace/upgrading/">
       
       
         <link rel="prev" href="../deployment/">
@@ -25,7 +25,7 @@
     
     
       
-        <title>Upgrading - AgentTrace</title>
+        <title>Upgrading - LaneTrace</title>
       
     
     
@@ -92,7 +92,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="AgentTrace" class="md-header__button md-logo" aria-label="AgentTrace" data-md-component="logo">
+    <a href=".." title="LaneTrace" class="md-header__button md-logo" aria-label="LaneTrace" data-md-component="logo">
       
   <img src="../assets/logo.svg" alt="logo">
 
@@ -105,7 +105,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            AgentTrace
+            LaneTrace
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -193,13 +193,13 @@
     
     
       <div class="md-header__source">
-        <a href="https://github.com/CouLiBaLy-B/agenttrace" title="Go to repository" class="md-source" data-md-component="source">
+        <a href="https://github.com/CouLiBaLy-B/lanetrace" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    CouLiBaLy-B/agenttrace
+    CouLiBaLy-B/lanetrace
   </div>
 </a>
       </div>
@@ -229,22 +229,22 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="AgentTrace" class="md-nav__button md-logo" aria-label="AgentTrace" data-md-component="logo">
+    <a href=".." title="LaneTrace" class="md-nav__button md-logo" aria-label="LaneTrace" data-md-component="logo">
       
   <img src="../assets/logo.svg" alt="logo">
 
     </a>
-    AgentTrace
+    LaneTrace
   </label>
   
     <div class="md-nav__source">
-      <a href="https://github.com/CouLiBaLy-B/agenttrace" title="Go to repository" class="md-source" data-md-component="source">
+      <a href="https://github.com/CouLiBaLy-B/lanetrace" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    CouLiBaLy-B/agenttrace
+    CouLiBaLy-B/lanetrace
   </div>
 </a>
     </div>
@@ -887,6 +887,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#from-02-renamed-to-lanetrace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From 0.2 (renamed to LaneTrace)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#from-deepagents-trace-01" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -951,6 +962,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#from-02-renamed-to-lanetrace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From 0.2 (renamed to LaneTrace)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#from-deepagents-trace-01" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -993,36 +1015,129 @@
 
 
 <h1 id="upgrading">Upgrading<a class="headerlink" href="#upgrading" title="Permanent link">&para;</a></h1>
+<h2 id="from-02-renamed-to-lanetrace">From 0.2 (renamed to LaneTrace)<a class="headerlink" href="#from-02-renamed-to-lanetrace" title="Permanent link">&para;</a></h2>
+<p>AgentTrace is now <strong>LaneTrace</strong>, with one name for the PyPI distribution, the
+Python module and the command: <code>lanetrace</code>. The old distribution was
+<code>deepagents-trace</code>, imported as <code>agenttrace</code>, a name that belongs to another
+project on PyPI. Your data, API keys and the HTTP API don't change.</p>
+<table>
+<thead>
+<tr>
+<th>0.2</th>
+<th>0.3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pip install 'deepagents-trace[server]'</code></td>
+<td><code>pip install 'lanetrace[server]'</code> (same extras)</td>
+</tr>
+<tr>
+<td><code>import agenttrace</code></td>
+<td><code>import lanetrace</code></td>
+</tr>
+<tr>
+<td><code>agenttrace ui</code>, <code>agenttrace demo</code>, <code>agenttrace db init</code></td>
+<td><code>lanetrace ui</code>, <code>lanetrace demo</code>, <code>lanetrace db init</code></td>
+</tr>
+<tr>
+<td><code>AgentTraceClient</code>, <code>AgentTraceMiddleware</code>, <code>AgentTraceCallbackHandler</code>, <code>AsyncAgentTraceCallbackHandler</code>, <code>AgentTraceRun</code>, <code>AsyncAgentTraceRun</code></td>
+<td><code>LaneTraceClient</code>, <code>LaneTraceMiddleware</code>, <code>LaneTraceCallbackHandler</code>, <code>AsyncLaneTraceCallbackHandler</code>, <code>LaneTraceRun</code>, <code>AsyncLaneTraceRun</code></td>
+</tr>
+<tr>
+<td><code>AGENTTRACE_TRACKING_URI</code>, <code>AGENTTRACE_URL</code>, <code>AGENTTRACE_KEY</code>, <code>AGENTTRACE_PROJECT</code></td>
+<td><code>LANETRACE_TRACKING_URI</code>, <code>LANETRACE_URL</code>, <code>LANETRACE_KEY</code>, <code>LANETRACE_PROJECT</code></td>
+</tr>
+<tr>
+<td><code>AGENTTRACE_AUTH</code>, <code>AGENTTRACE_SECRET</code>, <code>AGENTTRACE_ALLOWED_HOSTS</code>, <code>AGENTTRACE_STATIC_DIR</code></td>
+<td><code>LANETRACE_AUTH</code>, <code>LANETRACE_SECRET</code>, <code>LANETRACE_ALLOWED_HOSTS</code>, <code>LANETRACE_STATIC_DIR</code></td>
+</tr>
+<tr>
+<td><code>NEXT_PUBLIC_AGENTTRACE_WS_URL</code>, <code>AGENTTRACE_DEV_BACKEND</code> (UI development)</td>
+<td><code>NEXT_PUBLIC_LANETRACE_WS_URL</code>, <code>LANETRACE_DEV_BACKEND</code></td>
+</tr>
+<tr>
+<td><code>./agenttrace.db</code></td>
+<td><code>./lanetrace.db</code></td>
+</tr>
+</tbody>
+</table>
+<p>What keeps working while you migrate:</p>
+<ul>
+<li><strong>Old class names.</strong> The <code>AgentTrace*</code> classes are deprecated aliases of
+  the <code>LaneTrace*</code> ones, in the same modules.</li>
+<li><strong>Old environment variables.</strong> Each <code>AGENTTRACE_*</code> name is read when its
+  <code>LANETRACE_*</code> name is unset (the new one wins). The first one used logs a
+  deprecation line, once per process, naming the variable to set instead.
+  <code>DATABASE_URL</code> keeps its name.</li>
+<li><strong>Old database file.</strong> When <code>./lanetrace.db</code> doesn't exist but
+  <code>./agenttrace.db</code> does, the SDK, <code>lanetrace ui</code> and <code>lanetrace demo</code> use
+  <code>./agenttrace.db</code> and log once that it should be renamed. Rename it
+  (<code>mv agenttrace.db lanetrace.db</code>, with the server stopped) when convenient.
+  The schema, the <code>atr_</code> API keys and the local user of <code>--auth none</code> are
+  unchanged, so any existing database works as it is.</li>
+<li><strong>Old code, unchanged.</strong> <code>deepagents-trace</code> 0.3.0 is a compatibility
+  package: it installs <code>lanetrace</code> and keeps <code>import agenttrace</code>, every
+  <code>agenttrace.&lt;submodule&gt;</code> (they resolve to the <code>lanetrace</code> modules) and the
+  <code>agenttrace</code> command working, each with a deprecation warning. Its extras
+  (<code>server</code>, <code>langchain</code>, <code>postgres</code>, ...) install the same <code>lanetrace</code>
+  extras.</li>
+<li><strong>The dashboard</strong> keeps the theme and panel layout stored in your browser.</li>
+</ul>
+<p>What changes:</p>
+<ul>
+<li><strong>Logger names</strong> are <code>lanetrace.*</code> instead of <code>agenttrace.*</code>: update
+  logging configuration that filters or routes them (for example
+  <code>logging.getLogger("lanetrace").setLevel(...)</code>).</li>
+<li><strong>Password mode signs everyone out once</strong>: the session cookie is now
+  <code>lanetrace_session</code>.</li>
+<li><strong>Docker.</strong> The image runs <code>lanetrace ui</code> and the compose service is
+  <code>lanetrace</code>: run <code>docker compose up --build --remove-orphans</code> once.
+  Compose still reads <code>AGENTTRACE_SECRET</code> when <code>LANETRACE_SECRET</code> is unset.
+  Its Postgres defaults are now <code>lanetrace</code>; to keep a volume created before
+  0.3, set <code>POSTGRES_DB</code>, <code>POSTGRES_USER</code> and <code>POSTGRES_PASSWORD</code> to
+  <code>agenttrace</code> in <code>.env</code>. The volume itself is named after the compose
+  project, which defaults to the checkout's directory name
+  (<code>agenttrace_pgdata</code> for a checkout in <code>agenttrace/</code>): a new clone in
+  <code>lanetrace/</code> starts with an empty database. Keep the directory name, or set
+  <code>COMPOSE_PROJECT_NAME=agenttrace</code> in <code>.env</code>.</li>
+<li><strong>Password mode under compose</strong> refuses to start without
+  <code>LANETRACE_SECRET</code> (or <code>AGENTTRACE_SECRET</code>): compose sets
+  <code>LANETRACE_REQUIRE_SECRET=1</code>.</li>
+<li><strong><code>agenttrace-langchain</code> 0.4.0</strong> depends on <code>lanetrace[langchain]&gt;=0.3.0</code>;
+  its <code>agenttrace_langchain</code> imports are unchanged.</li>
+</ul>
 <h2 id="from-deepagents-trace-01">From deepagents-trace 0.1<a class="headerlink" href="#from-deepagents-trace-01" title="Permanent link">&para;</a></h2>
 <p>The full list is in the
-<a href="https://github.com/CouLiBaLy-B/agenttrace/blob/main/python-server/README.md#upgrading-from-01">python-server README</a>;
-in short:</p>
+<a href="https://github.com/CouLiBaLy-B/lanetrace/blob/main/python-server/README.md#upgrading-from-01">python-server README</a>;
+in short (with the 0.3 names):</p>
 <ul>
-<li>The server is now the <code>server</code> extra: <code>pip install 'deepagents-trace[server]'</code>.
+<li>The server is now the <code>server</code> extra: <code>pip install 'lanetrace[server]'</code>.
   The package alone only carries the SDK (SQLAlchemy, requests, click).</li>
-<li>On localhost, <code>agenttrace ui</code> now defaults to <code>--auth none</code>: no login, and
+<li>On localhost, <code>lanetrace ui</code> now defaults to <code>--auth none</code>: no login, and
   everything belongs to a single local user, so the projects of existing
   accounts don't show. Start it with <code>--auth password</code> to keep using accounts
   and <code>atr_</code> keys.</li>
-<li>When only <code>AGENTTRACE_KEY</code> is set, without <code>AGENTTRACE_TRACKING_URI</code> or
-  <code>AGENTTRACE_URL</code>, traces still go to the pre-0.2 default server,
+<li>When only <code>LANETRACE_KEY</code> is set, without <code>LANETRACE_TRACKING_URI</code> or
+  <code>LANETRACE_URL</code>, traces still go to the pre-0.2 default server,
   <code>http://localhost:3000</code>, with a warning logged once. Set
-  <code>AGENTTRACE_TRACKING_URI</code> to choose.</li>
+  <code>LANETRACE_TRACKING_URI</code> to choose.</li>
 <li>The Next.js backend (Prisma, NextAuth, Socket.IO) is gone, and data from its
   database is not migrated: start from a new database.</li>
-<li>With Docker Compose, one <code>agenttrace</code> service replaces <code>web</code> and <code>socket</code>
-  (run <code>docker compose up --build --remove-orphans</code>), <code>AGENTTRACE_SECRET</code>
+<li>With Docker Compose, one <code>lanetrace</code> service replaces <code>web</code> and <code>socket</code>
+  (run <code>docker compose up --build --remove-orphans</code>), <code>LANETRACE_SECRET</code>
   replaces <code>NEXTAUTH_SECRET</code> and is required, and PostgreSQL is no longer
   published on the host.</li>
-<li><code>AgentTraceRun.emit</code> raises a <code>ValueError</code> for an unknown event type instead
+<li><code>LaneTraceRun.emit</code> raises a <code>ValueError</code> for an unknown event type instead
   of dropping the event.</li>
 </ul>
 <h2 id="from-agenttrace-langchain-02x">From agenttrace-langchain 0.2.x<a class="headerlink" href="#from-agenttrace-langchain-02x" title="Permanent link">&para;</a></h2>
-<p><code>agenttrace-langchain</code> 0.3.0 is a deprecated shim: it depends on
-<code>deepagents-trace[langchain]&gt;=0.2.0</code> and re-exports the old names, which emit a
-<code>DeprecationWarning</code>, as do the old submodules (<code>agenttrace_langchain.client</code>,
-<code>.async_client</code>, <code>.run</code>, <code>.async_run</code>, <code>.middleware</code>, <code>.callback</code>,
-<code>.projection</code>). Move to the new imports:</p>
+<p><code>agenttrace-langchain</code> is a deprecated shim (0.3.0 on top of
+<code>deepagents-trace[langchain]</code>, 0.4.0 on top of <code>lanetrace[langchain]&gt;=0.3.0</code>):
+it re-exports the old names, which emit a <code>DeprecationWarning</code>, as do the old
+submodules (<code>agenttrace_langchain.client</code>, <code>.async_client</code>, <code>.run</code>,
+<code>.async_run</code>, <code>.middleware</code>, <code>.callback</code>, <code>.projection</code>). Move to the new
+imports:</p>
 <table>
 <thead>
 <tr>
@@ -1033,42 +1148,42 @@ in short:</p>
 <tbody>
 <tr>
 <td><code>AgentTraceMiddleware</code></td>
-<td><code>agenttrace.langchain.AgentTraceMiddleware</code></td>
+<td><code>lanetrace.langchain.LaneTraceMiddleware</code></td>
 </tr>
 <tr>
 <td><code>AgentTraceCallbackHandler</code> (0.2.2, async)</td>
-<td><code>agenttrace.langchain.AsyncAgentTraceCallbackHandler</code></td>
+<td><code>lanetrace.langchain.AsyncLaneTraceCallbackHandler</code></td>
 </tr>
 <tr>
 <td><code>AgentTraceClient</code></td>
-<td><code>agenttrace.tracking.http.HttpEventClient</code></td>
+<td><code>lanetrace.tracking.http.HttpEventClient</code></td>
 </tr>
 <tr>
 <td><code>AgentTraceRun</code></td>
-<td><code>agenttrace.tracking.http.AgentTraceRun</code></td>
+<td><code>lanetrace.tracking.http.LaneTraceRun</code></td>
 </tr>
 <tr>
 <td><code>AsyncAgentTraceClient</code></td>
-<td><code>agenttrace.tracking.async_http.AsyncHttpEventClient</code>, also <code>agenttrace.langchain.AsyncHttpEventClient</code></td>
+<td><code>lanetrace.tracking.async_http.AsyncHttpEventClient</code>, also <code>lanetrace.langchain.AsyncHttpEventClient</code></td>
 </tr>
 <tr>
 <td><code>AsyncAgentTraceRun</code></td>
-<td><code>agenttrace.tracking.async_run.AsyncAgentTraceRun</code></td>
+<td><code>lanetrace.tracking.async_run.AsyncLaneTraceRun</code></td>
 </tr>
 </tbody>
 </table>
-<p><code>agenttrace.langchain.AgentTraceCallbackHandler</code>, without <code>Async</code>, is a
+<p><code>lanetrace.langchain.LaneTraceCallbackHandler</code>, without <code>Async</code>, is a
 different class: the sync handler that <code>autolog()</code> installs.</p>
 <p>What behaves differently (see the
-<a href="https://github.com/CouLiBaLy-B/agenttrace/blob/main/integrations/agenttrace-langchain/README.md#upgrading-from-02x">shim README</a>):</p>
+<a href="https://github.com/CouLiBaLy-B/lanetrace/blob/main/integrations/agenttrace-langchain/README.md#upgrading-from-02x">shim README</a>):</p>
 <ul>
 <li><strong>No API key no longer means no tracing.</strong> An async client without a key
-  (<code>api_key=None</code> and no <code>AGENTTRACE_KEY</code>) now posts without an
-  <code>Authorization</code> header, for a local <code>agenttrace ui --auth none</code>; a server
-  that wants a key answers 401 and the run turns off, with one warning. An
-  <code>AgentTraceMiddleware()</code> without <code>url</code> or <code>api_key</code> now writes to the
-  <a href="../mlflow/#tracking-uris">tracking URI</a>: <code>./agenttrace.db</code>, unless
-  <code>AGENTTRACE_TRACKING_URI</code>, <code>AGENTTRACE_URL</code> or <code>AGENTTRACE_KEY</code> points at a
+  (<code>api_key=None</code> and no <code>LANETRACE_KEY</code>) now posts without an
+  <code>Authorization</code> header, for a local <code>lanetrace ui --auth none</code>; a server
+  that wants a key answers 401 and the run turns off, with one warning. A
+  <code>LaneTraceMiddleware()</code> without <code>url</code> or <code>api_key</code> now writes to the
+  <a href="../mlflow/#tracking-uris">tracking URI</a>: <code>./lanetrace.db</code>, unless
+  <code>LANETRACE_TRACKING_URI</code>, <code>LANETRACE_URL</code> or <code>LANETRACE_KEY</code> points at a
   server. If a missing key was your off switch, decide in your app whether to
   attach tracing.</li>
 <li><strong>The anonymizer also receives strings.</strong> It is called with every payload (a
@@ -1077,7 +1192,7 @@ different class: the sync handler that <code>autolog()</code> installs.</p>
   the field is redacted instead of sent unmasked. See
   <a href="../integration-callback/#anonymizer">Anonymizer</a>.</li>
 <li><strong>Stricter hand-offs in the async handler.</strong> For
-  <code>AsyncAgentTraceCallbackHandler</code>, only a tool named exactly <code>task</code>, or one
+  <code>AsyncLaneTraceCallbackHandler</code>, only a tool named exactly <code>task</code>, or one
   whose name contains <code>handoff</code> or <code>delegate</code>, is a hand-off to a sub-agent:
   <code>create_task</code>, for example, is now a plain tool call. (The middleware never
   counted <code>task</code> as a hand-off.)</li>

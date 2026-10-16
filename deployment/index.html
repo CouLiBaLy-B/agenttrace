@@ -6,11 +6,11 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Live sequence diagrams for AI agents. An MLflow-style tracking SDK, a LangChain / deepagents integration, and a dashboard served by `agenttrace ui`.">
+        <meta name="description" content="Live sequence diagrams for AI agents. An MLflow-style tracking SDK, a LangChain / deepagents integration, and a dashboard served by `lanetrace ui`.">
       
       
       
-        <link rel="canonical" href="https://coulibaly-b.github.io/agenttrace/deployment/">
+        <link rel="canonical" href="https://coulibaly-b.github.io/lanetrace/deployment/">
       
       
         <link rel="prev" href="../themes/">
@@ -27,7 +27,7 @@
     
     
       
-        <title>Deployment - AgentTrace</title>
+        <title>Deployment - LaneTrace</title>
       
     
     
@@ -94,7 +94,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="AgentTrace" class="md-header__button md-logo" aria-label="AgentTrace" data-md-component="logo">
+    <a href=".." title="LaneTrace" class="md-header__button md-logo" aria-label="LaneTrace" data-md-component="logo">
       
   <img src="../assets/logo.svg" alt="logo">
 
@@ -107,7 +107,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            AgentTrace
+            LaneTrace
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -195,13 +195,13 @@
     
     
       <div class="md-header__source">
-        <a href="https://github.com/CouLiBaLy-B/agenttrace" title="Go to repository" class="md-source" data-md-component="source">
+        <a href="https://github.com/CouLiBaLy-B/lanetrace" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    CouLiBaLy-B/agenttrace
+    CouLiBaLy-B/lanetrace
   </div>
 </a>
       </div>
@@ -231,22 +231,22 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="AgentTrace" class="md-nav__button md-logo" aria-label="AgentTrace" data-md-component="logo">
+    <a href=".." title="LaneTrace" class="md-nav__button md-logo" aria-label="LaneTrace" data-md-component="logo">
       
   <img src="../assets/logo.svg" alt="logo">
 
     </a>
-    AgentTrace
+    LaneTrace
   </label>
   
     <div class="md-nav__source">
-      <a href="https://github.com/CouLiBaLy-B/agenttrace" title="Go to repository" class="md-source" data-md-component="source">
+      <a href="https://github.com/CouLiBaLy-B/lanetrace" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    CouLiBaLy-B/agenttrace
+    CouLiBaLy-B/lanetrace
   </div>
 </a>
     </div>
@@ -1083,56 +1083,58 @@
 
 
 <h1 id="deployment">Deployment<a class="headerlink" href="#deployment" title="Permanent link">&para;</a></h1>
-<p><code>agenttrace ui</code> is one Python process: the FastAPI API, the <code>/ws</code> live stream
+<p><code>lanetrace ui</code> is one Python process: the FastAPI API, the <code>/ws</code> live stream
 and the dashboard's static files. Deploying it means picking a database, a way
 to run the process, and what sits in front of it.</p>
 <h2 id="docker-image">Docker image<a class="headerlink" href="#docker-image" title="Permanent link">&para;</a></h2>
 <p>The <code>Dockerfile</code> at the root of the repository builds a single image: a Bun
 stage builds the dashboard, then a <code>python:3.12-slim</code> stage installs
-<code>deepagents-trace[server,postgres]</code> and runs
-<code>agenttrace ui --host 0.0.0.0 --port 3000</code> as an unprivileged user (uid 10001),
+<code>lanetrace[server,postgres]</code> and runs
+<code>lanetrace ui --host 0.0.0.0 --port 3000</code> as an unprivileged user (uid 10001),
 in <code>/data</code>. Since it listens on every interface, it runs in password mode.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>agenttrace<span class="w"> </span>.
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>docker<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span><span class="m">3000</span>:3000<span class="w"> </span>-e<span class="w"> </span><span class="nv">AGENTTRACE_SECRET</span><span class="o">=</span><span class="s2">"</span><span class="k">$(</span>openssl<span class="w"> </span>rand<span class="w"> </span>-base64<span class="w"> </span><span class="m">32</span><span class="k">)</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>-v<span class="w"> </span>agenttrace-data:/data<span class="w"> </span>agenttrace
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>lanetrace<span class="w"> </span>.
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>docker<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span><span class="m">3000</span>:3000<span class="w"> </span>-e<span class="w"> </span><span class="nv">LANETRACE_SECRET</span><span class="o">=</span><span class="s2">"</span><span class="k">$(</span>openssl<span class="w"> </span>rand<span class="w"> </span>-base64<span class="w"> </span><span class="m">32</span><span class="k">)</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>-v<span class="w"> </span>lanetrace-data:/data<span class="w"> </span>lanetrace
 </code></pre></div>
-<p>Without <code>DATABASE_URL</code>, the container uses SQLite at <code>/data/agenttrace.db</code>:
+<p>Without <code>DATABASE_URL</code>, the container uses SQLite at <code>/data/lanetrace.db</code>:
 keep <code>/data</code> on a volume, as above, or the data goes away with the container.
-Without <code>AGENTTRACE_SECRET</code>, or with a new value, sign-ins reset at every
+Without <code>LANETRACE_SECRET</code>, or with a new value, sign-ins reset at every
 restart: keep the same secret across runs.</p>
 <p>Then sign up in the browser. On the <strong>Integration</strong> page, <strong>Regenerate key</strong>
 creates a project's API key and shows it once, and Settings → Demo data →
-<strong>Load demo projects</strong> adds the sample projects. <code>agenttrace demo</code> doesn't
+<strong>Load demo projects</strong> adds the sample projects. <code>lanetrace demo</code> doesn't
 help here: it fills the local user of <code>--auth none</code> mode, which password mode
 doesn't show.</p>
 <h2 id="docker-compose-with-postgresql">Docker Compose, with PostgreSQL<a class="headerlink" href="#docker-compose-with-postgresql" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>cp<span class="w"> </span>.env.example<span class="w"> </span>.env
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># in .env, set AGENTTRACE_SECRET=&lt;the output of: openssl rand -base64 32&gt;</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># in .env, set LANETRACE_SECRET=&lt;the output of: openssl rand -base64 32&gt;</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>--build
 </code></pre></div>
 <p><code>docker-compose.yml</code> runs PostgreSQL 16 (data in the <code>pgdata</code> volume) and the
-<code>agenttrace</code> service on port 3000, connected through
+<code>lanetrace</code> service on port 3000, connected through
 <code>DATABASE_URL=postgresql+psycopg://...@db:5432/...</code>, built from
-<code>POSTGRES_DB</code>, <code>POSTGRES_USER</code> and <code>POSTGRES_PASSWORD</code> (all <code>agenttrace</code> by
-default). Compose refuses to start until <code>AGENTTRACE_SECRET</code> is set.
+<code>POSTGRES_DB</code>, <code>POSTGRES_USER</code> and <code>POSTGRES_PASSWORD</code> (all <code>lanetrace</code> by
+default). The <code>lanetrace</code> service exits with an error until
+<code>LANETRACE_SECRET</code> is set: compose sets <code>LANETRACE_REQUIRE_SECRET=1</code>, which
+makes the server refuse a random secret in password mode.
 PostgreSQL isn't published on the host: add a <code>ports:</code> entry to the <code>db</code>
 service to reach it. <code>docker compose down -v</code> deletes the data.</p>
 <h2 id="postgresql-without-docker">PostgreSQL without Docker<a class="headerlink" href="#postgresql-without-docker" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">'deepagents-trace[server,postgres]'</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">DATABASE_URL</span><span class="o">=</span>postgresql+psycopg://agenttrace:secret@db:5432/agenttrace
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">AGENTTRACE_SECRET</span><span class="o">=</span><span class="s2">"</span><span class="k">$(</span>openssl<span class="w"> </span>rand<span class="w"> </span>-base64<span class="w"> </span><span class="m">32</span><span class="k">)</span><span class="s2">"</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>agenttrace<span class="w"> </span>db<span class="w"> </span>init<span class="w">  </span><span class="c1"># optional: agenttrace ui creates the tables too</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>agenttrace<span class="w"> </span>ui<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">'lanetrace[server,postgres]'</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">DATABASE_URL</span><span class="o">=</span>postgresql+psycopg://lanetrace:secret@db:5432/lanetrace
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">LANETRACE_SECRET</span><span class="o">=</span><span class="s2">"</span><span class="k">$(</span>openssl<span class="w"> </span>rand<span class="w"> </span>-base64<span class="w"> </span><span class="m">32</span><span class="k">)</span><span class="s2">"</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>lanetrace<span class="w"> </span>db<span class="w"> </span>init<span class="w">   </span><span class="c1"># optional: lanetrace ui creates the tables too</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>lanetrace<span class="w"> </span>ui<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0
 </code></pre></div>
 <p>There are no migrations: missing tables are created, existing ones are left as
 they are.</p>
 <h2 id="sending-runs-to-a-deployment">Sending runs to a deployment<a class="headerlink" href="#sending-runs-to-a-deployment" title="Permanent link">&para;</a></h2>
 <p>Point the agents at the server, with a project key:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">AGENTTRACE_TRACKING_URI</span><span class="o">=</span>https://traces.example.com
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">AGENTTRACE_KEY</span><span class="o">=</span>atr_...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">LANETRACE_TRACKING_URI</span><span class="o">=</span>https://traces.example.com
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">LANETRACE_KEY</span><span class="o">=</span>atr_...
 </code></pre></div>
 <p>Agents can also write to the database directly
-(<code>AGENTTRACE_TRACKING_URI=postgresql+psycopg://...</code>), but those runs belong to
+(<code>LANETRACE_TRACKING_URI=postgresql+psycopg://...</code>), but those runs belong to
 the local user, which only <code>--auth none</code> shows. With a password-mode server,
 send them over HTTP.</p>
 <h2 id="behind-a-reverse-proxy">Behind a reverse proxy<a class="headerlink" href="#behind-a-reverse-proxy" title="Permanent link">&para;</a></h2>
@@ -1161,9 +1163,9 @@ WebSocket upgrade of <code>/ws</code> (the live diagram needs it), keeping the o
 <ul>
 <li><strong>Password mode</strong>: the <code>/ws</code> origin check compares the browser's <code>Origin</code> with
   the <code>Host</code> header the server receives. Forward <code>Host</code>, as above, or list the
-  public name in <code>AGENTTRACE_ALLOWED_HOSTS</code>.</li>
+  public name in <code>LANETRACE_ALLOWED_HOSTS</code>.</li>
 <li><strong><code>--auth none</code></strong>: the server only accepts loopback host names, so list the
-  public one: <code>AGENTTRACE_ALLOWED_HOSTS=traces.example.com</code>. Anyone who can
+  public one: <code>LANETRACE_ALLOWED_HOSTS=traces.example.com</code>. Anyone who can
   reach the proxy can then read and write traces: put authentication in front
   of it, or use password mode.</li>
 </ul>

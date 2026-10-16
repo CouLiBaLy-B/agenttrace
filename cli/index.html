@@ -6,11 +6,11 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Live sequence diagrams for AI agents. An MLflow-style tracking SDK, a LangChain / deepagents integration, and a dashboard served by `agenttrace ui`.">
+        <meta name="description" content="Live sequence diagrams for AI agents. An MLflow-style tracking SDK, a LangChain / deepagents integration, and a dashboard served by `lanetrace ui`.">
       
       
       
-        <link rel="canonical" href="https://coulibaly-b.github.io/agenttrace/cli/">
+        <link rel="canonical" href="https://coulibaly-b.github.io/lanetrace/cli/">
       
       
         <link rel="prev" href="../events/">
@@ -27,7 +27,7 @@
     
     
       
-        <title>CLI - AgentTrace</title>
+        <title>CLI - LaneTrace</title>
       
     
     
@@ -94,7 +94,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="AgentTrace" class="md-header__button md-logo" aria-label="AgentTrace" data-md-component="logo">
+    <a href=".." title="LaneTrace" class="md-header__button md-logo" aria-label="LaneTrace" data-md-component="logo">
       
   <img src="../assets/logo.svg" alt="logo">
 
@@ -107,7 +107,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            AgentTrace
+            LaneTrace
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -195,13 +195,13 @@
     
     
       <div class="md-header__source">
-        <a href="https://github.com/CouLiBaLy-B/agenttrace" title="Go to repository" class="md-source" data-md-component="source">
+        <a href="https://github.com/CouLiBaLy-B/lanetrace" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    CouLiBaLy-B/agenttrace
+    CouLiBaLy-B/lanetrace
   </div>
 </a>
       </div>
@@ -231,22 +231,22 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="AgentTrace" class="md-nav__button md-logo" aria-label="AgentTrace" data-md-component="logo">
+    <a href=".." title="LaneTrace" class="md-nav__button md-logo" aria-label="LaneTrace" data-md-component="logo">
       
   <img src="../assets/logo.svg" alt="logo">
 
     </a>
-    AgentTrace
+    LaneTrace
   </label>
   
     <div class="md-nav__source">
-      <a href="https://github.com/CouLiBaLy-B/agenttrace" title="Go to repository" class="md-source" data-md-component="source">
+      <a href="https://github.com/CouLiBaLy-B/lanetrace" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    CouLiBaLy-B/agenttrace
+    CouLiBaLy-B/lanetrace
   </div>
 </a>
     </div>
@@ -687,15 +687,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#agenttrace-ui" class="md-nav__link">
+  <a href="#lanetrace-ui" class="md-nav__link">
     <span class="md-ellipsis">
       
-        agenttrace ui
+        lanetrace ui
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="agenttrace ui">
+    <nav class="md-nav" aria-label="lanetrace ui">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -715,10 +715,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#agenttrace-demo" class="md-nav__link">
+  <a href="#lanetrace-demo" class="md-nav__link">
     <span class="md-ellipsis">
       
-        agenttrace demo
+        lanetrace demo
       
     </span>
   </a>
@@ -726,10 +726,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#agenttrace-db-init" class="md-nav__link">
+  <a href="#lanetrace-db-init" class="md-nav__link">
     <span class="md-ellipsis">
       
-        agenttrace db init
+        lanetrace db init
       
     </span>
   </a>
@@ -992,15 +992,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#agenttrace-ui" class="md-nav__link">
+  <a href="#lanetrace-ui" class="md-nav__link">
     <span class="md-ellipsis">
       
-        agenttrace ui
+        lanetrace ui
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="agenttrace ui">
+    <nav class="md-nav" aria-label="lanetrace ui">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1020,10 +1020,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#agenttrace-demo" class="md-nav__link">
+  <a href="#lanetrace-demo" class="md-nav__link">
     <span class="md-ellipsis">
       
-        agenttrace demo
+        lanetrace demo
       
     </span>
   </a>
@@ -1031,10 +1031,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#agenttrace-db-init" class="md-nav__link">
+  <a href="#lanetrace-db-init" class="md-nav__link">
     <span class="md-ellipsis">
       
-        agenttrace db init
+        lanetrace db init
       
     </span>
   </a>
@@ -1073,12 +1073,12 @@
 
 
 <h1 id="cli">CLI<a class="headerlink" href="#cli" title="Permanent link">&para;</a></h1>
-<p><code>deepagents-trace</code> installs the <code>agenttrace</code> command. <code>agenttrace --version</code>
-prints the installed version and <code>agenttrace --help</code> lists the commands.</p>
-<h2 id="agenttrace-ui"><code>agenttrace ui</code><a class="headerlink" href="#agenttrace-ui" title="Permanent link">&para;</a></h2>
+<p>The <code>lanetrace</code> package installs the <code>lanetrace</code> command. <code>lanetrace --version</code>
+prints the installed version and <code>lanetrace --help</code> lists the commands.</p>
+<h2 id="lanetrace-ui"><code>lanetrace ui</code><a class="headerlink" href="#lanetrace-ui" title="Permanent link">&para;</a></h2>
 <p>Serves the API, the <code>/ws</code> live stream and the dashboard.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>agenttrace<span class="w"> </span>ui<span class="w"> </span><span class="o">[</span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="o">]</span><span class="w"> </span><span class="o">[</span>--port<span class="w"> </span><span class="m">3000</span><span class="o">]</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">              </span><span class="o">[</span>--database-url<span class="w"> </span>URL<span class="o">]</span><span class="w"> </span><span class="o">[</span>--auth<span class="w"> </span>none<span class="p">|</span>password<span class="o">]</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>lanetrace<span class="w"> </span>ui<span class="w"> </span><span class="o">[</span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="o">]</span><span class="w"> </span><span class="o">[</span>--port<span class="w"> </span><span class="m">3000</span><span class="o">]</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">             </span><span class="o">[</span>--database-url<span class="w"> </span>URL<span class="o">]</span><span class="w"> </span><span class="o">[</span>--auth<span class="w"> </span>none<span class="p">|</span>password<span class="o">]</span>
 </code></pre></div>
 <table>
 <thead>
@@ -1101,12 +1101,12 @@ prints the installed version and <code>agenttrace --help</code> lists the comman
 </tr>
 <tr>
 <td><code>--database-url</code></td>
-<td><code>DATABASE_URL</code>, else <code>sqlite:///./agenttrace.db</code></td>
+<td><code>DATABASE_URL</code>, else <code>sqlite:///./lanetrace.db</code></td>
 <td>the SQLAlchemy URL of the database to serve</td>
 </tr>
 <tr>
 <td><code>--auth</code></td>
-<td><code>AGENTTRACE_AUTH</code>, else <code>none</code> on a loopback host (<code>127.0.0.1</code>, <code>localhost</code>, <code>::1</code>) and <code>password</code> on any other</td>
+<td><code>LANETRACE_AUTH</code>, else <code>none</code> on a loopback host (<code>127.0.0.1</code>, <code>localhost</code>, <code>::1</code>) and <code>password</code> on any other</td>
 <td>the auth mode, see below</td>
 </tr>
 </tbody>
@@ -1115,8 +1115,8 @@ prints the installed version and <code>agenttrace --help</code> lists the comman
 dashboard URL (<code>localhost</code> when it listens on <code>0.0.0.0</code> or <code>::</code>), the auth
 mode, the database, with its credentials replaced by <code>***</code> (user and password
 together, <code>postgresql://***@db:5432/traces</code>, and any <code>password=</code> query parameter;
-the absolute path of a relative SQLite file), the <code>AGENTTRACE_TRACKING_URI</code> line for your agents
-(plus <code>AGENTTRACE_KEY</code> in password mode), and the docs URL. Then the server
+the absolute path of a relative SQLite file), the <code>LANETRACE_TRACKING_URI</code> line for your agents
+(plus <code>LANETRACE_KEY</code> in password mode), and the docs URL. Then the server
 starts, and creates the tables that don't exist yet. The banner is plain text
 when the output isn't a terminal or when <code>NO_COLOR</code> is set, which also turns
 off the colours of the server's log. Stop the server with Ctrl+C.</p>
@@ -1124,30 +1124,30 @@ off the colours of the server's log. Stop the server with Ctrl+C.</p>
 <p><strong><code>none</code></strong>: no login and no API key. Everything belongs to a single local user,
 the one the SDK writes as when it writes to the database directly. The server
 only accepts loopback names in the <code>Host</code> and <code>Origin</code> headers, a guard against
-DNS rebinding and cross-site requests; <code>AGENTTRACE_ALLOWED_HOSTS=name1,name2</code>
+DNS rebinding and cross-site requests; <code>LANETRACE_ALLOWED_HOSTS=name1,name2</code>
 adds names, for example behind a reverse proxy. On a host other than loopback,
-<code>agenttrace ui</code> warns that anyone who can reach the port can read and write
-traces, and prints the <code>AGENTTRACE_ALLOWED_HOSTS</code> value to set (with
-<code>--host 192.168.1.10</code>: <code>AGENTTRACE_ALLOWED_HOSTS=192.168.1.10</code>), or the value
+<code>lanetrace ui</code> warns that anyone who can reach the port can read and write
+traces, and prints the <code>LANETRACE_ALLOWED_HOSTS</code> value to set (with
+<code>--host 192.168.1.10</code>: <code>LANETRACE_ALLOWED_HOSTS=192.168.1.10</code>), or the value
 already set.</p>
 <p><strong><code>password</code></strong>: accounts (sign up in the browser) and <code>atr_...</code> project keys for
 sending events; the <code>/ws</code> live stream needs the session cookie. Set
-<code>AGENTTRACE_SECRET</code> to sign the session cookies: without it, a random secret is
-used, sign-ins don't survive a restart, and <code>agenttrace ui</code> says so.</p>
-<h2 id="agenttrace-demo"><code>agenttrace demo</code><a class="headerlink" href="#agenttrace-demo" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>agenttrace<span class="w"> </span>demo<span class="w"> </span><span class="o">[</span>--database-url<span class="w"> </span>URL<span class="o">]</span>
+<code>LANETRACE_SECRET</code> to sign the session cookies: without it, a random secret is
+used, sign-ins don't survive a restart, and <code>lanetrace ui</code> says so.</p>
+<h2 id="lanetrace-demo"><code>lanetrace demo</code><a class="headerlink" href="#lanetrace-demo" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>lanetrace<span class="w"> </span>demo<span class="w"> </span><span class="o">[</span>--database-url<span class="w"> </span>URL<span class="o">]</span>
 </code></pre></div>
 <p>Loads three demo projects (Customer Support Agent, Research Assistant, Code
 Review Bot) with their runs, for the local user that <code>--auth none</code> shows. It
 does nothing if that user already has projects. The database is
-<code>--database-url</code>, else <code>DATABASE_URL</code>, else <code>./agenttrace.db</code>. It needs the
+<code>--database-url</code>, else <code>DATABASE_URL</code>, else <code>./lanetrace.db</code>. It needs the
 <code>server</code> extra. In password mode, a signed-in user loads the same projects from
 Settings → Demo data → <strong>Load demo projects</strong>.</p>
-<h2 id="agenttrace-db-init"><code>agenttrace db init</code><a class="headerlink" href="#agenttrace-db-init" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>agenttrace<span class="w"> </span>db<span class="w"> </span>init<span class="w"> </span><span class="o">[</span>--database-url<span class="w"> </span>URL<span class="o">]</span>
+<h2 id="lanetrace-db-init"><code>lanetrace db init</code><a class="headerlink" href="#lanetrace-db-init" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>lanetrace<span class="w"> </span>db<span class="w"> </span>init<span class="w"> </span><span class="o">[</span>--database-url<span class="w"> </span>URL<span class="o">]</span>
 </code></pre></div>
 <p>Creates the tables that don't exist yet. There are no migrations: the schema is
-created as a whole (SQLAlchemy's <code>create_all</code>). <code>agenttrace ui</code> does the same
+created as a whole (SQLAlchemy's <code>create_all</code>). <code>lanetrace ui</code> does the same
 at startup, so <code>db init</code> is for preparing a database ahead of time; it works
 without the <code>server</code> extra.</p>
 <h2 id="environment-variables">Environment variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h2>
@@ -1163,25 +1163,30 @@ without the <code>server</code> extra.</p>
 <tr>
 <td><code>DATABASE_URL</code></td>
 <td><code>ui</code>, <code>demo</code>, <code>db init</code></td>
-<td>the database, when <code>--database-url</code> isn't given (default <code>sqlite:///./agenttrace.db</code>)</td>
+<td>the database, when <code>--database-url</code> isn't given (default <code>sqlite:///./lanetrace.db</code>)</td>
 </tr>
 <tr>
-<td><code>AGENTTRACE_AUTH</code></td>
+<td><code>LANETRACE_AUTH</code></td>
 <td><code>ui</code></td>
 <td><code>none</code> or <code>password</code>, when <code>--auth</code> isn't given</td>
 </tr>
 <tr>
-<td><code>AGENTTRACE_SECRET</code></td>
+<td><code>LANETRACE_SECRET</code></td>
 <td>the server, in password mode</td>
 <td>the secret that signs session cookies</td>
 </tr>
 <tr>
-<td><code>AGENTTRACE_ALLOWED_HOSTS</code></td>
+<td><code>LANETRACE_ALLOWED_HOSTS</code></td>
 <td>the server</td>
 <td>comma-separated host names accepted besides loopback: for <code>Host</code> and <code>Origin</code> in <code>--auth none</code> mode, and for the <code>/ws</code> origin check in password mode</td>
 </tr>
 <tr>
-<td><code>AGENTTRACE_STATIC_DIR</code></td>
+<td><code>LANETRACE_REQUIRE_SECRET</code></td>
+<td><code>ui</code>, the server</td>
+<td><code>1</code>: in password mode, refuse to start without <code>LANETRACE_SECRET</code> instead of using a random secret (docker-compose sets it)</td>
+</tr>
+<tr>
+<td><code>LANETRACE_STATIC_DIR</code></td>
 <td>the server</td>
 <td>serve the dashboard from this directory instead of the bundled one</td>
 </tr>
@@ -1191,27 +1196,33 @@ without the <code>server</code> extra.</p>
 <td>plain-text banner and log</td>
 </tr>
 <tr>
-<td><code>AGENTTRACE_TRACKING_URI</code></td>
+<td><code>LANETRACE_TRACKING_URI</code></td>
 <td>the SDK</td>
 <td>where runs go, see <a href="../mlflow/#tracking-uris">tracking URIs</a></td>
 </tr>
 <tr>
-<td><code>AGENTTRACE_PROJECT</code></td>
+<td><code>LANETRACE_PROJECT</code></td>
 <td>the SDK</td>
 <td>the default project (else <code>Default</code>)</td>
 </tr>
 <tr>
-<td><code>AGENTTRACE_KEY</code></td>
+<td><code>LANETRACE_KEY</code></td>
 <td>the SDK</td>
 <td>the <code>atr_...</code> project key sent to a password-mode server</td>
 </tr>
 <tr>
-<td><code>AGENTTRACE_URL</code></td>
+<td><code>LANETRACE_URL</code></td>
 <td>the SDK</td>
-<td>the pre-0.2 ingestion URL (<code>http://host:port/api/events</code>), used when <code>AGENTTRACE_TRACKING_URI</code> is unset</td>
+<td>the pre-0.2 ingestion URL (<code>http://host:port/api/events</code>), used when <code>LANETRACE_TRACKING_URI</code> is unset</td>
 </tr>
 </tbody>
 </table>
+<p>Each <code>LANETRACE_*</code> variable also accepts its pre-0.3 name, <code>AGENTTRACE_*</code>
+(from before the rename to LaneTrace), when the new one is unset; the first
+one used logs a deprecation line naming its replacement. An empty value
+counts as unset. Without
+<code>DATABASE_URL</code>, an existing <code>./agenttrace.db</code> is used when there is no
+<code>./lanetrace.db</code> (see <a href="../upgrading/#from-02-renamed-to-lanetrace">Upgrading</a>).</p>
 
 
 

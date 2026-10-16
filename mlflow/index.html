@@ -6,11 +6,11 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Live sequence diagrams for AI agents. An MLflow-style tracking SDK, a LangChain / deepagents integration, and a dashboard served by `agenttrace ui`.">
+        <meta name="description" content="Live sequence diagrams for AI agents. An MLflow-style tracking SDK, a LangChain / deepagents integration, and a dashboard served by `lanetrace ui`.">
       
       
       
-        <link rel="canonical" href="https://coulibaly-b.github.io/agenttrace/mlflow/">
+        <link rel="canonical" href="https://coulibaly-b.github.io/lanetrace/mlflow/">
       
       
         <link rel="prev" href="../quickstart/">
@@ -27,7 +27,7 @@
     
     
       
-        <title>Coming from MLflow - AgentTrace</title>
+        <title>Coming from MLflow - LaneTrace</title>
       
     
     
@@ -94,7 +94,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="AgentTrace" class="md-header__button md-logo" aria-label="AgentTrace" data-md-component="logo">
+    <a href=".." title="LaneTrace" class="md-header__button md-logo" aria-label="LaneTrace" data-md-component="logo">
       
   <img src="../assets/logo.svg" alt="logo">
 
@@ -107,7 +107,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            AgentTrace
+            LaneTrace
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -195,13 +195,13 @@
     
     
       <div class="md-header__source">
-        <a href="https://github.com/CouLiBaLy-B/agenttrace" title="Go to repository" class="md-source" data-md-component="source">
+        <a href="https://github.com/CouLiBaLy-B/lanetrace" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    CouLiBaLy-B/agenttrace
+    CouLiBaLy-B/lanetrace
   </div>
 </a>
       </div>
@@ -231,22 +231,22 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="AgentTrace" class="md-nav__button md-logo" aria-label="AgentTrace" data-md-component="logo">
+    <a href=".." title="LaneTrace" class="md-nav__button md-logo" aria-label="LaneTrace" data-md-component="logo">
       
   <img src="../assets/logo.svg" alt="logo">
 
     </a>
-    AgentTrace
+    LaneTrace
   </label>
   
     <div class="md-nav__source">
-      <a href="https://github.com/CouLiBaLy-B/agenttrace" title="Go to repository" class="md-source" data-md-component="source">
+      <a href="https://github.com/CouLiBaLy-B/lanetrace" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    CouLiBaLy-B/agenttrace
+    CouLiBaLy-B/lanetrace
   </div>
 </a>
     </div>
@@ -1022,21 +1022,21 @@
 <thead>
 <tr>
 <th>MLflow</th>
-<th>AgentTrace</th>
+<th>LaneTrace</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>mlflow.set_tracking_uri()</code> / <code>MLFLOW_TRACKING_URI</code></td>
-<td><code>agenttrace.set_tracking_uri()</code> / <code>AGENTTRACE_TRACKING_URI</code></td>
+<td><code>lanetrace.set_tracking_uri()</code> / <code>LANETRACE_TRACKING_URI</code></td>
 </tr>
 <tr>
 <td><code>mlflow.get_tracking_uri()</code></td>
-<td><code>agenttrace.get_tracking_uri()</code></td>
+<td><code>lanetrace.get_tracking_uri()</code></td>
 </tr>
 <tr>
 <td><code>mlflow.set_experiment()</code> / <code>MLFLOW_EXPERIMENT_NAME</code></td>
-<td><code>agenttrace.set_project()</code> / <code>AGENTTRACE_PROJECT</code></td>
+<td><code>lanetrace.set_project()</code> / <code>LANETRACE_PROJECT</code></td>
 </tr>
 <tr>
 <td><code>mlflow.start_run()</code> / <code>active_run()</code> / <code>end_run()</code></td>
@@ -1044,19 +1044,19 @@
 </tr>
 <tr>
 <td><code>@mlflow.trace</code></td>
-<td><code>@agenttrace.trace</code></td>
+<td><code>@lanetrace.trace</code></td>
 </tr>
 <tr>
 <td><code>mlflow.langchain.autolog()</code></td>
-<td><code>agenttrace.langchain.autolog()</code></td>
+<td><code>lanetrace.langchain.autolog()</code></td>
 </tr>
 <tr>
 <td><code>MlflowClient</code></td>
-<td><code>agenttrace.AgentTraceClient</code></td>
+<td><code>lanetrace.LaneTraceClient</code></td>
 </tr>
 <tr>
 <td><code>mlflow ui</code></td>
-<td><code>agenttrace ui</code></td>
+<td><code>lanetrace ui</code></td>
 </tr>
 </tbody>
 </table>
@@ -1068,12 +1068,12 @@
   optionally a <code>label</code>, a JSON <code>payload</code>, a duration and a status. See the
   <a href="../events/">event contract</a>.</li>
 <li>A <strong>project</strong> plays the experiment's part. Projects are created on first use,
-  by name; without <code>set_project()</code> or <code>AGENTTRACE_PROJECT</code>, runs go to
+  by name; without <code>set_project()</code> or <code>LANETRACE_PROJECT</code>, runs go to
   <code>Default</code>.</li>
 <li><code>start_run()</code> returns the run, which is a context manager: leaving the block
   ends it <code>completed</code>, or <code>failed</code> if an exception escaped. <code>end_run(status)</code>
   ends the current run.</li>
-<li><code>log_event()</code> and <code>@agenttrace.trace</code> don't block and don't raise (except a
+<li><code>log_event()</code> and <code>@lanetrace.trace</code> don't block and don't raise (except a
   <code>ValueError</code> for an unknown event type): each run writes from its own
   background thread, and a storage error turns tracing off for that run.
   Ending a run, with <code>end_run()</code> or by leaving the <code>start_run()</code> block, waits
@@ -1083,13 +1083,13 @@
 <h2 id="tracking-uris">Tracking URIs<a class="headerlink" href="#tracking-uris" title="Permanent link">&para;</a></h2>
 <p>The tracking URI is the first of:</p>
 <ol>
-<li><code>agenttrace.set_tracking_uri(uri)</code>;</li>
-<li><code>AGENTTRACE_TRACKING_URI</code>;</li>
-<li><code>AGENTTRACE_URL</code>, the pre-0.2 variable: a full <code>.../api/events</code> URL, of
+<li><code>lanetrace.set_tracking_uri(uri)</code>;</li>
+<li><code>LANETRACE_TRACKING_URI</code>;</li>
+<li><code>LANETRACE_URL</code>, the pre-0.2 variable: a full <code>.../api/events</code> URL, of
    which the server part is used;</li>
-<li><code>http://localhost:3000</code>, when only <code>AGENTTRACE_KEY</code> is set (the pre-0.2
+<li><code>http://localhost:3000</code>, when only <code>LANETRACE_KEY</code> is set (the pre-0.2
    default server; a warning says so once);</li>
-<li><code>sqlite:///./agenttrace.db</code>.</li>
+<li><code>sqlite:///./lanetrace.db</code>.</li>
 </ol>
 <table>
 <thead>
@@ -1100,8 +1100,8 @@
 </thead>
 <tbody>
 <tr>
-<td><code>sqlite:///./agenttrace.db</code> (the default) or another SQLite file</td>
-<td>that file, written directly; <code>agenttrace ui</code> reads it (<code>--database-url</code> for another file)</td>
+<td><code>sqlite:///./lanetrace.db</code> (the default) or another SQLite file</td>
+<td>that file, written directly; <code>lanetrace ui</code> reads it (<code>--database-url</code> for another file)</td>
 </tr>
 <tr>
 <td>another SQLAlchemy URL, such as <code>postgresql+psycopg://...</code></td>
@@ -1109,18 +1109,18 @@
 </tr>
 <tr>
 <td><code>http://host:port</code> or <code>https://...</code></td>
-<td>a running <code>agenttrace ui</code>, through <code>POST /api/events</code></td>
+<td>a running <code>lanetrace ui</code>, through <code>POST /api/events</code></td>
 </tr>
 </tbody>
 </table>
-<p>Over HTTP, <code>AGENTTRACE_KEY</code> is sent when it is set: the run then goes to that
+<p>Over HTTP, <code>LANETRACE_KEY</code> is sent when it is set: the run then goes to that
 key's project, and <code>set_project()</code> is ignored. Without a key, each run names its
 project, which only a server running with <code>--auth none</code> accepts.</p>
 <h2 id="the-explicit-client">The explicit client<a class="headerlink" href="#the-explicit-client" title="Permanent link">&para;</a></h2>
-<p>Like <code>MlflowClient</code>, <code>AgentTraceClient</code> is synchronous and raises on any error:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">agenttrace</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentTraceClient</span>
+<p>Like <code>MlflowClient</code>, <code>LaneTraceClient</code> is synchronous and raises on any error:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lanetrace</span><span class="w"> </span><span class="kn">import</span> <span class="n">LaneTraceClient</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">client</span> <span class="o">=</span> <span class="n">AgentTraceClient</span><span class="p">()</span>  <span class="c1"># or AgentTraceClient("postgresql+psycopg://...")</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">client</span> <span class="o">=</span> <span class="n">LaneTraceClient</span><span class="p">()</span>   <span class="c1"># or LaneTraceClient("postgresql+psycopg://...")</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">run_id</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">create_run</span><span class="p">(</span><span class="s2">"nightly eval"</span><span class="p">,</span> <span class="n">project</span><span class="o">=</span><span class="s2">"evals"</span><span class="p">)</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">client</span><span class="o">.</span><span class="n">log_event</span><span class="p">(</span><span class="n">run_id</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"Orchestrator"</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s2">"LLM"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">"llm_call"</span><span class="p">)</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">client</span><span class="o">.</span><span class="n">end_run</span><span class="p">(</span><span class="n">run_id</span><span class="p">,</span> <span class="s2">"completed"</span><span class="p">)</span>

@@ -6,11 +6,11 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Live sequence diagrams for AI agents. An MLflow-style tracking SDK, a LangChain / deepagents integration, and a dashboard served by `agenttrace ui`.">
+        <meta name="description" content="Live sequence diagrams for AI agents. An MLflow-style tracking SDK, a LangChain / deepagents integration, and a dashboard served by `lanetrace ui`.">
       
       
       
-        <link rel="canonical" href="https://coulibaly-b.github.io/agenttrace/events/">
+        <link rel="canonical" href="https://coulibaly-b.github.io/lanetrace/events/">
       
       
         <link rel="prev" href="../integration-callback/">
@@ -27,7 +27,7 @@
     
     
       
-        <title>Event contract - AgentTrace</title>
+        <title>Event contract - LaneTrace</title>
       
     
     
@@ -94,7 +94,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="AgentTrace" class="md-header__button md-logo" aria-label="AgentTrace" data-md-component="logo">
+    <a href=".." title="LaneTrace" class="md-header__button md-logo" aria-label="LaneTrace" data-md-component="logo">
       
   <img src="../assets/logo.svg" alt="logo">
 
@@ -107,7 +107,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            AgentTrace
+            LaneTrace
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -195,13 +195,13 @@
     
     
       <div class="md-header__source">
-        <a href="https://github.com/CouLiBaLy-B/agenttrace" title="Go to repository" class="md-source" data-md-component="source">
+        <a href="https://github.com/CouLiBaLy-B/lanetrace" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    CouLiBaLy-B/agenttrace
+    CouLiBaLy-B/lanetrace
   </div>
 </a>
       </div>
@@ -231,22 +231,22 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="AgentTrace" class="md-nav__button md-logo" aria-label="AgentTrace" data-md-component="logo">
+    <a href=".." title="LaneTrace" class="md-nav__button md-logo" aria-label="LaneTrace" data-md-component="logo">
       
   <img src="../assets/logo.svg" alt="logo">
 
     </a>
-    AgentTrace
+    LaneTrace
   </label>
   
     <div class="md-nav__source">
-      <a href="https://github.com/CouLiBaLy-B/agenttrace" title="Go to repository" class="md-source" data-md-component="source">
+      <a href="https://github.com/CouLiBaLy-B/lanetrace" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    CouLiBaLy-B/agenttrace
+    CouLiBaLy-B/lanetrace
   </div>
 </a>
     </div>
@@ -1127,7 +1127,7 @@
 
 
 <h1 id="event-contract">Event contract<a class="headerlink" href="#event-contract" title="Permanent link">&para;</a></h1>
-<p>Agents send runs to <code>agenttrace ui</code> through one endpoint, <code>POST /api/events</code>,
+<p>Agents send runs to <code>lanetrace ui</code> through one endpoint, <code>POST /api/events</code>,
 from any language. The Python SDK uses it when the tracking URI is
 <code>http(s)://</code>; when it writes straight to the database (the default), it stores
 the same runs and events.</p>
@@ -1146,7 +1146,7 @@ the same runs and events.</p>
 </tr>
 <tr>
 <td><code>--auth none</code></td>
-<td>No <code>Authorization</code> header: the body names the project when it creates a run. A header that is sent anyway is checked as a key. The server only accepts loopback <code>Host</code> and <code>Origin</code> names, plus <code>AGENTTRACE_ALLOWED_HOSTS</code>; others get <code>403 {"error": "Host not allowed"}</code> or <code>"Origin not allowed"</code>.</td>
+<td>No <code>Authorization</code> header: the body names the project when it creates a run. A header that is sent anyway is checked as a key. The server only accepts loopback <code>Host</code> and <code>Origin</code> names, plus <code>LANETRACE_ALLOWED_HOSTS</code>; others get <code>403 {"error": "Host not allowed"}</code> or <code>"Origin not allowed"</code>.</td>
 </tr>
 </tbody>
 </table>
@@ -1271,7 +1271,7 @@ A run that is never ended stays <code>running</code>.</p>
 <tr>
 <td><code>tool_call</code></td>
 <td>agent → tool</td>
-<td><code>args</code>; <code>@agenttrace.trace</code> adds <code>kwargs</code>, and the async handler <code>server</code> (with <code>tool_server=</code>)</td>
+<td><code>args</code>; <code>@lanetrace.trace</code> adds <code>kwargs</code>, and the async handler <code>server</code> (with <code>tool_server=</code>)</td>
 </tr>
 <tr>
 <td><code>tool_result</code></td>
@@ -1296,7 +1296,7 @@ A run that is never ended stays <code>running</code>.</p>
 </tbody>
 </table>
 <h2 id="with-curl">With curl<a class="headerlink" href="#with-curl" title="Permanent link">&para;</a></h2>
-<p>Against <code>agenttrace ui</code> on localhost (<code>--auth none</code>):</p>
+<p>Against <code>lanetrace ui</code> on localhost (<code>--auth none</code>):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nv">url</span><span class="o">=</span>http://127.0.0.1:3000/api/events
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>post<span class="o">()</span><span class="w"> </span><span class="o">{</span><span class="w"> </span>curl<span class="w"> </span>-s<span class="w"> </span><span class="s2">"</span><span class="nv">$url</span><span class="s2">"</span><span class="w"> </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span>-d<span class="w"> </span><span class="s2">"</span><span class="nv">$1</span><span class="s2">"</span><span class="p">;</span><span class="w"> </span>echo<span class="p">;</span><span class="w"> </span><span class="o">}</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
@@ -1306,7 +1306,7 @@ A run that is never ended stays <code>running</code>.</p>
 <a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="s1">       "type": "llm_call", "label": "plan", "durationMs": 420}'</span>
 <a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>post<span class="w"> </span><span class="s1">'{"runId": "'</span><span class="s2">"</span><span class="nv">$run</span><span class="s2">"</span><span class="s1">'", "endRun": "completed"}'</span>
 </code></pre></div>
-<p>For a server in password mode, add <code>-H "Authorization: Bearer $AGENTTRACE_KEY"</code>
+<p>For a server in password mode, add <code>-H "Authorization: Bearer $LANETRACE_KEY"</code>
 to <code>post</code> (the key then decides the project).</p>
 <h2 id="reading-runs-back">Reading runs back<a class="headerlink" href="#reading-runs-back" title="Permanent link">&para;</a></h2>
 <p>The dashboard reads runs through the same server: <code>GET /api/runs/recent</code>
@@ -1347,7 +1347,7 @@ that signing in sets.</p>
 follow up to 50 runs. New events are read from the database every 0.5 seconds,
 so events written by the SDK straight to the database stream too.</p>
 <p>In password mode, the connection needs the session cookie, and a browser's
-<code>Origin</code> must match the host (or be listed in <code>AGENTTRACE_ALLOWED_HOSTS</code>);
+<code>Origin</code> must match the host (or be listed in <code>LANETRACE_ALLOWED_HOSTS</code>);
 otherwise it is closed with code 1008. In <code>--auth none</code> mode, the API's <code>Host</code>
 and <code>Origin</code> check applies.</p>
 
